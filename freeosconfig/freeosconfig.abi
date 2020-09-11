@@ -1,0 +1,134 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.1",
+    "types": [],
+    "structs": [
+        {
+            "name": "configcheck",
+            "base": "",
+            "fields": [
+                {
+                    "name": "threshold",
+                    "type": "uint64"
+                },
+                {
+                    "name": "paramname",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "erase",
+            "base": "",
+            "fields": [
+                {
+                    "name": "paramname",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "getthreshold",
+            "base": "",
+            "fields": [
+                {
+                    "name": "numusers",
+                    "type": "uint64"
+                },
+                {
+                    "name": "account_type",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "stakeerase",
+            "base": "",
+            "fields": [
+                {
+                    "name": "threshold",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "stakeupsert",
+            "base": "",
+            "fields": [
+                {
+                    "name": "threshold",
+                    "type": "uint64"
+                },
+                {
+                    "name": "value_e",
+                    "type": "uint32"
+                },
+                {
+                    "name": "value_d",
+                    "type": "uint32"
+                },
+                {
+                    "name": "value_v",
+                    "type": "uint32"
+                },
+                {
+                    "name": "value_x",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "upsert",
+            "base": "",
+            "fields": [
+                {
+                    "name": "virtualtable",
+                    "type": "name"
+                },
+                {
+                    "name": "paramname",
+                    "type": "name"
+                },
+                {
+                    "name": "value",
+                    "type": "string"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "configcheck",
+            "type": "configcheck",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "erase",
+            "type": "erase",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "getthreshold",
+            "type": "getthreshold",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "stakeerase",
+            "type": "stakeerase",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "stakeupsert",
+            "type": "stakeupsert",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "upsert",
+            "type": "upsert",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [],
+    "ricardian_clauses": [],
+    "variants": []
+}
