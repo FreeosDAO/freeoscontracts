@@ -6,7 +6,7 @@
 
 using namespace eosio;
 
-
+[[eosio::action]]
 void freeos::reguser(const name& user, const std::string account_type) {
   require_auth( get_self() );
   // check( is_account( user ), "user account does not exist");
@@ -22,7 +22,7 @@ void freeos::reguser(const name& user, const std::string account_type) {
 
   // get the required stake for the user number
   uint32_t stake = getthreshold(entry.count, account_type);
-  asset stake_requirement = asset(stake, symbol("EOS",4)); // TODO: look up from the config table
+  asset stake_requirement = asset(stake * 10000, symbol("EOS",4)); // TODO: look up from the config table
 
   // find the account in the user table
   user_index usertable( get_self(), user.value );
@@ -40,7 +40,7 @@ void freeos::reguser(const name& user, const std::string account_type) {
        // update number of users in record_count singleton
        user_counter.set(entry, get_self());
 
-       print("account number ", entry.count, ": ", user, " registered with account type ", u.account_type, ", stake requirement = ", u.stake_requirement.amount);
+       print("account number ", entry.count, ": ", user, " registered with account type ", u.account_type, ", stake requirement = ", u.stake_requirement.to_string());
      });
 
   } else {
@@ -48,14 +48,119 @@ void freeos::reguser(const name& user, const std::string account_type) {
   }
 }
 
-void freeos::stake(const name& user, const asset& amount) {
-  // TODO - add to the user staked record
-  print("Running stake action");
+// for deregistering user
+[[eosio::action]]
+void freeos::dereg(const name& user) {
+  require_auth( get_self() );
+
+  user_index usertable( get_self(), user.value );
+  auto u = usertable.find( symbol_code("EOS").raw() );
+
+  if(u != usertable.end()) {
+    if (u->stake.amount == 0) {
+      // erase the user record
+      usertable.erase(u);
+
+      // decrement number of users in record_count singleton
+      user_singleton user_counter(get_self(), get_self().value);
+      if (!user_counter.exists()) {
+        user_counter.get_or_create(get_self(), ct);
+      }
+      auto entry = user_counter.get();
+      entry.count -= 1;
+      user_counter.set(entry, get_self());
+    } else {
+      print("account ", user, " has staked amount and cannot be deregistered");
+    }
+
+    print("account ", user, " removed from user register");
+  } else {
+    print("account ", user, " not in register");
+  }
+
 }
 
-void freeos::unstake(const name& user, const asset& amount) {
-  // TODO - subtract from the user staked record
-  print("Running unstake action");
+
+// stake action
+[[eosio::on_notify("eosio.token::transfer")]]
+void freeos::stake(name user, name to, asset quantity, std::string memo) {
+
+  if (user == get_self()) {
+    return;
+  }
+
+  // get the user record - the amount of the stake requirement and the amount staked
+  // find the account in the user table
+  user_index usertable( get_self(), user.value );
+  auto u = usertable.find( symbol_code("EOS").raw() );
+
+  // check if the user is registered
+  check(u != usertable.end(), "user is not registered");
+
+  // print("req: ", u->stake_requirement.to_string(), " quantity: ", quantity.to_string());
+
+  // check that user isn't already staked
+  check(u->staked_time == time_point_sec(0), "the account is already staked");
+
+  // check that the required stake has been transferred
+  check(u->stake_requirement == quantity, "the stake amount is not what is required");
+
+  // update the user record
+  usertable.modify(u, to, [&](auto& row) {   // second argument is scope
+    row.stake += quantity;
+    row.staked_time = current_time_point();
+  });
+
+  print(quantity.to_string(), " stake received for account ", user);
+}
+
+
+[[eosio::action]]
+void freeos::unstake(const name& user) {
+
+  // find user record
+  user_index usertable( get_self(), user.value );
+  auto u = usertable.find( symbol_code("EOS").raw() );
+
+  // check if the user is registered
+  check(u != usertable.end(), "account is not registered");
+
+  // check if the user has an amount staked
+  check(u->stake.amount > 0, "account has not staked");
+
+  // if enough time elapsed then refund amount
+  check((u->staked_time.utc_seconds + 604800) <= current_time_point().sec_since_epoch(), "stake has not been held for required time and cannot be refunded");
+
+  // refund the stake tokens
+  // transfer stake from freeos to user account using the eosio.token contract
+  action transfer = action(
+    permission_level{get_self(),"active"_n},
+    "eosio.token"_n,
+    "transfer"_n,
+    std::make_tuple("freeos"_n, user, u->stake, std::string("refund of freeos stake"))
+  );
+
+  transfer.send();
+
+  // update the user record
+  usertable.modify(u, user, [&](auto& row) {   // second argument is scope
+    row.stake = asset(0, symbol("EOS", 4));
+    row.staked_time = time_point_sec(0);
+  });
+
+  print("stake refunded");
+
+}
+
+[[eosio::action]]
+void freeos::getuser(const name& user) {
+  user_index usertable( get_self(), user.value );
+  auto u = usertable.find( symbol_code("EOS").raw() );
+
+  // check if the user is registered
+  check(u != usertable.end(), "user is not registered");
+
+  print("account: ", user, " account type ", u->account_type, ", stake req = ", u->stake_requirement.to_string(), ", stake = ", u->stake.to_string(), ", staked on ", u->staked_time.utc_seconds);
 }
 
 

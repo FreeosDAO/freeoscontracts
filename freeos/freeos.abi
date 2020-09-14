@@ -60,6 +60,26 @@
             ]
         },
         {
+            "name": "dereg",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "getuser",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                }
+            ]
+        },
+        {
             "name": "issue",
             "base": "",
             "fields": [
@@ -124,20 +144,6 @@
             ]
         },
         {
-            "name": "stake",
-            "base": "",
-            "fields": [
-                {
-                    "name": "user",
-                    "type": "name"
-                },
-                {
-                    "name": "amount",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
             "name": "transfer",
             "base": "",
             "fields": [
@@ -166,10 +172,6 @@
                 {
                     "name": "user",
                     "type": "name"
-                },
-                {
-                    "name": "amount",
-                    "type": "asset"
                 }
             ]
         }
@@ -183,6 +185,16 @@
         {
             "name": "create",
             "type": "create",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "dereg",
+            "type": "dereg",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "getuser",
+            "type": "getuser",
             "ricardian_contract": ""
         },
         {
@@ -203,11 +215,6 @@
         {
             "name": "retire",
             "type": "retire",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "stake",
-            "type": "stake",
             "ricardian_contract": ""
         },
         {

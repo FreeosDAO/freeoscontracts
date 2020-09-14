@@ -32,10 +32,16 @@ namespace eosio {
          void reguser(const name& user, const std::string account_type);
 
          [[eosio::action]]
-         void stake(const name& user, const asset& amount);
+         void dereg(const name& user);
+
+         [[eosio::on_notify("eosio.token::transfer")]]
+         void stake(name user, name to, asset quantity, std::string memo);
 
          [[eosio::action]]
-         void unstake(const name& user, const asset& amount);
+         void unstake(const name& user);
+
+         [[eosio::action]]
+         void getuser(const name& user);
 
          /**
           * Create action.
