@@ -1,2 +1,0 @@
-# freeosconfig
-freeos configuration contract
