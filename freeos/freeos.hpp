@@ -9,17 +9,16 @@ namespace eosiosystem {
    class system_contract;
 }
 
-namespace eosio {
-
+   using namespace eosio;
    using std::string;
 
    /**
-    * @defgroup eosiotoken eosio.token
+    * @defgroup freeos freeos contract
     * @ingroup eosiocontracts
     *
-    * eosio.token contract
+    * freeos contract
     *
-    * @details eosio.token contract defines the structures and actions that allow users to create, issue, and manage
+    * @details freeos contract defines the structures and actions that allow users to create, issue, and manage
     * tokens on eosio based blockchains.
     * @{
     */
@@ -27,19 +26,80 @@ namespace eosio {
       public:
          using contract::contract;
 
-
+         /**
+          * reguser action.
+          *
+          * @details Creates a record for the user in the 'stakereqs' table.
+          * @param user - the account to be registered,
+          * @param account_type - the type of account: "e" is EOS wallet user, "d" is Dapp Account user, "v" is Voice verified user.
+          *
+          * @pre Requires permission of the contract account
+          *
+          * If validation is successful a new entry in 'stakereqs' table is created for the user account.
+          */
          [[eosio::action]]
          void reguser(const name& user, const std::string account_type);
 
+         /**
+          * dereg action.
+          *
+          * @details Creates a record for the user in the 'stakereqs' table.
+          * @param user - the account to be registered,
+          * @param account_type - the type of account: "e" is EOS wallet user, "d" is Dapp Account user, "v" is Voice verified user.
+          *
+          * @pre Requires permission of the contract account
+          * @pre The user account must be previously registered
+          * @pre The account must not have any staked EOS recorded
+          *
+          * If validation is successful the record for the user account is deleted from the 'stakereqs' table.
+          */
          [[eosio::action]]
          void dereg(const name& user);
 
+         /**
+          * stake action.
+          *
+          * @details Adds a record of staked EOS tokens in the user account record in the 'stakereqs' table.\n
+          * @details This action is automatically invoked on the freeos account receiving EOS from the user.\n
+          *
+          * @param user - the account sending the EOS tokens to freeos,
+          * @param to - the 'freeos' account,
+          * @param quantity - the asset, i.e. an amount of EOS which is transferred to the freeos account,
+          * @param memo - a memo describing the transaction
+          *
+          * @pre The user account must be previously registered
+          * @pre The asset must be equal to the stake requirement for the user
+          *
+          * If validation is successful the record for the user account is updated to record the amount staked and the date/time of the receipt.
+          */
          [[eosio::on_notify("eosio.token::transfer")]]
          void stake(name user, name to, asset quantity, std::string memo);
 
+         /**
+          * unstake action.
+          *
+          * @details Transfer staked EOS back to the user if the waiting time of 1 week has elapsed since staking.
+          * @details Updates the record of staked EOS tokens in the user account record in the 'stakereqs' table.\n
+          *
+          * @param user - the account to transfer the previously EOS tokens to,
+          *
+          * @pre The user account must be previously registered and has a non-zero balance of staked EOS
+          *
+          * If transfer is successful the record for the user account is updated to set the amount staked and stake time/date to zero.
+          */
          [[eosio::action]]
          void unstake(const name& user);
 
+         /**
+          * getuser action.
+          *
+          * @details For testing purposes, prints the values stored in the user account record in the 'stakereqs' table.
+          *
+          * @param user - the user account
+          *
+          * @pre The user account must be previously registered
+          *
+          */
          [[eosio::action]]
          void getuser(const name& user);
 
@@ -196,5 +256,4 @@ namespace eosio {
          bool checkmasterswitch();
          uint32_t getthreshold(uint32_t numusers, std::string account_type);
    };
-   /** @}*/ // end of @defgroup eosiotoken eosio.token
-} /// namespace eosio
+   /** @}*/ // end of @defgroup freeos freeos contract
