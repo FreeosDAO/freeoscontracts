@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['open_44',['open',['../classfreeos.html#a2a738e773b2e20c7b9be400d37cc83fe',1,'freeos']]]
+  ['paramerase_40',['paramerase',['../classfreeosconfig.html#a200d1d93e8215b9050bced3bbb58e4d2',1,'freeosconfig']]],
+  ['paramupsert_41',['paramupsert',['../classfreeosconfig.html#ac628cf94f2c2c99848698038f5802497',1,'freeosconfig']]]
 ];

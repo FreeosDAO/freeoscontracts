@@ -18,8 +18,9 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
      */
     freeosconfig(name receiver, name code, datastream<const char*> ds):contract(receiver, code, ds) {}
 
+
     /**
-     * upsert action
+     * paramupsert action
      *
      * @details This action creates a new parameter or modifies an existing parameter in the 'parameters' table.
      *
@@ -31,14 +32,14 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
      *
      */
     [[eosio::action]]
-    void upsert(
+    void paramupsert(
             name virtualtable,
             name paramname,
             std::string value
           );
 
     /**
-     * erase action.
+     * paramerase action.
      *
      * @details This action deletes a parameter from the 'parameters' table.
      *
@@ -47,7 +48,7 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
      * @pre requires permission of the contract account
      */
     [[eosio::action]]
-    void erase ( name paramname );
+    void paramerase ( name paramname );
 
     /**
      * stakeupsert action.
@@ -81,8 +82,49 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
     [[eosio::action]]
     void stakeerase(uint64_t threshold);
 
+
     /**
-     * configcheck action.
+     * weekupsert action.
+     *
+     * @details This action creates a new entry, or modifies an existing entry, in the 'weeks' table.
+     *
+     * @param week_number - the airclaim week number
+     * @param start - string representing the start of week in YYYY-MM-DD HH:MM:SS format,
+     * @param end - string representing the end of week in YYYY-MM-DD HH:MM:SS format
+     *
+     * @pre requires permission of the contract account
+     */
+    [[eosio::action]]
+    void weekupsert(uint64_t week_number,
+    std::string start,
+    std::string end);
+
+    /**
+     * getweek action.
+     *
+     * @details For testing purposes. This action prints a record from the 'weeks' table.
+     *
+     * @param week_number - the week number
+     *
+     * @pre requires permission of the contract account
+     */
+    [[eosio::action]]
+    void getweek(uint64_t week_number);
+
+    /**
+     * weekerase action.
+     *
+     * @details This action deletes a record from the 'weeks' table.
+     *
+     * @param week_number - the week number
+     *
+     * @pre requires permission of the contract account
+     */
+    [[eosio::action]]
+    void weekerase(uint64_t week_number);
+
+    /**
+     * getconfig action.
      *
      * @details This action is intended for testers. It displays the values associated with the threshold in the 'stakereqs' table and the parameter in the 'parameters' table.
      *
@@ -91,7 +133,7 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
      *
      */
     [[eosio::action]]
-    void configcheck(uint64_t threshold, name paramname);
+    void getconfig(uint64_t threshold, name paramname);
 
     /**
      * getthreshold action.
@@ -107,6 +149,58 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
 
 
   private:
+    // ************************************
+    // parameter table
+
+    struct [[eosio::table]] parameter {
+      name virtualtable;
+      name paramname;
+      std::string value;
+
+      uint64_t primary_key() const { return paramname.value;}
+      uint64_t get_secondary() const {return virtualtable.value;}
+    };
+
+    using parameter_index = eosio::multi_index<"parameters"_n, parameter,
+    indexed_by<"virtualtable"_n, const_mem_fun<parameter, uint64_t, &parameter::get_secondary>>
+    >;
+
+
+    // stake requirement table
+
+    struct [[eosio::table]] stakerequire {
+      uint64_t    threshold;
+      uint32_t    requirement_e;
+      uint32_t    requirement_d;
+      uint32_t    requirement_v;
+      uint32_t    requirement_x;
+
+      uint64_t primary_key() const { return threshold;}
+    };
+
+    using stakereq_index = eosio::multi_index<"stakereqs"_n, stakerequire>;
+
+
+    // freeos airclaim week calendar
+
+    struct [[eosio::table]] week {
+      uint64_t    week_number;
+      uint32_t    start;
+      std::string start_date;
+      uint32_t    end;
+      std::string end_date;
+
+      uint64_t primary_key() const { return week_number; }
+    };
+
+    using week_index = eosio::multi_index<"weeks"_n, week>;
+
+    // ************************************
+
+    // helper functions
+    uint32_t parsetime(std::string datetime);
+    uint32_t GetTimeStamp(  int year, int month, int day,
+                            int hour, int minute, int second);
 
 };
 /** @}*/ // end of @defgroup freeosconfig freeosconfig contract

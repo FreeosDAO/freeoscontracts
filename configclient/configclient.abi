@@ -27,6 +27,24 @@
                     "type": "name"
                 }
             ]
+        },
+        {
+            "name": "parameter",
+            "base": "",
+            "fields": [
+                {
+                    "name": "virtualtable",
+                    "type": "name"
+                },
+                {
+                    "name": "paramname",
+                    "type": "name"
+                },
+                {
+                    "name": "value",
+                    "type": "string"
+                }
+            ]
         }
     ],
     "actions": [
@@ -46,7 +64,15 @@
             "ricardian_contract": ""
         }
     ],
-    "tables": [],
+    "tables": [
+        {
+            "name": "parameters",
+            "type": "parameter",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
     "ricardian_clauses": [],
     "variants": []
 }

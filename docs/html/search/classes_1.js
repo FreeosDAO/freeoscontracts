@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['freeos_28',['freeos',['../classfreeos.html',1,'']]],
-  ['freeosconfig_29',['freeosconfig',['../classfreeosconfig.html',1,'']]]
+  ['freeos_26',['freeos',['../classfreeos.html',1,'']]],
+  ['freeosconfig_27',['freeosconfig',['../classfreeosconfig.html',1,'']]]
 ];

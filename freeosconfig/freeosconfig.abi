@@ -4,23 +4,13 @@
     "types": [],
     "structs": [
         {
-            "name": "configcheck",
+            "name": "getconfig",
             "base": "",
             "fields": [
                 {
                     "name": "threshold",
                     "type": "uint64"
                 },
-                {
-                    "name": "paramname",
-                    "type": "name"
-                }
-            ]
-        },
-        {
-            "name": "erase",
-            "base": "",
-            "fields": [
                 {
                     "name": "paramname",
                     "type": "name"
@@ -42,12 +32,94 @@
             ]
         },
         {
+            "name": "getweek",
+            "base": "",
+            "fields": [
+                {
+                    "name": "week_number",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "paramerase",
+            "base": "",
+            "fields": [
+                {
+                    "name": "paramname",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "parameter",
+            "base": "",
+            "fields": [
+                {
+                    "name": "virtualtable",
+                    "type": "name"
+                },
+                {
+                    "name": "paramname",
+                    "type": "name"
+                },
+                {
+                    "name": "value",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "paramupsert",
+            "base": "",
+            "fields": [
+                {
+                    "name": "virtualtable",
+                    "type": "name"
+                },
+                {
+                    "name": "paramname",
+                    "type": "name"
+                },
+                {
+                    "name": "value",
+                    "type": "string"
+                }
+            ]
+        },
+        {
             "name": "stakeerase",
             "base": "",
             "fields": [
                 {
                     "name": "threshold",
                     "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "stakerequire",
+            "base": "",
+            "fields": [
+                {
+                    "name": "threshold",
+                    "type": "uint64"
+                },
+                {
+                    "name": "requirement_e",
+                    "type": "uint32"
+                },
+                {
+                    "name": "requirement_d",
+                    "type": "uint32"
+                },
+                {
+                    "name": "requirement_v",
+                    "type": "uint32"
+                },
+                {
+                    "name": "requirement_x",
+                    "type": "uint32"
                 }
             ]
         },
@@ -78,19 +150,55 @@
             ]
         },
         {
-            "name": "upsert",
+            "name": "week",
             "base": "",
             "fields": [
                 {
-                    "name": "virtualtable",
-                    "type": "name"
+                    "name": "week_number",
+                    "type": "uint64"
                 },
                 {
-                    "name": "paramname",
-                    "type": "name"
+                    "name": "start",
+                    "type": "uint32"
                 },
                 {
-                    "name": "value",
+                    "name": "start_date",
+                    "type": "string"
+                },
+                {
+                    "name": "end",
+                    "type": "uint32"
+                },
+                {
+                    "name": "end_date",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "weekerase",
+            "base": "",
+            "fields": [
+                {
+                    "name": "week_number",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "weekupsert",
+            "base": "",
+            "fields": [
+                {
+                    "name": "week_number",
+                    "type": "uint64"
+                },
+                {
+                    "name": "start",
+                    "type": "string"
+                },
+                {
+                    "name": "end",
                     "type": "string"
                 }
             ]
@@ -98,18 +206,28 @@
     ],
     "actions": [
         {
-            "name": "configcheck",
-            "type": "configcheck",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "erase",
-            "type": "erase",
+            "name": "getconfig",
+            "type": "getconfig",
             "ricardian_contract": ""
         },
         {
             "name": "getthreshold",
             "type": "getthreshold",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "getweek",
+            "type": "getweek",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "paramerase",
+            "type": "paramerase",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "paramupsert",
+            "type": "paramupsert",
             "ricardian_contract": ""
         },
         {
@@ -123,12 +241,39 @@
             "ricardian_contract": ""
         },
         {
-            "name": "upsert",
-            "type": "upsert",
+            "name": "weekerase",
+            "type": "weekerase",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "weekupsert",
+            "type": "weekupsert",
             "ricardian_contract": ""
         }
     ],
-    "tables": [],
+    "tables": [
+        {
+            "name": "parameters",
+            "type": "parameter",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "stakereqs",
+            "type": "stakerequire",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "weeks",
+            "type": "week",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
     "ricardian_clauses": [],
     "variants": []
 }

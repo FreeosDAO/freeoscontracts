@@ -28,6 +28,16 @@
             ]
         },
         {
+            "name": "count",
+            "base": "",
+            "fields": [
+                {
+                    "name": "count",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
             "name": "create",
             "base": "",
             "fields": [
@@ -116,6 +126,24 @@
             ]
         },
         {
+            "name": "parameter",
+            "base": "",
+            "fields": [
+                {
+                    "name": "virtualtable",
+                    "type": "name"
+                },
+                {
+                    "name": "paramname",
+                    "type": "name"
+                },
+                {
+                    "name": "value",
+                    "type": "string"
+                }
+            ]
+        },
+        {
             "name": "reguser",
             "base": "",
             "fields": [
@@ -140,6 +168,32 @@
                 {
                     "name": "memo",
                     "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "stakerequire",
+            "base": "",
+            "fields": [
+                {
+                    "name": "threshold",
+                    "type": "uint64"
+                },
+                {
+                    "name": "requirement_e",
+                    "type": "uint32"
+                },
+                {
+                    "name": "requirement_d",
+                    "type": "uint32"
+                },
+                {
+                    "name": "requirement_v",
+                    "type": "uint32"
+                },
+                {
+                    "name": "requirement_x",
+                    "type": "uint32"
                 }
             ]
         },
@@ -172,6 +226,32 @@
                 {
                     "name": "user",
                     "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "user",
+            "base": "",
+            "fields": [
+                {
+                    "name": "stake",
+                    "type": "asset"
+                },
+                {
+                    "name": "account_type",
+                    "type": "int8"
+                },
+                {
+                    "name": "stake_requirement",
+                    "type": "asset"
+                },
+                {
+                    "name": "registered_time",
+                    "type": "time_point_sec"
+                },
+                {
+                    "name": "staked_time",
+                    "type": "time_point_sec"
                 }
             ]
         }
@@ -237,8 +317,36 @@
             "key_types": []
         },
         {
+            "name": "count",
+            "type": "count",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "parameters",
+            "type": "parameter",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "stakereqs",
+            "type": "stakerequire",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
             "name": "stat",
             "type": "currency_stats",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "users",
+            "type": "user",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

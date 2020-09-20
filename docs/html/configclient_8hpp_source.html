@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.0"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Freeos Project: freeos/configclient/configclient.hpp Source File</title>
+<title>Freeos Project: configclient/configclient.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -23,6 +23,7 @@
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Freeos Project
    </div>
+   <div id="projectbrief">Freeos AirClaim and FreeDAO MVP</div>
   </td>
  </tr>
  </tbody>
@@ -61,7 +62,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_b08a84995a798f32574cd75c0024f37a.html">freeos</a></li><li class="navelem"><a class="el" href="dir_830665598675f9482d62d9e9062ab109.html">configclient</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_2b82641fd704538172afc63b5b06f4df.html">configclient</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -70,7 +71,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#include &lt;eosio/eosio.hpp&gt;</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &quot;../paramtable.hpp&quot;</span></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160; </div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160; </div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="keyword">using namespace </span>eosio;</div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160; </div>
@@ -89,12 +90,28 @@ $(function() {
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;  <span class="keyword">private</span>:</div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160; </div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keywordtype">void</span> print_parameter(<a class="code" href="structparameter.html">parameter</a> p) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;};</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="comment">// ********************************</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="comment">// parameter table</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keyword">struct </span>[[eosio::table]] parameter {</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;      name virtualtable;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;      name paramname;</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;      std::string value;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;      uint64_t primary_key()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> paramname.value;}</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;      uint64_t get_secondary_1()<span class="keyword"> const </span>{<span class="keywordflow">return</span> virtualtable.value;}</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    };</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keyword">using</span> parameter_index = eosio::multi_index&lt;<span class="stringliteral">&quot;parameters&quot;</span>_n, parameter,</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    indexed_by&lt;<span class="stringliteral">&quot;virtualtable&quot;</span>_n, const_mem_fun&lt;parameter, uint64_t, &amp;parameter::get_secondary_1&gt;&gt;</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    &gt;;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="comment">// ********************************</span></div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keywordtype">void</span> print_parameter(parameter p) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;};</div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassconfigclient_html"><div class="ttname"><a href="classconfigclient.html">configclient</a></div><div class="ttdef"><b>Definition:</b> configclient.hpp:6</div></div>
-<div class="ttc" id="astructparameter_html"><div class="ttname"><a href="structparameter.html">parameter</a></div><div class="ttdef"><b>Definition:</b> paramtable.hpp:8</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by&#160;<a href="http://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.0

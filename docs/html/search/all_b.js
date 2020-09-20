@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['unstake_23',['unstake',['../classfreeos.html#a36289ded2740d9a0a7d34b634a2ba636',1,'freeos']]],
-  ['upsert_24',['upsert',['../classfreeosconfig.html#ae45a70f683da0faeff4045c92fe78aff',1,'freeosconfig']]],
-  ['user_25',['user',['../structuser.html',1,'']]]
+  ['weekerase_23',['weekerase',['../classfreeosconfig.html#a0eec8efafc53c1885aeed209839b5eb4',1,'freeosconfig']]],
+  ['weekupsert_24',['weekupsert',['../classfreeosconfig.html#a33b37174d521cc59ec9f2beef91e8e50',1,'freeosconfig']]]
 ];

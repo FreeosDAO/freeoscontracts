@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['erase_37',['erase',['../classfreeosconfig.html#a19ab65bdf0aa929fc896bd75ce0b20b3',1,'freeosconfig']]]
+  ['freeosconfig_31',['freeosconfig',['../classfreeosconfig.html#a1a01dd1870ce4760d6982b6e37e01bb5',1,'freeosconfig']]]
 ];

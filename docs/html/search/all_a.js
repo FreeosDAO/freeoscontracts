@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['transfer_22',['transfer',['../classfreeos.html#a9a62226a3cc6851ed15e51252cf69f79',1,'freeos']]]
+  ['unstake_22',['unstake',['../classfreeos.html#a36289ded2740d9a0a7d34b634a2ba636',1,'freeos']]]
 ];

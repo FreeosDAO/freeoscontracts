@@ -1,14 +1,13 @@
 #include <eosio/eosio.hpp>
 #include <eosio/system.hpp>
 #include "freeos.hpp"
-#include "../paramtable.hpp"
-#include "../usertable.hpp"
+
 
 using namespace eosio;
 
 [[eosio::action]]
 void freeos::reguser(const name& user, const std::string account_type) {
-  require_auth( get_self() );
+  require_auth( user );
   // check( is_account( user ), "user account does not exist");
   check(account_type.length() == 1, "account type should be 1 character");
 
@@ -137,7 +136,7 @@ void freeos::unstake(const name& user) {
     permission_level{get_self(),"active"_n},
     "eosio.token"_n,
     "transfer"_n,
-    std::make_tuple("freeos"_n, user, u->stake, std::string("refund of freeos stake"))
+    std::make_tuple(get_self(), user, u->stake, std::string("refund of freeos stake"))
   );
 
   transfer.send();

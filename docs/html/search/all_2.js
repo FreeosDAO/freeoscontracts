@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['erase_6',['erase',['../classfreeosconfig.html#a19ab65bdf0aa929fc896bd75ce0b20b3',1,'freeosconfig']]]
+  ['freeos_4',['freeos',['../classfreeos.html',1,'freeos'],['../group__freeos.html',1,'(Global Namespace)']]],
+  ['freeosconfig_5',['freeosconfig',['../classfreeosconfig.html',1,'freeosconfig'],['../classfreeosconfig.html#a1a01dd1870ce4760d6982b6e37e01bb5',1,'freeosconfig::freeosconfig()'],['../group__freeosconfig.html',1,'(Global Namespace)']]]
 ];

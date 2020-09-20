@@ -1,6 +1,6 @@
 #include <eosio/eosio.hpp>
 #include "configclient.hpp"
-#include "../paramtable.hpp"
+
 
 using namespace eosio;
 

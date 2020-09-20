@@ -1,0 +1,329 @@
+\hypertarget{classfreeos}{}\doxysection{freeos Class Reference}
+\label{classfreeos}\index{freeos@{freeos}}
+
+
+Inheritance diagram for freeos\+:
+% FIG 0
+
+
+Collaboration diagram for freeos\+:
+% FIG 1
+\doxysubsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classfreeos_ab846a27a43010a2566697433792cc011}\label{classfreeos_ab846a27a43010a2566697433792cc011}} 
+using {\bfseries create\+\_\+action} = eosio\+::action\+\_\+wrapper$<$\char`\"{}create\char`\"{}\+\_\+n, \&\mbox{\hyperlink{classfreeos_a60d46bb1d254c865b81ac0deeb642b58}{freeos\+::create}} $>$
+\item 
+\mbox{\Hypertarget{classfreeos_a1701b6532ce342ef9ba4f9463a654c80}\label{classfreeos_a1701b6532ce342ef9ba4f9463a654c80}} 
+using {\bfseries issue\+\_\+action} = eosio\+::action\+\_\+wrapper$<$\char`\"{}issue\char`\"{}\+\_\+n, \&\mbox{\hyperlink{classfreeos_a5410f45c1c2322d5bad1aae9e2b52bf6}{freeos\+::issue}} $>$
+\item 
+\mbox{\Hypertarget{classfreeos_ada58423054307f737ebde5a4f8930243}\label{classfreeos_ada58423054307f737ebde5a4f8930243}} 
+using {\bfseries retire\+\_\+action} = eosio\+::action\+\_\+wrapper$<$\char`\"{}retire\char`\"{}\+\_\+n, \&\mbox{\hyperlink{classfreeos_a23309a37c56ffad07669de4841b0d8bd}{freeos\+::retire}} $>$
+\item 
+\mbox{\Hypertarget{classfreeos_a45ec351a5bde88e3a087db0481796b1a}\label{classfreeos_a45ec351a5bde88e3a087db0481796b1a}} 
+using {\bfseries transfer\+\_\+action} = eosio\+::action\+\_\+wrapper$<$\char`\"{}transfer\char`\"{}\+\_\+n, \&\mbox{\hyperlink{classfreeos_a9a62226a3cc6851ed15e51252cf69f79}{freeos\+::transfer}} $>$
+\item 
+\mbox{\Hypertarget{classfreeos_a83f23fa8dd1aa95eedc1031dae73d8b5}\label{classfreeos_a83f23fa8dd1aa95eedc1031dae73d8b5}} 
+using {\bfseries open\+\_\+action} = eosio\+::action\+\_\+wrapper$<$\char`\"{}open\char`\"{}\+\_\+n, \&\mbox{\hyperlink{classfreeos_a2a738e773b2e20c7b9be400d37cc83fe}{freeos\+::open}} $>$
+\item 
+\mbox{\Hypertarget{classfreeos_ac10ca03d937ed9b7f289492bad6c20ab}\label{classfreeos_ac10ca03d937ed9b7f289492bad6c20ab}} 
+using {\bfseries close\+\_\+action} = eosio\+::action\+\_\+wrapper$<$\char`\"{}close\char`\"{}\+\_\+n, \&\mbox{\hyperlink{classfreeos_a623a8a09d700c2c511453853995ea7ac}{freeos\+::close}} $>$
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classfreeos_a2ca1c1730a7e24b590b3a5b17ac82015}{reguser}} (const name \&user, const std\+::string account\+\_\+type)
+\item 
+void \mbox{\hyperlink{classfreeos_adbdb65299c6cd507787403901fb223f5}{dereg}} (const name \&user)
+\item 
+void \mbox{\hyperlink{classfreeos_a32074af4f0fdd077dc773ee900402311}{stake}} (name user, name to, asset quantity, std\+::string memo)
+\item 
+void \mbox{\hyperlink{classfreeos_a36289ded2740d9a0a7d34b634a2ba636}{unstake}} (const name \&user)
+\item 
+void \mbox{\hyperlink{classfreeos_a7feac6d7246491df1133b7674ac6c1c1}{getuser}} (const name \&user)
+\item 
+void \mbox{\hyperlink{classfreeos_a60d46bb1d254c865b81ac0deeb642b58}{create}} (const name \&issuer, const asset \&maximum\+\_\+supply)
+\item 
+void \mbox{\hyperlink{classfreeos_a5410f45c1c2322d5bad1aae9e2b52bf6}{issue}} (const name \&to, const asset \&quantity, const string \&memo)
+\item 
+void \mbox{\hyperlink{classfreeos_a23309a37c56ffad07669de4841b0d8bd}{retire}} (const asset \&quantity, const string \&memo)
+\item 
+void \mbox{\hyperlink{classfreeos_a9a62226a3cc6851ed15e51252cf69f79}{transfer}} (const name \&from, const name \&to, const asset \&quantity, const string \&memo)
+\item 
+void \mbox{\hyperlink{classfreeos_a2a738e773b2e20c7b9be400d37cc83fe}{open}} (const name \&owner, const symbol \&symbol, const name \&ram\+\_\+payer)
+\item 
+void \mbox{\hyperlink{classfreeos_a623a8a09d700c2c511453853995ea7ac}{close}} (const name \&owner, const symbol \&symbol)
+\end{DoxyCompactItemize}
+\doxysubsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static asset \mbox{\hyperlink{classfreeos_ab44b74a7025fa583dfda486c22fdac22}{get\+\_\+supply}} (const name \&token\+\_\+contract\+\_\+account, const symbol\+\_\+code \&sym\+\_\+code)
+\item 
+static asset \mbox{\hyperlink{classfreeos_a1c38e41cbd3400ca3ee54d7dd23fcbbb}{get\+\_\+balance}} (const name \&token\+\_\+contract\+\_\+account, const name \&owner, const symbol\+\_\+code \&sym\+\_\+code)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classfreeos_a623a8a09d700c2c511453853995ea7ac}\label{classfreeos_a623a8a09d700c2c511453853995ea7ac}} 
+\index{freeos@{freeos}!close@{close}}
+\index{close@{close}!freeos@{freeos}}
+\doxysubsubsection{\texorpdfstring{close()}{close()}}
+{\footnotesize\ttfamily void freeos\+::close (\begin{DoxyParamCaption}\item[{const name \&}]{owner,  }\item[{const symbol \&}]{symbol }\end{DoxyParamCaption})}
+
+Close action.
+
+This action is the opposite for open, it closes the account {\ttfamily owner} for token {\ttfamily symbol}.
+
+
+\begin{DoxyParams}{Parameters}
+{\em owner} & -\/ the owner account to execute the close action for, \\
+\hline
+{\em symbol} & -\/ the symbol of the token to execute the close action for.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+The pair of owner plus symbol has to exist otherwise no action is executed, 
+
+If the pair of owner plus symbol exists, the balance has to be zero. 
+\end{DoxyPrecond}
+\mbox{\Hypertarget{classfreeos_a60d46bb1d254c865b81ac0deeb642b58}\label{classfreeos_a60d46bb1d254c865b81ac0deeb642b58}} 
+\index{freeos@{freeos}!create@{create}}
+\index{create@{create}!freeos@{freeos}}
+\doxysubsubsection{\texorpdfstring{create()}{create()}}
+{\footnotesize\ttfamily void freeos\+::create (\begin{DoxyParamCaption}\item[{const name \&}]{issuer,  }\item[{const asset \&}]{maximum\+\_\+supply }\end{DoxyParamCaption})}
+
+Create action.
+
+Allows {\ttfamily issuer} account to create a token in supply of {\ttfamily maximum\+\_\+supply}. 
+\begin{DoxyParams}{Parameters}
+{\em issuer} & -\/ the account that creates the token, \\
+\hline
+{\em maximum\+\_\+supply} & -\/ the maximum supply set for the token created.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+Token symbol has to be valid, 
+
+Token symbol must not be already created, 
+
+maximum\+\_\+supply has to be smaller than the maximum supply allowed by the system\+: 1$^\wedge$62 -\/ 1. 
+
+Maximum supply must be positive;
+\end{DoxyPrecond}
+If validation is successful a new entry in statstable for token symbol scope gets created. \mbox{\Hypertarget{classfreeos_adbdb65299c6cd507787403901fb223f5}\label{classfreeos_adbdb65299c6cd507787403901fb223f5}} 
+\index{freeos@{freeos}!dereg@{dereg}}
+\index{dereg@{dereg}!freeos@{freeos}}
+\doxysubsubsection{\texorpdfstring{dereg()}{dereg()}}
+{\footnotesize\ttfamily void freeos\+::dereg (\begin{DoxyParamCaption}\item[{const name \&}]{user }\end{DoxyParamCaption})}
+
+dereg action.
+
+Creates a record for the user in the \textquotesingle{}stakereqs\textquotesingle{} table. 
+\begin{DoxyParams}{Parameters}
+{\em user} & -\/ the account to be registered, \\
+\hline
+{\em account\+\_\+type} & -\/ the type of account\+: \char`\"{}e\char`\"{} is E\+OS wallet user, \char`\"{}d\char`\"{} is Dapp Account user, \char`\"{}v\char`\"{} is Voice verified user.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+Requires permission of the contract account 
+
+The user account must be previously registered 
+
+The account must not have any staked E\+OS recorded
+\end{DoxyPrecond}
+If validation is successful the record for the user account is deleted from the \textquotesingle{}stakereqs\textquotesingle{} table. \mbox{\Hypertarget{classfreeos_a1c38e41cbd3400ca3ee54d7dd23fcbbb}\label{classfreeos_a1c38e41cbd3400ca3ee54d7dd23fcbbb}} 
+\index{freeos@{freeos}!get\_balance@{get\_balance}}
+\index{get\_balance@{get\_balance}!freeos@{freeos}}
+\doxysubsubsection{\texorpdfstring{get\_balance()}{get\_balance()}}
+{\footnotesize\ttfamily static asset freeos\+::get\+\_\+balance (\begin{DoxyParamCaption}\item[{const name \&}]{token\+\_\+contract\+\_\+account,  }\item[{const name \&}]{owner,  }\item[{const symbol\+\_\+code \&}]{sym\+\_\+code }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+Get balance method.
+
+Get the balance for a token {\ttfamily sym\+\_\+code} created by {\ttfamily token\+\_\+contract\+\_\+account} account, for account {\ttfamily owner}.
+
+
+\begin{DoxyParams}{Parameters}
+{\em token\+\_\+contract\+\_\+account} & -\/ the token creator account, \\
+\hline
+{\em owner} & -\/ the account for which the token balance is returned, \\
+\hline
+{\em sym\+\_\+code} & -\/ the token for which the balance is returned. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classfreeos_ab44b74a7025fa583dfda486c22fdac22}\label{classfreeos_ab44b74a7025fa583dfda486c22fdac22}} 
+\index{freeos@{freeos}!get\_supply@{get\_supply}}
+\index{get\_supply@{get\_supply}!freeos@{freeos}}
+\doxysubsubsection{\texorpdfstring{get\_supply()}{get\_supply()}}
+{\footnotesize\ttfamily static asset freeos\+::get\+\_\+supply (\begin{DoxyParamCaption}\item[{const name \&}]{token\+\_\+contract\+\_\+account,  }\item[{const symbol\+\_\+code \&}]{sym\+\_\+code }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [static]}}
+
+Get supply method.
+
+Gets the supply for token {\ttfamily sym\+\_\+code}, created by {\ttfamily token\+\_\+contract\+\_\+account} account.
+
+
+\begin{DoxyParams}{Parameters}
+{\em token\+\_\+contract\+\_\+account} & -\/ the account to get the supply for, \\
+\hline
+{\em sym\+\_\+code} & -\/ the symbol to get the supply for. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classfreeos_a7feac6d7246491df1133b7674ac6c1c1}\label{classfreeos_a7feac6d7246491df1133b7674ac6c1c1}} 
+\index{freeos@{freeos}!getuser@{getuser}}
+\index{getuser@{getuser}!freeos@{freeos}}
+\doxysubsubsection{\texorpdfstring{getuser()}{getuser()}}
+{\footnotesize\ttfamily void freeos\+::getuser (\begin{DoxyParamCaption}\item[{const name \&}]{user }\end{DoxyParamCaption})}
+
+getuser action.
+
+For testing purposes, prints the values stored in the user account record in the \textquotesingle{}stakereqs\textquotesingle{} table.
+
+
+\begin{DoxyParams}{Parameters}
+{\em user} & -\/ the user account\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+The user account must be previously registered 
+\end{DoxyPrecond}
+\mbox{\Hypertarget{classfreeos_a5410f45c1c2322d5bad1aae9e2b52bf6}\label{classfreeos_a5410f45c1c2322d5bad1aae9e2b52bf6}} 
+\index{freeos@{freeos}!issue@{issue}}
+\index{issue@{issue}!freeos@{freeos}}
+\doxysubsubsection{\texorpdfstring{issue()}{issue()}}
+{\footnotesize\ttfamily void freeos\+::issue (\begin{DoxyParamCaption}\item[{const name \&}]{to,  }\item[{const asset \&}]{quantity,  }\item[{const string \&}]{memo }\end{DoxyParamCaption})}
+
+Issue action.
+
+This action issues to {\ttfamily to} account a {\ttfamily quantity} of tokens.
+
+
+\begin{DoxyParams}{Parameters}
+{\em to} & -\/ the account to issue tokens to, it must be the same as the issuer, \\
+\hline
+{\em quntity} & -\/ the amount of tokens to be issued, @memo -\/ the memo string that accompanies the token issue transaction. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classfreeos_a2a738e773b2e20c7b9be400d37cc83fe}\label{classfreeos_a2a738e773b2e20c7b9be400d37cc83fe}} 
+\index{freeos@{freeos}!open@{open}}
+\index{open@{open}!freeos@{freeos}}
+\doxysubsubsection{\texorpdfstring{open()}{open()}}
+{\footnotesize\ttfamily void freeos\+::open (\begin{DoxyParamCaption}\item[{const name \&}]{owner,  }\item[{const symbol \&}]{symbol,  }\item[{const name \&}]{ram\+\_\+payer }\end{DoxyParamCaption})}
+
+Open action.
+
+Allows {\ttfamily ram\+\_\+payer} to create an account {\ttfamily owner} with zero balance for token {\ttfamily symbol} at the expense of {\ttfamily ram\+\_\+payer}.
+
+
+\begin{DoxyParams}{Parameters}
+{\em owner} & -\/ the account to be created, \\
+\hline
+{\em symbol} & -\/ the token to be payed with by {\ttfamily ram\+\_\+payer}, \\
+\hline
+{\em ram\+\_\+payer} & -\/ the account that supports the cost of this action.\\
+\hline
+\end{DoxyParams}
+More information can be read \href{https://github.com/EOSIO/eosio.contracts/issues/62}{\texttt{ here}} and \href{https://github.com/EOSIO/eosio.contracts/issues/61}{\texttt{ here}}. \mbox{\Hypertarget{classfreeos_a2ca1c1730a7e24b590b3a5b17ac82015}\label{classfreeos_a2ca1c1730a7e24b590b3a5b17ac82015}} 
+\index{freeos@{freeos}!reguser@{reguser}}
+\index{reguser@{reguser}!freeos@{freeos}}
+\doxysubsubsection{\texorpdfstring{reguser()}{reguser()}}
+{\footnotesize\ttfamily void freeos\+::reguser (\begin{DoxyParamCaption}\item[{const name \&}]{user,  }\item[{const std\+::string}]{account\+\_\+type }\end{DoxyParamCaption})}
+
+reguser action.
+
+Creates a record for the user in the \textquotesingle{}stakereqs\textquotesingle{} table. 
+\begin{DoxyParams}{Parameters}
+{\em user} & -\/ the account to be registered, \\
+\hline
+{\em account\+\_\+type} & -\/ the type of account\+: \char`\"{}e\char`\"{} is E\+OS wallet user, \char`\"{}d\char`\"{} is Dapp Account user, \char`\"{}v\char`\"{} is Voice verified user.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+Requires permission of the contract account
+\end{DoxyPrecond}
+If validation is successful a new entry in \textquotesingle{}stakereqs\textquotesingle{} table is created for the user account. \mbox{\Hypertarget{classfreeos_a23309a37c56ffad07669de4841b0d8bd}\label{classfreeos_a23309a37c56ffad07669de4841b0d8bd}} 
+\index{freeos@{freeos}!retire@{retire}}
+\index{retire@{retire}!freeos@{freeos}}
+\doxysubsubsection{\texorpdfstring{retire()}{retire()}}
+{\footnotesize\ttfamily void freeos\+::retire (\begin{DoxyParamCaption}\item[{const asset \&}]{quantity,  }\item[{const string \&}]{memo }\end{DoxyParamCaption})}
+
+Retire action.
+
+The opposite for create action, if all validations succeed, it debits the statstable.\+supply amount.
+
+
+\begin{DoxyParams}{Parameters}
+{\em quantity} & -\/ the quantity of tokens to retire, \\
+\hline
+{\em memo} & -\/ the memo string to accompany the transaction. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classfreeos_a32074af4f0fdd077dc773ee900402311}\label{classfreeos_a32074af4f0fdd077dc773ee900402311}} 
+\index{freeos@{freeos}!stake@{stake}}
+\index{stake@{stake}!freeos@{freeos}}
+\doxysubsubsection{\texorpdfstring{stake()}{stake()}}
+{\footnotesize\ttfamily void freeos\+::stake (\begin{DoxyParamCaption}\item[{name}]{user,  }\item[{name}]{to,  }\item[{asset}]{quantity,  }\item[{std\+::string}]{memo }\end{DoxyParamCaption})}
+
+stake action.
+
+Adds a record of staked E\+OS tokens in the user account record in the \textquotesingle{}stakereqs\textquotesingle{} table.~\newline
+ This action is automatically invoked on the freeos account receiving E\+OS from the user.~\newline
+ 
+\begin{DoxyParams}{Parameters}
+{\em user} & -\/ the account sending the E\+OS tokens to freeos, \\
+\hline
+{\em to} & -\/ the \textquotesingle{}freeos\textquotesingle{} account, \\
+\hline
+{\em quantity} & -\/ the asset, i.\+e. an amount of E\+OS which is transferred to the freeos account, \\
+\hline
+{\em memo} & -\/ a memo describing the transaction\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+The user account must be previously registered 
+
+The asset must be equal to the stake requirement for the user
+\end{DoxyPrecond}
+If validation is successful the record for the user account is updated to record the amount staked and the date/time of the receipt. \mbox{\Hypertarget{classfreeos_a9a62226a3cc6851ed15e51252cf69f79}\label{classfreeos_a9a62226a3cc6851ed15e51252cf69f79}} 
+\index{freeos@{freeos}!transfer@{transfer}}
+\index{transfer@{transfer}!freeos@{freeos}}
+\doxysubsubsection{\texorpdfstring{transfer()}{transfer()}}
+{\footnotesize\ttfamily void freeos\+::transfer (\begin{DoxyParamCaption}\item[{const name \&}]{from,  }\item[{const name \&}]{to,  }\item[{const asset \&}]{quantity,  }\item[{const string \&}]{memo }\end{DoxyParamCaption})}
+
+Transfer action.
+
+Allows {\ttfamily from} account to transfer to {\ttfamily to} account the {\ttfamily quantity} tokens. One account is debited and the other is credited with quantity tokens.
+
+
+\begin{DoxyParams}{Parameters}
+{\em from} & -\/ the account to transfer from, \\
+\hline
+{\em to} & -\/ the account to be transferred to, \\
+\hline
+{\em quantity} & -\/ the quantity of tokens to be transferred, \\
+\hline
+{\em memo} & -\/ the memo string to accompany the transaction. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classfreeos_a36289ded2740d9a0a7d34b634a2ba636}\label{classfreeos_a36289ded2740d9a0a7d34b634a2ba636}} 
+\index{freeos@{freeos}!unstake@{unstake}}
+\index{unstake@{unstake}!freeos@{freeos}}
+\doxysubsubsection{\texorpdfstring{unstake()}{unstake()}}
+{\footnotesize\ttfamily void freeos\+::unstake (\begin{DoxyParamCaption}\item[{const name \&}]{user }\end{DoxyParamCaption})}
+
+unstake action.
+
+Transfer staked E\+OS back to the user if the waiting time of 1 week has elapsed since staking.  Updates the record of staked E\+OS tokens in the user account record in the \textquotesingle{}stakereqs\textquotesingle{} table.~\newline
+ 
+\begin{DoxyParams}{Parameters}
+{\em user} & -\/ the account to transfer the previously E\+OS tokens to,\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+The user account must be previously registered and has a non-\/zero balance of staked E\+OS
+\end{DoxyPrecond}
+If transfer is successful the record for the user account is updated to set the amount staked and stake time/date to zero. 
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+freeos/freeos.\+hpp\item 
+freeos/freeos.\+cpp\end{DoxyCompactItemize}
