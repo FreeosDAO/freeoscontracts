@@ -12,11 +12,6 @@ namespace eosiosystem {
    using namespace eosio;
    using std::string;
 
-   // account names
-   extern const string freeos_acct;
-   extern const string freeosconfig_acct;
-   extern const string freedao_acct;
-
    /**
     * @defgroup freeos freeos contract
     * @ingroup eosiocontracts
