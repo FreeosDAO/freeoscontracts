@@ -1,13 +1,18 @@
 #include <eosio/eosio.hpp>
 #include <eosio/system.hpp>
+#include "../common/freeoscommon.hpp"
 #include "freeos.hpp"
 
-
 using namespace eosio;
+
 
 [[eosio::action]]
 void freeos::reguser(const name& user, const std::string account_type) {
   require_auth( user );
+
+  // check that system is operational (global masterswitch parameter set to "1")
+  check(checkmasterswitch(), "freeos system is not operating");
+
   // check( is_account( user ), "user account does not exist");
   check(account_type.length() == 1, "account type should be 1 character");
 
@@ -33,7 +38,7 @@ void freeos::reguser(const name& user, const std::string account_type) {
        u.stake = asset(0, symbol("EOS", 4));
        u.account_type = account_type.at(0);
        u.stake_requirement = stake_requirement;
-       u.registered_time = current_time_point();
+       u.registered_time = time_point_sec(current_time_point().sec_since_epoch());
        u.staked_time = time_point_sec(0);
 
        // update number of users in record_count singleton
@@ -46,6 +51,7 @@ void freeos::reguser(const name& user, const std::string account_type) {
     print("account ", user, " is already registered");
   }
 }
+
 
 // for deregistering user
 [[eosio::action]]
@@ -88,6 +94,9 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
     return;
   }
 
+  // check that system is operational (global masterswitch parameter set to "1")
+  check(checkmasterswitch(), "freeos system is not operating");
+
   // get the user record - the amount of the stake requirement and the amount staked
   // find the account in the user table
   user_index usertable( get_self(), user.value );
@@ -107,7 +116,7 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
   // update the user record
   usertable.modify(u, to, [&](auto& row) {   // second argument is scope
     row.stake += quantity;
-    row.staked_time = current_time_point();
+    row.staked_time = time_point_sec(current_time_point().sec_since_epoch());
   });
 
   print(quantity.to_string(), " stake received for account ", user);
@@ -116,6 +125,11 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
 
 [[eosio::action]]
 void freeos::unstake(const name& user) {
+
+  require_auth(user);
+
+  // check that system is operational (global masterswitch parameter set to "1")
+  check(checkmasterswitch(), "freeos system is not operating");
 
   // find user record
   user_index usertable( get_self(), user.value );
@@ -150,6 +164,7 @@ void freeos::unstake(const name& user) {
   print("stake refunded");
 
 }
+
 
 [[eosio::action]]
 void freeos::getuser(const name& user) {
@@ -211,6 +226,7 @@ void freeos::issue( const name& to, const asset& quantity, const string& memo )
     add_balance( st.issuer, quantity, st.issuer );
 }
 
+
 void freeos::retire( const asset& quantity, const string& memo )
 {
     auto sym = quantity.symbol;
@@ -234,6 +250,7 @@ void freeos::retire( const asset& quantity, const string& memo )
 
     sub_balance( st.issuer, quantity );
 }
+
 
 void freeos::transfer( const name&    from,
                       const name&    to,
@@ -282,6 +299,7 @@ bool freeos::checkmasterswitch() {
   }
 }
 
+
 void freeos::sub_balance( const name& owner, const asset& value ) {
    accounts from_acnts( get_self(), owner.value );
 
@@ -292,6 +310,7 @@ void freeos::sub_balance( const name& owner, const asset& value ) {
          a.balance -= value;
       });
 }
+
 
 void freeos::add_balance( const name& owner, const asset& value, const name& ram_payer )
 {
@@ -324,6 +343,7 @@ void freeos::add_stake( const name& owner, const asset& value, const name& ram_p
    }
 }
 
+
 void freeos::sub_stake( const name& owner, const asset& value ) {
    user_index from_acnts( get_self(), owner.value );
 
@@ -334,6 +354,7 @@ void freeos::sub_stake( const name& owner, const asset& value ) {
          a.stake -= value;
       });
 }
+
 
 void freeos::open( const name& owner, const symbol& symbol, const name& ram_payer )
 {
@@ -355,6 +376,7 @@ void freeos::open( const name& owner, const symbol& symbol, const name& ram_paye
    }
 }
 
+
 void freeos::close( const name& owner, const symbol& symbol )
 {
    require_auth( owner );
@@ -365,11 +387,67 @@ void freeos::close( const name& owner, const symbol& symbol )
    acnts.erase( it );
 }
 
+
+void freeos::claim( const name& claimant )
+{
+   require_auth ( claimant );
+
+   // check that system is operational (global masterswitch parameter set to "1")
+   check(checkmasterswitch(), "freeos system is not operating");
+
+   // what week are we in?
+   week this_week = getclaimweek();
+   check(this_week.week_number != 0, "not in a claim period");
+
+   // for debugging
+   // print("this_week: ", this_week.week_number, " ", this_week.start, " ", this_week.start_date, " ", this_week.end, " ", this_week.end_date, " ", this_week.claim_amount, " ", this_week.tokens_required);
+
+   // check user eligibility to claim
+   if (!eligible_to_claim(claimant, this_week)) return;
+
+   // transfer FREEOS to claimant
+   asset claim_amount = asset(this_week.claim_amount * 10000, symbol("FREEOS",4));
+
+   action transfer = action(
+     permission_level{get_self(),"active"_n},
+     name(freeos_acct),
+     "transfer"_n,
+     std::make_tuple(get_self(), claimant, claim_amount, std::string("freeos airclaim"))
+   );
+
+   transfer.send();
+
+   // transfer FREEOS to freedao_acct
+   transfer = action(
+     permission_level{get_self(),"active"_n},
+     name(freeos_acct),
+     "transfer"_n,
+     std::make_tuple(get_self(), name(freedao_acct), claim_amount, std::string("freeos airclaim"))
+   );
+
+   transfer.send();
+
+
+   // write the claim event to the claim history table
+   claim_index claims(get_self(), claimant.value);
+   auto iterator = claims.find(this_week.week_number);
+   claims.emplace( get_self(), [&]( auto& claim ) {
+     claim.week_number = this_week.week_number;
+     claim.claim_time = current_time_point().sec_since_epoch();
+   });
+
+   print("user ", claimant, " claimed ", claim_amount.to_string(), " for week ", this_week.week_number, " at ", current_time_point().sec_since_epoch());
+
+}
+
+
 // look up the required stake depending on number of users and account type
 uint32_t freeos::getthreshold(uint32_t numusers, std::string account_type) {
   uint64_t required_stake;
 
-  stakereq_index stakereqs("freeosconfig"_n, "freeosconfig"_n.value);
+  require_auth(get_self());
+
+  stakereq_index stakereqs(name(freeosconfig_acct), name(freeosconfig_acct).value);
   auto iterator = stakereqs.end();
 
   // find which band to apply
@@ -395,4 +473,84 @@ uint32_t freeos::getthreshold(uint32_t numusers, std::string account_type) {
   }
 
   return required_stake;
+}
+
+
+// return the week record matching the current datetime
+freeos::week freeos::getclaimweek() {
+
+  freeos::week this_week = week {0, 0, "", 0, "", 0, 0};    // default null week value if outside of a claim period
+
+  // current time in UTC seconds
+  uint32_t now = current_time_point().sec_since_epoch();
+
+  // iterate through week records and find one that matches current time
+  week_index freeosweeks(name(freeosconfig_acct), name(freeosconfig_acct).value);
+  auto iterator = freeosweeks.begin();
+
+  while (iterator != freeosweeks.end()) {
+    if ((now >= iterator->start) && (now <= iterator->end)) {
+      this_week = *iterator;
+      break;
+    }
+    // print(" week ", iterator->week_number, " ", iterator->start_date, "-", iterator->end_date, " >> ");
+    iterator++;
+  }
+
+  //print ("week_number = ", week_number);
+  return this_week;
+}
+
+
+// calculate if user is eligible to claim in a week
+bool freeos::eligible_to_claim(const name& claimant, week this_week) {
+
+  // get the user record - if there is no record then user is not registered
+  user_index users(get_self(), claimant.value);
+  auto user_record = users.begin();
+  if (user_record == users.end()) {
+    print("user ", claimant, " is not registered");
+    return false;
+  }
+
+  // has the user claimed this week - consult the claims history table
+  claim_index claims(get_self(), claimant.value);
+  auto iterator = claims.find(this_week.week_number);
+  // if the claim record exists for the week then the user has claimed, so is not eligible to claim again
+  if (iterator != claims.end()) {
+    print("user ", claimant, " has already claimed in week ", this_week.week_number);
+    return false;
+  }
+
+  // has the user met their staking requirement
+  if (user_record->stake != user_record->stake_requirement) {
+    print("user ", claimant, " has not staked the required ", user_record->stake_requirement.to_string());
+    return false;
+  }
+
+  // check that they have the required balance of FREEOS
+  asset user_freeos_balance = asset(0, symbol("FREEOS",4));  // default holding = 0 FREEOS
+
+  accounts user_accounts(get_self(), claimant.value);
+  symbol_code freeos = symbol_code("FREEOS");
+  auto user_account = user_accounts.find(freeos.raw());
+
+  if (user_account != user_accounts.end()) {
+    user_freeos_balance = user_account->balance;
+  }
+
+  // for debugging purposes
+  // print("user ", claimant, " has a balance of ", user_freeos_balance.to_string());
+
+  // the 'holding' balance requirement for this week's claim
+  asset week_holding_requirement = asset(this_week.tokens_required * 10000, symbol("FREEOS",4));
+  // print("holding balance required for week ", this_week.week_number, " is ", holding_balance.to_string());
+
+  if (user_freeos_balance < week_holding_requirement) {
+    print("user ", claimant, " has ", user_freeos_balance.to_string(), " which is less than the holding requirement of ", week_holding_requirement.to_string());
+    return false;
+  }
+
+  // if the user passes all these checks then they are eligible
+  return true;
 }

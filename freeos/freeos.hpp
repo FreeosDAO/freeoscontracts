@@ -4,7 +4,6 @@
 #include <eosio/eosio.hpp>
 #include <eosio/singleton.hpp>
 
-#include <string>
 
 namespace eosiosystem {
    class system_contract;
@@ -12,6 +11,11 @@ namespace eosiosystem {
 
    using namespace eosio;
    using std::string;
+
+   // account names
+   extern const string freeos_acct;
+   extern const string freeosconfig_acct;
+   extern const string freedao_acct;
 
    /**
     * @defgroup freeos freeos contract
@@ -193,6 +197,23 @@ namespace eosiosystem {
          void close( const name& owner, const symbol& symbol );
 
          /**
+          * claim action.
+          *
+          * @details This action is run by the user to claim this week's allocation of freeos tokens.
+          *
+          * @param owner - the user account to execute the claim action for.
+          *
+          * @pre Requires authorisation of the user account
+          * @pre The user must pass claim eligibility requirements:
+          * - must be registered as a freeos user (has a record in the users table)
+          * - must not have already claimed for the current week
+          * - must have staked the required amount of EOS tokens
+          * - must hold the required amount of freeos tokens.
+          */
+         [[eosio::action]]
+         void claim( const name& user);
+
+         /**
           * Get supply method.
           *
           * @details Gets the supply for token `sym_code`, created by `token_contract_account` account.
@@ -223,6 +244,7 @@ namespace eosiosystem {
             const auto& ac = accountstable.get( sym_code.raw() );
             return ac.balance;
          }
+
 
          using create_action = eosio::action_wrapper<"create"_n, &freeos::create>;
          using issue_action = eosio::action_wrapper<"issue"_n, &freeos::issue>;
@@ -303,6 +325,34 @@ namespace eosiosystem {
 
          using stakereq_index = eosio::multi_index<"stakereqs"_n, stakerequire>;
 
+
+         // freeos airclaim week calendar
+
+         struct [[eosio::table]] week {
+           uint64_t    week_number;
+           uint32_t    start;
+           std::string start_date;
+           uint32_t    end;
+           std::string end_date;
+           uint16_t    claim_amount;
+           uint16_t    tokens_required;
+
+           uint64_t primary_key() const { return week_number; }
+         };
+
+         using week_index = eosio::multi_index<"weeks"_n, week>;
+
+
+         // claim history table - scoped on user account name
+         struct [[eosio::table]] claimevent {
+           uint64_t   week_number;
+           uint32_t   claim_time;
+
+           uint64_t primary_key() const { return week_number; }
+         };
+
+         using claim_index = eosio::multi_index<"claims"_n, claimevent>;
+
          // ********************************
 
          void sub_balance( const name& owner, const asset& value );
@@ -313,5 +363,8 @@ namespace eosiosystem {
 
          bool checkmasterswitch();
          uint32_t getthreshold(uint32_t numusers, std::string account_type);
+         week getclaimweek();
+         bool eligible_to_claim(const name& claimant, week this_week);
+
    };
    /** @}*/ // end of @defgroup freeos freeos contract

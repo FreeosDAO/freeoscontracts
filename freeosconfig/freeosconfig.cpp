@@ -1,4 +1,5 @@
 #include <eosio/eosio.hpp>
+#include "../common/freeoscommon.hpp"
 #include "freeosconfig.hpp"
 
 
@@ -106,7 +107,7 @@ void freeosconfig::stakeerase (uint64_t threshold) {
 
 // upsert a week into the weeks table
 [[eosio::action]]
-void freeosconfig::weekupsert(uint64_t week_number, std::string start, std::string end) {
+void freeosconfig::weekupsert(uint64_t week_number, std::string start, std::string end, uint16_t claim_amount, uint16_t tokens_required) {
 
   require_auth(_self);
 
@@ -135,9 +136,11 @@ void freeosconfig::weekupsert(uint64_t week_number, std::string start, std::stri
          row.start_date = start;
          row.end = nend;
          row.end_date = end;
+         row.claim_amount = claim_amount;
+         row.tokens_required = tokens_required;
       });
 
-      print("week: ", week_number, " start: ", start, ", end: ", end, " added to the weeks table");
+      print("week: ", week_number, " start: ", start, ", end: ", end, ", claim amount: ", claim_amount, ", tokens_required: ", tokens_required, " added to the weeks table");
 
   } else {
       // the week is in the table, so update
@@ -147,9 +150,11 @@ void freeosconfig::weekupsert(uint64_t week_number, std::string start, std::stri
         row.start_date = start;
         row.end = nend;
         row.end_date = end;
+        row.claim_amount = claim_amount;
+        row.tokens_required = tokens_required;
       });
 
-      print("week: ", week_number, " start: ", start, ", end: ", end, " modified in the weeks table");
+      print("week: ", week_number, " start: ", start, ", end: ", end, ", claim amount: ", claim_amount, ", tokens_required: ", tokens_required, " modified in the weeks table");
   }
 }
 
@@ -165,6 +170,8 @@ void freeosconfig::weekerase(uint64_t week_number) {
 
   // the parameter is in the table, so delete
   freeosweeks.erase(iterator);
+
+  print("record for week ", week_number, " deleted from weeks table");
 }
 
 // for testing - get a week from the weeks table
@@ -178,7 +185,8 @@ void freeosconfig::getweek(uint64_t week_number) {
   if (iterator == freeosweeks.end() ) {
     print("a record for week ", week_number, " does not exist in the weeks table" );
   } else {
-    print("week ", week_number, " start: ", iterator->start_date, " (", iterator->start, "), end: ", iterator->end_date, " (", iterator->end, ")");
+    print("week ", week_number, " start: ", iterator->start_date, " (", iterator->start, "), end: ", iterator->end_date,
+    " (", iterator->end, "), claim amount: ", iterator->claim_amount, ", tokens required: ", iterator->tokens_required);
   }
 }
 

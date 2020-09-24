@@ -172,6 +172,14 @@
                 {
                     "name": "end_date",
                     "type": "string"
+                },
+                {
+                    "name": "claim_amount",
+                    "type": "uint16"
+                },
+                {
+                    "name": "tokens_required",
+                    "type": "uint16"
                 }
             ]
         },
@@ -200,6 +208,14 @@
                 {
                     "name": "end",
                     "type": "string"
+                },
+                {
+                    "name": "claim_amount",
+                    "type": "uint16"
+                },
+                {
+                    "name": "tokens_required",
+                    "type": "uint16"
                 }
             ]
         }
