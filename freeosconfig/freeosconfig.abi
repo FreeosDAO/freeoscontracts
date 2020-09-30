@@ -180,6 +180,10 @@
                 {
                     "name": "tokens_required",
                     "type": "uint16"
+                },
+                {
+                    "name": "freedao_payment",
+                    "type": "uint16"
                 }
             ]
         },
@@ -215,6 +219,10 @@
                 },
                 {
                     "name": "tokens_required",
+                    "type": "uint16"
+                },
+                {
+                    "name": "freedao_payment",
                     "type": "uint16"
                 }
             ]

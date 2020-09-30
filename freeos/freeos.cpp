@@ -417,12 +417,15 @@ void freeos::claim( const name& claimant )
 
    transfer.send();
 
+   // transfer FREEOS to FreeDAO
+   asset freedao_amount = asset(this_week.freedao_payment * 10000, symbol("FREEOS",4));
+
    // transfer FREEOS to freedao_acct
    transfer = action(
      permission_level{get_self(),"active"_n},
      name(freeos_acct),
      "transfer"_n,
-     std::make_tuple(get_self(), name(freedao_acct), claim_amount, std::string("freeos airclaim"))
+     std::make_tuple(get_self(), name(freedao_acct), freedao_amount, std::string("freeos airclaim"))
    );
 
    transfer.send();

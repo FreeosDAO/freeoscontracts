@@ -331,6 +331,7 @@ namespace eosiosystem {
            std::string end_date;
            uint16_t    claim_amount;
            uint16_t    tokens_required;
+           uint16_t    freedao_payment;
 
            uint64_t primary_key() const { return week_number; }
          };

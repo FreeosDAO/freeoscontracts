@@ -83,8 +83,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a42809d253bc46eec7680b0cda96ebcd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a98fafb0d78f7b9e654a06ab226c8a816"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeosconfig.html#a98fafb0d78f7b9e654a06ab226c8a816">stakeerase</a> (uint64_t threshold)</td></tr>
 <tr class="separator:a98fafb0d78f7b9e654a06ab226c8a816"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7ac12e14912e35f29b92405734ea899c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeosconfig.html#a7ac12e14912e35f29b92405734ea899c">weekupsert</a> (uint64_t week_number, std::string start, std::string end, uint16_t claim_amount, uint16_t tokens_required)</td></tr>
-<tr class="separator:a7ac12e14912e35f29b92405734ea899c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b8c399ba2af3170ba6df105a97363d6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeosconfig.html#a5b8c399ba2af3170ba6df105a97363d6">weekupsert</a> (uint64_t week_number, std::string start, std::string end, uint16_t claim_amount, uint16_t tokens_required, uint16_t freedao_payment)</td></tr>
+<tr class="separator:a5b8c399ba2af3170ba6df105a97363d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f09757df4b692b8cba59cec34898af8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeosconfig.html#a9f09757df4b692b8cba59cec34898af8">getweek</a> (uint64_t week_number)</td></tr>
 <tr class="separator:a9f09757df4b692b8cba59cec34898af8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0eec8efafc53c1885aeed209839b5eb4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeosconfig.html#a0eec8efafc53c1885aeed209839b5eb4">weekerase</a> (uint64_t week_number)</td></tr>
@@ -425,8 +425,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a7ac12e14912e35f29b92405734ea899c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7ac12e14912e35f29b92405734ea899c">&#9670;&nbsp;</a></span>weekupsert()</h2>
+<a id="a5b8c399ba2af3170ba6df105a97363d6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b8c399ba2af3170ba6df105a97363d6">&#9670;&nbsp;</a></span>weekupsert()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -459,7 +459,13 @@ Public Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">uint16_t&#160;</td>
-          <td class="paramname"><em>tokens_required</em>&#160;</td>
+          <td class="paramname"><em>tokens_required</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>freedao_payment</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -476,7 +482,8 @@ Public Member Functions</h2></td></tr>
     <tr><td class="paramname">start</td><td>- string representing the start of week in YYYY-MM-DD HH:MM:SS format, </td></tr>
     <tr><td class="paramname">end</td><td>- string representing the end of week in YYYY-MM-DD HH:MM:SS format </td></tr>
     <tr><td class="paramname">claim_amount</td><td>- the amount of FREEOS a user can claim in the week </td></tr>
-    <tr><td class="paramname">claim_amount</td><td>- the amount of FREEOS a user must hold before claiming</td></tr>
+    <tr><td class="paramname">claim_amount</td><td>- the amount of FREEOS a user must hold before claiming </td></tr>
+    <tr><td class="paramname">freedao_payment</td><td>- the amount of FREEOS that is contributed to the freedao account</td></tr>
   </table>
   </dd>
 </dl>
