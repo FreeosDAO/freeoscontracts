@@ -260,6 +260,10 @@ void freeos::transfer( const name&    from,
     check( from != to, "cannot transfer to self" );
     require_auth( from );
     check( is_account( to ), "to account does not exist");
+
+    // AIRKEY tokens are non-transferable, except by the freeostokens account
+    check(!(quantity.symbol.code().to_string().compare("AIRKEY") != 0 && from != name(freeos_acct)), "AIRKEY tokens are non-transferable");
+    
     auto sym = quantity.symbol.code();
     stats statstable( get_self(), sym.raw() );
     const auto& st = statstable.get( sym.raw() );
@@ -531,28 +535,44 @@ bool freeos::eligible_to_claim(const name& claimant, week this_week) {
     return false;
   }
 
-  // check that they have the required balance of FREEOS
-  asset user_freeos_balance = asset(0, symbol("FREEOS",4));  // default holding = 0 FREEOS
+  // how many airkey tokens does the user have?
+  asset user_airkey_balance = asset(0, symbol("AIRKEY",0));  // default = 0 AIRKEY
 
   accounts user_accounts(get_self(), claimant.value);
-  symbol_code freeos = symbol_code("FREEOS");
-  auto user_account = user_accounts.find(freeos.raw());
+  symbol_code airkey = symbol_code("AIRKEY");
+  auto user_airkey_account = user_accounts.find(airkey.raw());
 
-  if (user_account != user_accounts.end()) {
-    user_freeos_balance = user_account->balance;
+  if (user_airkey_account != user_accounts.end()) {
+    user_airkey_balance = user_airkey_account->balance;
   }
 
   // for debugging purposes
-  // print("user ", claimant, " has a balance of ", user_freeos_balance.to_string());
+  // print("user ", claimant, " has FREEOS balance of ", user_freeos_balance.to_string());
+  // print("user ", claimant, " has AIRKEY balance of ", user_airkey_balance.to_string());
 
-  // the 'holding' balance requirement for this week's claim
-  asset week_holding_requirement = asset(this_week.tokens_required * 10000, symbol("FREEOS",4));
-  // print("holding balance required for week ", this_week.week_number, " is ", holding_balance.to_string());
+  // only perform the FREEOS holding requirement check if the user does NOT have an AIRKEY token
+  if (user_airkey_balance.amount == 0) {
+    // check that the user has the required balance of FREEOS
+    asset user_freeos_balance = asset(0, symbol("FREEOS",4));  // default holding = 0 FREEOS
 
-  if (user_freeos_balance < week_holding_requirement) {
-    print("user ", claimant, " has ", user_freeos_balance.to_string(), " which is less than the holding requirement of ", week_holding_requirement.to_string());
-    return false;
+    symbol_code freeos = symbol_code("FREEOS");
+    auto user_freeos_account = user_accounts.find(freeos.raw());
+
+    if (user_freeos_account != user_accounts.end()) {
+      user_freeos_balance = user_freeos_account->balance;
+    }
+
+    // the 'holding' balance requirement for this week's claim
+    asset week_holding_requirement = asset(this_week.tokens_required * 10000, symbol("FREEOS",4));
+    // print("holding balance required for week ", this_week.week_number, " is ", holding_balance.to_string());
+
+    if (user_freeos_balance < week_holding_requirement) {
+      print("user ", claimant, " has ", user_freeos_balance.to_string(), " which is less than the holding requirement of ", week_holding_requirement.to_string());
+      return false;
+    }
   }
+
+
 
   // if the user passes all these checks then they are eligible
   return true;
