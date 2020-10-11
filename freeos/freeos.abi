@@ -4,36 +4,26 @@
     "types": [],
     "structs": [
         {
-            "name": "account",
-            "base": "",
-            "fields": [
-                {
-                    "name": "balance",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
             "name": "claim",
             "base": "",
             "fields": [
                 {
-                    "name": "user",
-                    "type": "name"
+                    "name": "payload",
+                    "type": "claim_action"
                 }
             ]
         },
         {
-            "name": "claimevent",
+            "name": "claim_action",
             "base": "",
             "fields": [
                 {
-                    "name": "week_number",
-                    "type": "uint64"
+                    "name": "vaccount",
+                    "type": "name"
                 },
                 {
-                    "name": "claim_time",
-                    "type": "uint32"
+                    "name": "claimant",
+                    "type": "name"
                 }
             ]
         },
@@ -52,16 +42,6 @@
             ]
         },
         {
-            "name": "count",
-            "base": "",
-            "fields": [
-                {
-                    "name": "count",
-                    "type": "uint32"
-                }
-            ]
-        },
-        {
             "name": "create",
             "base": "",
             "fields": [
@@ -76,24 +56,6 @@
             ]
         },
         {
-            "name": "currency_stats",
-            "base": "",
-            "fields": [
-                {
-                    "name": "supply",
-                    "type": "asset"
-                },
-                {
-                    "name": "max_supply",
-                    "type": "asset"
-                },
-                {
-                    "name": "issuer",
-                    "type": "name"
-                }
-            ]
-        },
-        {
             "name": "dereg",
             "base": "",
             "fields": [
@@ -104,12 +66,58 @@
             ]
         },
         {
+            "name": "dummy_action_hello",
+            "base": "",
+            "fields": [
+                {
+                    "name": "vaccount",
+                    "type": "name"
+                },
+                {
+                    "name": "b",
+                    "type": "uint64"
+                },
+                {
+                    "name": "c",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
             "name": "getuser",
             "base": "",
             "fields": [
                 {
                     "name": "user",
                     "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "hello",
+            "base": "",
+            "fields": [
+                {
+                    "name": "payload",
+                    "type": "dummy_action_hello"
+                }
+            ]
+        },
+        {
+            "name": "ipfsentry",
+            "base": "",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "data",
+                    "type": "bytes"
+                },
+                {
+                    "name": "pending_commit",
+                    "type": "bool$"
                 }
             ]
         },
@@ -150,20 +158,22 @@
             ]
         },
         {
-            "name": "parameter",
+            "name": "regaccount",
             "base": "",
             "fields": [
                 {
-                    "name": "virtualtable",
-                    "type": "name"
-                },
+                    "name": "payload",
+                    "type": "regaccount_action"
+                }
+            ]
+        },
+        {
+            "name": "regaccount_action",
+            "base": "",
+            "fields": [
                 {
-                    "name": "paramname",
+                    "name": "vaccount",
                     "type": "name"
-                },
-                {
-                    "name": "value",
-                    "type": "string"
                 }
             ]
         },
@@ -171,6 +181,20 @@
             "name": "reguser",
             "base": "",
             "fields": [
+                {
+                    "name": "payload",
+                    "type": "reguser_action"
+                }
+            ]
+        },
+        {
+            "name": "reguser_action",
+            "base": "",
+            "fields": [
+                {
+                    "name": "vaccount",
+                    "type": "name"
+                },
                 {
                     "name": "user",
                     "type": "name"
@@ -196,28 +220,16 @@
             ]
         },
         {
-            "name": "stakerequire",
+            "name": "shardbucket_t",
             "base": "",
             "fields": [
                 {
-                    "name": "threshold",
+                    "name": "shard_uri",
+                    "type": "bytes"
+                },
+                {
+                    "name": "shard",
                     "type": "uint64"
-                },
-                {
-                    "name": "requirement_e",
-                    "type": "uint32"
-                },
-                {
-                    "name": "requirement_d",
-                    "type": "uint32"
-                },
-                {
-                    "name": "requirement_v",
-                    "type": "uint32"
-                },
-                {
-                    "name": "requirement_x",
-                    "type": "uint32"
                 }
             ]
         },
@@ -225,6 +237,20 @@
             "name": "transfer",
             "base": "",
             "fields": [
+                {
+                    "name": "payload",
+                    "type": "transfer_action"
+                }
+            ]
+        },
+        {
+            "name": "transfer_action",
+            "base": "",
+            "fields": [
+                {
+                    "name": "vaccount",
+                    "type": "name"
+                },
                 {
                     "name": "from",
                     "type": "name"
@@ -248,72 +274,386 @@
             "base": "",
             "fields": [
                 {
+                    "name": "payload",
+                    "type": "unstake_action"
+                }
+            ]
+        },
+        {
+            "name": "unstake_action",
+            "base": "",
+            "fields": [
+                {
+                    "name": "vaccount",
+                    "type": "name"
+                },
+                {
                     "name": "user",
                     "type": "name"
                 }
             ]
         },
         {
-            "name": "user",
+            "name": "vchain",
             "base": "",
             "fields": [
                 {
-                    "name": "stake",
-                    "type": "asset"
-                },
-                {
-                    "name": "account_type",
-                    "type": "int8"
-                },
-                {
-                    "name": "stake_requirement",
-                    "type": "asset"
-                },
-                {
-                    "name": "registered_time",
-                    "type": "time_point_sec"
-                },
-                {
-                    "name": "staked_time",
-                    "type": "time_point_sec"
+                    "name": "chainid",
+                    "type": "checksum256"
                 }
             ]
         },
         {
-            "name": "week",
+            "name": "vconfig",
             "base": "",
             "fields": [
                 {
-                    "name": "week_number",
+                    "name": "next_available_key",
                     "type": "uint64"
                 },
                 {
-                    "name": "start",
+                    "name": "shards",
                     "type": "uint32"
                 },
                 {
-                    "name": "start_date",
-                    "type": "string"
+                    "name": "buckets_per_shard",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "vkey",
+            "base": "",
+            "fields": [
+                {
+                    "name": "pubkey",
+                    "type": "public_key"
                 },
                 {
-                    "name": "end",
+                    "name": "vaccount",
+                    "type": "name"
+                },
+                {
+                    "name": "nonce",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "xcleanchain",
+            "base": "",
+            "fields": [
+                {
+                    "name": "current_provider",
+                    "type": "name"
+                },
+                {
+                    "name": "package",
+                    "type": "name"
+                },
+                {
+                    "name": "shard",
                     "type": "uint32"
                 },
                 {
-                    "name": "end_date",
+                    "name": "code",
+                    "type": "name"
+                },
+                {
+                    "name": "table",
+                    "type": "name"
+                },
+                {
+                    "name": "chain",
+                    "type": "name"
+                },
+                {
+                    "name": "size",
+                    "type": "uint32"
+                },
+                {
+                    "name": "uris",
+                    "type": "string[]"
+                }
+            ]
+        },
+        {
+            "name": "xcleanup",
+            "base": "",
+            "fields": [
+                {
+                    "name": "current_provider",
+                    "type": "name"
+                },
+                {
+                    "name": "package",
+                    "type": "name"
+                },
+                {
+                    "name": "size",
+                    "type": "uint32"
+                },
+                {
+                    "name": "uri",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "xcleanuprow",
+            "base": "",
+            "fields": [
+                {
+                    "name": "current_provider",
+                    "type": "name"
+                },
+                {
+                    "name": "package",
+                    "type": "name"
+                },
+                {
+                    "name": "size",
+                    "type": "uint32"
+                },
+                {
+                    "name": "uris",
+                    "type": "string[]"
+                }
+            ]
+        },
+        {
+            "name": "xcommit",
+            "base": "",
+            "fields": [
+                {
+                    "name": "current_provider",
+                    "type": "name"
+                },
+                {
+                    "name": "package",
+                    "type": "name"
+                },
+                {
+                    "name": "size",
+                    "type": "uint32"
+                },
+                {
+                    "name": "uri",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "xdcommit",
+            "base": "",
+            "fields": [
+                {
+                    "name": "data",
+                    "type": "bytes"
+                }
+            ]
+        },
+        {
+            "name": "xsignal",
+            "base": "",
+            "fields": [
+                {
+                    "name": "service",
+                    "type": "name"
+                },
+                {
+                    "name": "action",
+                    "type": "name"
+                },
+                {
+                    "name": "provider",
+                    "type": "name"
+                },
+                {
+                    "name": "package",
+                    "type": "name"
+                },
+                {
+                    "name": "signalRawData",
+                    "type": "bytes"
+                }
+            ]
+        },
+        {
+            "name": "xvauth",
+            "base": "",
+            "fields": [
+                {
+                    "name": "payload",
+                    "type": "bytes"
+                },
+                {
+                    "name": "sig",
+                    "type": "signature"
+                },
+                {
+                    "name": "pubkey",
+                    "type": "public_key"
+                },
+                {
+                    "name": "vaccount",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "xvexec",
+            "base": "",
+            "fields": [
+                {
+                    "name": "current_provider",
+                    "type": "name"
+                },
+                {
+                    "name": "package",
+                    "type": "name"
+                },
+                {
+                    "name": "payload",
+                    "type": "bytes"
+                },
+                {
+                    "name": "sig",
+                    "type": "signature"
+                },
+                {
+                    "name": "pubkey",
+                    "type": "public_key"
+                }
+            ]
+        },
+        {
+            "name": "xvinit",
+            "base": "",
+            "fields": [
+                {
+                    "name": "chainid",
+                    "type": "checksum256"
+                }
+            ]
+        },
+        {
+            "name": "xwarmup",
+            "base": "",
+            "fields": [
+                {
+                    "name": "current_provider",
+                    "type": "name"
+                },
+                {
+                    "name": "package",
+                    "type": "name"
+                },
+                {
+                    "name": "size",
+                    "type": "uint32"
+                },
+                {
+                    "name": "uri",
                     "type": "string"
                 },
                 {
-                    "name": "claim_amount",
-                    "type": "uint16"
+                    "name": "data",
+                    "type": "bytes"
+                }
+            ]
+        },
+        {
+            "name": "xwarmupchain",
+            "base": "",
+            "fields": [
+                {
+                    "name": "current_provider",
+                    "type": "name"
                 },
                 {
-                    "name": "tokens_required",
-                    "type": "uint16"
+                    "name": "package",
+                    "type": "name"
                 },
                 {
-                    "name": "freedao_payment",
-                    "type": "uint16"
+                    "name": "shard",
+                    "type": "uint32"
+                },
+                {
+                    "name": "code",
+                    "type": "name"
+                },
+                {
+                    "name": "table",
+                    "type": "name"
+                },
+                {
+                    "name": "chain",
+                    "type": "name"
+                },
+                {
+                    "name": "size",
+                    "type": "uint32"
+                },
+                {
+                    "name": "uris",
+                    "type": "string[]"
+                },
+                {
+                    "name": "data",
+                    "type": "bytes[]"
+                }
+            ]
+        },
+        {
+            "name": "xwarmupcode",
+            "base": "",
+            "fields": [
+                {
+                    "name": "current_provider",
+                    "type": "name"
+                },
+                {
+                    "name": "package",
+                    "type": "name"
+                },
+                {
+                    "name": "size",
+                    "type": "uint32"
+                },
+                {
+                    "name": "uri",
+                    "type": "string"
+                },
+                {
+                    "name": "data",
+                    "type": "bytes"
+                }
+            ]
+        },
+        {
+            "name": "xwarmuprow",
+            "base": "",
+            "fields": [
+                {
+                    "name": "current_provider",
+                    "type": "name"
+                },
+                {
+                    "name": "package",
+                    "type": "name"
+                },
+                {
+                    "name": "size",
+                    "type": "uint32"
+                },
+                {
+                    "name": "uris",
+                    "type": "string[]"
+                },
+                {
+                    "name": "data",
+                    "type": "bytes[]"
                 }
             ]
         }
@@ -345,6 +685,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "hello",
+            "type": "hello",
+            "ricardian_contract": ""
+        },
+        {
             "name": "issue",
             "type": "issue",
             "ricardian_contract": ""
@@ -352,6 +697,11 @@
         {
             "name": "open",
             "type": "open",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "regaccount",
+            "type": "regaccount",
             "ricardian_contract": ""
         },
         {
@@ -373,61 +723,105 @@
             "name": "unstake",
             "type": "unstake",
             "ricardian_contract": ""
+        },
+        {
+            "name": "xcleanchain",
+            "type": "xcleanchain",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "xcleanup",
+            "type": "xcleanup",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "xcleanuprow",
+            "type": "xcleanuprow",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "xcommit",
+            "type": "xcommit",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "xdcommit",
+            "type": "xdcommit",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "xsignal",
+            "type": "xsignal",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "xvauth",
+            "type": "xvauth",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "xvexec",
+            "type": "xvexec",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "xvinit",
+            "type": "xvinit",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "xwarmup",
+            "type": "xwarmup",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "xwarmupchain",
+            "type": "xwarmupchain",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "xwarmupcode",
+            "type": "xwarmupcode",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "xwarmuprow",
+            "type": "xwarmuprow",
+            "ricardian_contract": ""
         }
     ],
     "tables": [
         {
-            "name": "accounts",
-            "type": "account",
+            "name": ".vconfig",
+            "type": "vconfig",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "claims",
-            "type": "claimevent",
+            "name": ".vkey",
+            "type": "vkey",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "count",
-            "type": "count",
+            "name": "ipfsentry",
+            "type": "ipfsentry",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "parameters",
-            "type": "parameter",
+            "name": "vchain",
+            "type": "vchain",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "stakereqs",
-            "type": "stakerequire",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
-            "name": "stat",
-            "type": "currency_stats",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
-            "name": "users",
-            "type": "user",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
-            "name": "weeks",
-            "type": "week",
+            "name": "vkey",
+            "type": "shardbucket_t",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

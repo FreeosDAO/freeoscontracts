@@ -1,14 +1,38 @@
-#include <eosio/eosio.hpp>
-#include <eosio/system.hpp>
-#include "../common/freeoscommon.hpp"
+#define VACCOUNTS_DELAYED_CLEANUP 120
+
+#include "../dappservices/vaccounts.hpp"
+#include "../dappservices/ipfs.hpp"
+#include "../dappservices/multi_index.hpp"
+
+#define DAPPSERVICES_ACTIONS() \
+  XSIGNAL_DAPPSERVICE_ACTION \
+  IPFS_DAPPSERVICE_ACTIONS \
+  VACCOUNTS_DAPPSERVICE_ACTIONS
+#define DAPPSERVICE_ACTIONS_COMMANDS() \
+  IPFS_SVC_COMMANDS()VACCOUNTS_SVC_COMMANDS()
+
+#define CONTRACT_NAME() freeos
+
+#include "../freeoscommon/freeoscommon.hpp"
 #include "freeos.hpp"
 
-using namespace eosio;
+
+CONTRACT_START()
+public:
 
 
 [[eosio::action]]
-void freeos::reguser(const name& user, const std::string account_type) {
-  require_auth( user );
+void reguser(reguser_action payload) {
+  // dereference parameter payload
+  name user = payload.user;
+  std::string account_type = payload.account_type;
+
+  // authenticate user
+  if (empty(payload.vaccount.to_string())) {
+    require_auth(user);                   // authenticate the EOS account
+  } else {
+    require_vaccount(payload.vaccount);   // authenticate the vaccount
+  }
 
   // check that system is operational (global masterswitch parameter set to "1")
   check(checkmasterswitch(), "freeos system is not operating");
@@ -29,7 +53,7 @@ void freeos::reguser(const name& user, const std::string account_type) {
   asset stake_requirement = asset(stake * 10000, symbol("EOS",4)); // TODO: look up from the config table
 
   // find the account in the user table
-  user_index usertable( get_self(), user.value );
+  user_index_t usertable( get_self(), user.value, 1024, 64, false, false );
   auto u = usertable.find( symbol_code("EOS").raw() );
 
   // add the user if not already registered
@@ -53,12 +77,13 @@ void freeos::reguser(const name& user, const std::string account_type) {
 }
 
 
-// for deregistering user
+// for deregistering user - called with contract permission
 [[eosio::action]]
-void freeos::dereg(const name& user) {
+void dereg(const name& user) {
+
   require_auth( get_self() );
 
-  user_index usertable( get_self(), user.value );
+  user_index_t usertable( get_self(), user.value, 1024, 64, false, false );
   auto u = usertable.find( symbol_code("EOS").raw() );
 
   if(u != usertable.end()) {
@@ -88,7 +113,7 @@ void freeos::dereg(const name& user) {
 
 // stake action
 [[eosio::on_notify("eosio.token::transfer")]]
-void freeos::stake(name user, name to, asset quantity, std::string memo) {
+void stake(name user, name to, asset quantity, std::string memo) {
 
   if (user == get_self()) {
     return;
@@ -99,7 +124,7 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
 
   // get the user record - the amount of the stake requirement and the amount staked
   // find the account in the user table
-  user_index usertable( get_self(), user.value );
+  user_index_t usertable( get_self(), user.value, 1024, 64, false, false );
   auto u = usertable.find( symbol_code("EOS").raw() );
 
   // check if the user is registered
@@ -124,15 +149,22 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
 
 
 [[eosio::action]]
-void freeos::unstake(const name& user) {
+void unstake(unstake_action payload) {
+  // dereference parameter payload
+  name user = payload.user;
 
-  require_auth(user);
+  // authenticate user
+  if (empty(payload.vaccount.to_string())) {
+    require_auth(user);                   // authenticate the EOS account
+  } else {
+    require_vaccount(payload.vaccount);   // authenticate the vaccount
+  }
 
   // check that system is operational (global masterswitch parameter set to "1")
   check(checkmasterswitch(), "freeos system is not operating");
 
   // find user record
-  user_index usertable( get_self(), user.value );
+  user_index_t usertable( get_self(), user.value, 1024, 64, false, false );
   auto u = usertable.find( symbol_code("EOS").raw() );
 
   // check if the user is registered
@@ -167,8 +199,8 @@ void freeos::unstake(const name& user) {
 
 
 [[eosio::action]]
-void freeos::getuser(const name& user) {
-  user_index usertable( get_self(), user.value );
+void getuser(const name& user) {
+  user_index_t usertable( get_self(), user.value, 1024, 64, false, false );
   auto u = usertable.find( symbol_code("EOS").raw() );
 
   // check if the user is registered
@@ -178,7 +210,8 @@ void freeos::getuser(const name& user) {
 }
 
 
-void freeos::create( const name&   issuer,
+[[eosio::action]]
+void create( const name&   issuer,
                     const asset&  maximum_supply )
 {
     require_auth( get_self() );
@@ -200,7 +233,8 @@ void freeos::create( const name&   issuer,
 }
 
 
-void freeos::issue( const name& to, const asset& quantity, const string& memo )
+[[eosio::action]]
+void issue( const name& to, const asset& quantity, const string& memo )
 {
     auto sym = quantity.symbol;
     check( sym.is_valid(), "invalid symbol name" );
@@ -227,7 +261,8 @@ void freeos::issue( const name& to, const asset& quantity, const string& memo )
 }
 
 
-void freeos::retire( const asset& quantity, const string& memo )
+[[eosio::action]]
+void retire( const asset& quantity, const string& memo )
 {
     auto sym = quantity.symbol;
     check( sym.is_valid(), "invalid symbol name" );
@@ -252,18 +287,28 @@ void freeos::retire( const asset& quantity, const string& memo )
 }
 
 
-void freeos::transfer( const name&    from,
-                      const name&    to,
-                      const asset&   quantity,
-                      const string&  memo )
+[[eosio::action]]
+void transfer(transfer_action payload)
 {
+    // dereference parameter payload
+    name from = payload.from;
+    name to = payload.to;
+    asset quantity = payload.quantity;
+    std::string memo = payload.memo;
+
+    // authenticate 'from' user
+    if (empty(payload.vaccount.to_string())) {
+      require_auth(from);                   // authenticate the EOS account
+    } else {
+      require_vaccount(payload.vaccount);   // authenticate the vaccount
+    }
+
     check( from != to, "cannot transfer to self" );
-    require_auth( from );
     check( is_account( to ), "to account does not exist");
 
     // AIRKEY tokens are non-transferable, except by the freeostokens account
     check(!(quantity.symbol.code().to_string().compare("AIRKEY") != 0 && from != name(freeos_acct)), "AIRKEY tokens are non-transferable");
-    
+
     auto sym = quantity.symbol.code();
     stats statstable( get_self(), sym.raw() );
     const auto& st = statstable.get( sym.raw() );
@@ -283,7 +328,7 @@ void freeos::transfer( const name&    from,
 }
 
 
-bool freeos::checkmasterswitch() {
+bool checkmasterswitch() {
   parameter_index parameters("freeosconfig"_n, "freeosconfig"_n.value);
   auto iterator = parameters.find("masterswitch"_n.value);
 
@@ -304,8 +349,8 @@ bool freeos::checkmasterswitch() {
 }
 
 
-void freeos::sub_balance( const name& owner, const asset& value ) {
-   accounts from_acnts( get_self(), owner.value );
+void sub_balance( const name& owner, const asset& value ) {
+   accounts_t from_acnts( get_self(), owner.value, 1024, 64, false, false );
 
    const auto& from = from_acnts.get( value.symbol.code().raw(), "no balance object found" );
    check( from.balance.amount >= value.amount, "overdrawn balance" );
@@ -316,9 +361,9 @@ void freeos::sub_balance( const name& owner, const asset& value ) {
 }
 
 
-void freeos::add_balance( const name& owner, const asset& value, const name& ram_payer )
+void add_balance( const name& owner, const asset& value, const name& ram_payer )
 {
-   accounts to_acnts( get_self(), owner.value );
+   accounts_t to_acnts( get_self(), owner.value, 1024, 64, false, false );
    auto to = to_acnts.find( value.symbol.code().raw() );
    if( to == to_acnts.end() ) {
       to_acnts.emplace( ram_payer, [&]( auto& a ){
@@ -332,9 +377,9 @@ void freeos::add_balance( const name& owner, const asset& value, const name& ram
 }
 
 
-void freeos::add_stake( const name& owner, const asset& value, const name& ram_payer )
+void add_stake( const name& owner, const asset& value, const name& ram_payer )
 {
-   user_index to_acnts( get_self(), owner.value );
+   user_index_t to_acnts( get_self(), owner.value, 1024, 64, false, false );
    auto to = to_acnts.find( value.symbol.code().raw() );
    if( to == to_acnts.end() ) {
       to_acnts.emplace( ram_payer, [&]( auto& a ){
@@ -348,8 +393,8 @@ void freeos::add_stake( const name& owner, const asset& value, const name& ram_p
 }
 
 
-void freeos::sub_stake( const name& owner, const asset& value ) {
-   user_index from_acnts( get_self(), owner.value );
+void sub_stake( const name& owner, const asset& value ) {
+   user_index_t from_acnts( get_self(), owner.value, 1024, 64, false, false );
 
    const auto& from = from_acnts.get( value.symbol.code().raw(), "no stake balance found" );
    check( from.stake.amount >= value.amount, "overdrawn balance" );
@@ -360,7 +405,8 @@ void freeos::sub_stake( const name& owner, const asset& value ) {
 }
 
 
-void freeos::open( const name& owner, const symbol& symbol, const name& ram_payer )
+[[eosio::action]]
+void open( const name& owner, const symbol& symbol, const name& ram_payer )
 {
    require_auth( ram_payer );
 
@@ -371,7 +417,7 @@ void freeos::open( const name& owner, const symbol& symbol, const name& ram_paye
    const auto& st = statstable.get( sym_code_raw, "symbol does not exist" );
    check( st.supply.symbol == symbol, "symbol precision mismatch" );
 
-   accounts acnts( get_self(), owner.value );
+   accounts_t acnts( get_self(), owner.value, 1024, 64, false, false );
    auto it = acnts.find( sym_code_raw );
    if( it == acnts.end() ) {
       acnts.emplace( ram_payer, [&]( auto& a ){
@@ -381,10 +427,11 @@ void freeos::open( const name& owner, const symbol& symbol, const name& ram_paye
 }
 
 
-void freeos::close( const name& owner, const symbol& symbol )
+[[eosio::action]]
+void close( const name& owner, const symbol& symbol )
 {
    require_auth( owner );
-   accounts acnts( get_self(), owner.value );
+   accounts_t acnts( get_self(), owner.value, 1024, 64, false, false );
    auto it = acnts.find( symbol.code().raw() );
    check( it != acnts.end(), "Balance row already deleted or never existed. Action won't have any effect." );
    check( it->balance.amount == 0, "Cannot close because the balance is not zero." );
@@ -392,9 +439,18 @@ void freeos::close( const name& owner, const symbol& symbol )
 }
 
 
-void freeos::claim( const name& claimant )
+[[eosio::action]]
+void claim(claim_action payload)
 {
-   require_auth ( claimant );
+   // dereference parameter payload
+   name claimant = payload.claimant;
+
+   // authenticate claimant
+   if (empty(payload.vaccount.to_string())) {
+     require_auth(claimant);               // authenticate the EOS account
+   } else {
+     require_vaccount(payload.vaccount);   // authenticate the vaccount
+   }
 
    // check that system is operational (global masterswitch parameter set to "1")
    check(checkmasterswitch(), "freeos system is not operating");
@@ -449,7 +505,7 @@ void freeos::claim( const name& claimant )
 
 
 // look up the required stake depending on number of users and account type
-uint32_t freeos::getthreshold(uint32_t numusers, std::string account_type) {
+uint32_t getthreshold(uint32_t numusers, std::string account_type) {
   uint64_t required_stake;
 
   require_auth(get_self());
@@ -484,9 +540,9 @@ uint32_t freeos::getthreshold(uint32_t numusers, std::string account_type) {
 
 
 // return the week record matching the current datetime
-freeos::week freeos::getclaimweek() {
+week getclaimweek() {
 
-  freeos::week this_week = week {0, 0, "", 0, "", 0, 0};    // default null week value if outside of a claim period
+  week this_week = week {0, 0, "", 0, "", 0, 0};    // default null week value if outside of a claim period
 
   // current time in UTC seconds
   uint32_t now = current_time_point().sec_since_epoch();
@@ -510,11 +566,11 @@ freeos::week freeos::getclaimweek() {
 
 
 // calculate if user is eligible to claim in a week
-bool freeos::eligible_to_claim(const name& claimant, week this_week) {
+bool eligible_to_claim(const name& claimant, week this_week) {
 
   // get the user record - if there is no record then user is not registered
-  user_index users(get_self(), claimant.value);
-  auto user_record = users.begin();
+  user_index_t users(get_self(), claimant.value, 1024, 64, false, false);
+  auto user_record = users.find(symbol_code("FREEOS").raw());
   if (user_record == users.end()) {
     print("user ", claimant, " is not registered");
     return false;
@@ -538,7 +594,7 @@ bool freeos::eligible_to_claim(const name& claimant, week this_week) {
   // how many airkey tokens does the user have?
   asset user_airkey_balance = asset(0, symbol("AIRKEY",0));  // default = 0 AIRKEY
 
-  accounts user_accounts(get_self(), claimant.value);
+  accounts_t user_accounts(get_self(), claimant.value, 1024, 64, false, false);
   symbol_code airkey = symbol_code("AIRKEY");
   auto user_airkey_account = user_accounts.find(airkey.raw());
 
@@ -572,8 +628,31 @@ bool freeos::eligible_to_claim(const name& claimant, week this_week) {
     }
   }
 
-
-
   // if the user passes all these checks then they are eligible
   return true;
 }
+
+
+
+struct dummy_action_hello {
+    name vaccount;
+    uint64_t b;
+    uint64_t c;
+
+    EOSLIB_SERIALIZE( dummy_action_hello, (vaccount)(b)(c) )
+};
+
+[[eosio::action]] void hello(dummy_action_hello payload) {
+  require_vaccount(payload.vaccount);
+
+  print("hello from ");
+  print(payload.vaccount);
+  print(" ");
+  print(payload.b + payload.c);
+  print("\n");
+}
+
+VACCOUNTS_APPLY(((dummy_action_hello)(hello)))
+
+//CONTRACT_END((init)(hello)(hello2)(paramupsert)(getconfig)(regaccount)(xdcommit)(xvinit)(xvauth))
+CONTRACT_END((reguser)(dereg)(stake)(unstake)(getuser)(create)(issue)(retire)(transfer)(regaccount)(xdcommit)(xvinit)(xvauth))

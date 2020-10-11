@@ -1,0 +1,3 @@
+/home/user/contracts/vaccounts-dapp-service/zeus_boxes/contracts/eos/dappservices/CMakeFiles/edit_cache.dir
+/home/user/contracts/vaccounts-dapp-service/zeus_boxes/contracts/eos/dappservices/CMakeFiles/dappservices.dir
+/home/user/contracts/vaccounts-dapp-service/zeus_boxes/contracts/eos/dappservices/CMakeFiles/rebuild_cache.dir
