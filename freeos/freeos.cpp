@@ -13,11 +13,11 @@ void freeos::reguser(const name& user, const std::string account_type) {
   // check that system is operational (global masterswitch parameter set to "1")
   check(checkmasterswitch(), "freeos system is not operating");
 
-  // check( is_account( user ), "user account does not exist");
+  check( is_account( user ), "user account does not exist");
   check(account_type.length() == 1, "account type should be 1 character");
 
   // calculate the user number when registered
-  user_singleton user_counter(get_self(), get_self().value);
+  user_singleton user_counter(get_self(), get_self().value);  // owner was originally get_self()
   if (!user_counter.exists()) {
     user_counter.get_or_create(get_self(), ct);
   }
@@ -26,6 +26,7 @@ void freeos::reguser(const name& user, const std::string account_type) {
 
   // get the required stake for the user number
   uint32_t stake = getthreshold(entry.count, account_type);
+  //uint32_t stake = 10;
   asset stake_requirement = asset(stake * 10000, symbol("EOS",4)); // TODO: look up from the config table
 
   // find the account in the user table
@@ -34,7 +35,7 @@ void freeos::reguser(const name& user, const std::string account_type) {
 
   // add the user if not already registered
   if( u == usertable.end() ) {
-     usertable.emplace( get_self(), [&]( auto& u ){
+     usertable.emplace( get_self(), [&]( auto& u ) {
        u.stake = asset(0, symbol("EOS", 4));
        u.account_type = account_type.at(0);
        u.stake_requirement = stake_requirement;
@@ -263,7 +264,7 @@ void freeos::transfer( const name&    from,
 
     // AIRKEY tokens are non-transferable, except by the freeostokens account
     check(!(quantity.symbol.code().to_string().compare("AIRKEY") != 0 && from != name(freeos_acct)), "AIRKEY tokens are non-transferable");
-    
+
     auto sym = quantity.symbol.code();
     stats statstable( get_self(), sym.raw() );
     const auto& st = statstable.get( sym.raw() );
@@ -452,7 +453,7 @@ void freeos::claim( const name& claimant )
 uint32_t freeos::getthreshold(uint32_t numusers, std::string account_type) {
   uint64_t required_stake;
 
-  require_auth(get_self());
+  // require_auth(get_self()); -- read only, so will not require authentication
 
   stakereq_index stakereqs(name(freeosconfig_acct), name(freeosconfig_acct).value);
   auto iterator = stakereqs.end();
