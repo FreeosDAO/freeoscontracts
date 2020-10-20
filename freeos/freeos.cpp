@@ -508,7 +508,7 @@ void claim(claim_action payload)
 uint32_t getthreshold(uint32_t numusers, std::string account_type) {
   uint64_t required_stake;
 
-  require_auth(get_self());
+  // require_auth(get_self()); -- will not require authentication of contract
 
   stakereq_index stakereqs(name(freeosconfig_acct), name(freeosconfig_acct).value);
   auto iterator = stakereqs.end();
