@@ -167,7 +167,7 @@
      // equivalent to: claim( const name& claimant )
      struct claim_action {
          name vaccount;
-         name claimant;
+         name user;
 
-         EOSLIB_SERIALIZE(claim_action, (vaccount)(claimant))
+         EOSLIB_SERIALIZE(claim_action, (vaccount)(user))
      };
