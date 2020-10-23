@@ -393,9 +393,9 @@ void freeos::close( const name& owner, const symbol& symbol )
 }
 
 
-void freeos::claim( const name& claimant )
+void freeos::claim( const name& user )
 {
-   require_auth ( claimant );
+   require_auth ( user );
 
    // check that system is operational (global masterswitch parameter set to "1")
    check(checkmasterswitch(), "freeos system is not operating");
@@ -408,43 +408,58 @@ void freeos::claim( const name& claimant )
    // print("this_week: ", this_week.week_number, " ", this_week.start, " ", this_week.start_date, " ", this_week.end, " ", this_week.end_date, " ", this_week.claim_amount, " ", this_week.tokens_required);
 
    // check user eligibility to claim
-   if (!eligible_to_claim(claimant, this_week)) return;
+   if (!eligible_to_claim(user, this_week)) return;
 
-   // transfer FREEOS to claimant
+   // calculate amounts to be transferred to user and FreeDAO
    asset claim_amount = asset(this_week.claim_amount * 10000, symbol("FREEOS",4));
+   asset freedao_amount = asset(this_week.freedao_payment * 10000, symbol("FREEOS",4));
+   asset total_amount = claim_amount + freedao_amount;
 
-   action transfer = action(
+   // prepare the memo string
+   std::string memo = std::string("claim by ") + user.to_string();
+
+   // Issue the required total amount to the freeos account
+   action issue_action = action(
+     permission_level{get_self(),"active"_n},
+     name(freeos_acct),
+     "issue"_n,
+     std::make_tuple(get_self(), total_amount, memo)
+   );
+
+   issue_action.send();
+
+
+   // transfer FREEOS to user
+   action user_transfer = action(
      permission_level{get_self(),"active"_n},
      name(freeos_acct),
      "transfer"_n,
-     std::make_tuple(get_self(), claimant, claim_amount, std::string("freeos airclaim"))
+     std::make_tuple(get_self(), user, claim_amount, memo)
    );
 
-   transfer.send();
+   user_transfer.send();
 
-   // transfer FREEOS to FreeDAO
-   asset freedao_amount = asset(this_week.freedao_payment * 10000, symbol("FREEOS",4));
 
    // transfer FREEOS to freedao_acct
-   transfer = action(
+   action freedao_transfer = action(
      permission_level{get_self(),"active"_n},
      name(freeos_acct),
      "transfer"_n,
-     std::make_tuple(get_self(), name(freedao_acct), freedao_amount, std::string("freeos airclaim"))
+     std::make_tuple(get_self(), name(freedao_acct), freedao_amount, memo)
    );
 
-   transfer.send();
+   freedao_transfer.send();
 
 
    // write the claim event to the claim history table
-   claim_index claims(get_self(), claimant.value);
+   claim_index claims(get_self(), user.value);
    auto iterator = claims.find(this_week.week_number);
    claims.emplace( get_self(), [&]( auto& claim ) {
      claim.week_number = this_week.week_number;
      claim.claim_time = current_time_point().sec_since_epoch();
    });
 
-   print("user ", claimant, " claimed ", claim_amount.to_string(), " for week ", this_week.week_number, " at ", current_time_point().sec_since_epoch());
+   print("user ", user, " claimed ", claim_amount.to_string(), " for week ", this_week.week_number, " at ", current_time_point().sec_since_epoch());
 
 }
 
