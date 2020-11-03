@@ -58,6 +58,10 @@
                 {
                     "name": "count",
                     "type": "uint32"
+                },
+                {
+                    "name": "claimevents",
+                    "type": "uint32"
                 }
             ]
         },
@@ -85,6 +89,10 @@
                 },
                 {
                     "name": "max_supply",
+                    "type": "asset"
+                },
+                {
+                    "name": "conditional_supply",
                     "type": "asset"
                 },
                 {
@@ -127,6 +135,16 @@
                 },
                 {
                     "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "maintain",
+            "base": "",
+            "fields": [
+                {
+                    "name": "option",
                     "type": "string"
                 }
             ]
@@ -310,10 +328,6 @@
                 {
                     "name": "tokens_required",
                     "type": "uint16"
-                },
-                {
-                    "name": "freedao_payment",
-                    "type": "uint16"
                 }
             ]
         }
@@ -347,6 +361,11 @@
         {
             "name": "issue",
             "type": "issue",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "maintain",
+            "type": "maintain",
             "ricardian_contract": ""
         },
         {

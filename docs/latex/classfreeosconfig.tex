@@ -2,12 +2,8 @@
 \label{classfreeosconfig}\index{freeosconfig@{freeosconfig}}
 
 
-Inheritance diagram for freeosconfig\+:
-% FIG 0
+Inherits contract.
 
-
-Collaboration diagram for freeosconfig\+:
-% FIG 1
 \doxysubsection*{Public Member Functions}
 \begin{DoxyCompactItemize}
 \item 
@@ -21,7 +17,7 @@ void \mbox{\hyperlink{classfreeosconfig_a42809d253bc46eec7680b0cda96ebcd8}{stake
 \item 
 void \mbox{\hyperlink{classfreeosconfig_a98fafb0d78f7b9e654a06ab226c8a816}{stakeerase}} (uint64\+\_\+t threshold)
 \item 
-void \mbox{\hyperlink{classfreeosconfig_a33b37174d521cc59ec9f2beef91e8e50}{weekupsert}} (uint64\+\_\+t week\+\_\+number, std\+::string start, std\+::string end)
+void \mbox{\hyperlink{classfreeosconfig_a7ac12e14912e35f29b92405734ea899c}{weekupsert}} (uint64\+\_\+t week\+\_\+number, std\+::string start, std\+::string end, uint16\+\_\+t claim\+\_\+amount, uint16\+\_\+t tokens\+\_\+required)
 \item 
 void \mbox{\hyperlink{classfreeosconfig_a9f09757df4b692b8cba59cec34898af8}{getweek}} (uint64\+\_\+t week\+\_\+number)
 \item 
@@ -197,11 +193,11 @@ This action deletes a record from the \textquotesingle{}weeks\textquotesingle{} 
 \begin{DoxyPrecond}{Precondition}
 requires permission of the contract account 
 \end{DoxyPrecond}
-\mbox{\Hypertarget{classfreeosconfig_a33b37174d521cc59ec9f2beef91e8e50}\label{classfreeosconfig_a33b37174d521cc59ec9f2beef91e8e50}} 
+\mbox{\Hypertarget{classfreeosconfig_a7ac12e14912e35f29b92405734ea899c}\label{classfreeosconfig_a7ac12e14912e35f29b92405734ea899c}} 
 \index{freeosconfig@{freeosconfig}!weekupsert@{weekupsert}}
 \index{weekupsert@{weekupsert}!freeosconfig@{freeosconfig}}
 \doxysubsubsection{\texorpdfstring{weekupsert()}{weekupsert()}}
-{\footnotesize\ttfamily void freeosconfig\+::weekupsert (\begin{DoxyParamCaption}\item[{uint64\+\_\+t}]{week\+\_\+number,  }\item[{std\+::string}]{start,  }\item[{std\+::string}]{end }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily void freeosconfig\+::weekupsert (\begin{DoxyParamCaption}\item[{uint64\+\_\+t}]{week\+\_\+number,  }\item[{std\+::string}]{start,  }\item[{std\+::string}]{end,  }\item[{uint16\+\_\+t}]{claim\+\_\+amount,  }\item[{uint16\+\_\+t}]{tokens\+\_\+required }\end{DoxyParamCaption})}
 
 weekupsert action.
 
@@ -213,7 +209,11 @@ This action creates a new entry, or modifies an existing entry, in the \textquot
 \hline
 {\em start} & -\/ string representing the start of week in Y\+Y\+Y\+Y-\/\+M\+M-\/\+DD H\+H\+:\+MM\+:SS format, \\
 \hline
-{\em end} & -\/ string representing the end of week in Y\+Y\+Y\+Y-\/\+M\+M-\/\+DD H\+H\+:\+MM\+:SS format\\
+{\em end} & -\/ string representing the end of week in Y\+Y\+Y\+Y-\/\+M\+M-\/\+DD H\+H\+:\+MM\+:SS format \\
+\hline
+{\em claim\+\_\+amount} & -\/ the amount of F\+R\+E\+E\+OS a user can claim in the week \\
+\hline
+{\em claim\+\_\+amount} & -\/ the amount of F\+R\+E\+E\+OS a user must hold before claiming\\
 \hline
 \end{DoxyParams}
 \begin{DoxyPrecond}{Precondition}

@@ -40,6 +40,10 @@ namespace eosiosystem {
          [[eosio::action]]
          void reguser(const name& user, const std::string account_type);
 
+         // this action for maintenance purposes
+         [[eosio::action]]
+         void maintain(std::string option);
+
          /**
           * dereg action.
           *
@@ -247,6 +251,7 @@ namespace eosiosystem {
          using transfer_action = eosio::action_wrapper<"transfer"_n, &freeos::transfer>;
          using open_action = eosio::action_wrapper<"open"_n, &freeos::open>;
          using close_action = eosio::action_wrapper<"close"_n, &freeos::close>;
+
       private:
          struct [[eosio::table]] account {
             asset    balance;
@@ -257,6 +262,7 @@ namespace eosiosystem {
          struct [[eosio::table]] currency_stats {
             asset    supply;
             asset    max_supply;
+            asset    conditional_supply;
             name     issuer;
 
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
@@ -284,6 +290,7 @@ namespace eosiosystem {
          // the record counter table
          struct [[eosio::table]] count {
            uint32_t  count;
+           uint32_t  claimevents;
          } ct;
 
          using user_singleton = eosio::singleton<"usercount"_n, count>;
@@ -331,7 +338,6 @@ namespace eosiosystem {
            std::string end_date;
            uint16_t    claim_amount;
            uint16_t    tokens_required;
-           uint16_t    freedao_payment;
 
            uint64_t primary_key() const { return week_number; }
          };
@@ -361,6 +367,8 @@ namespace eosiosystem {
          uint32_t getthreshold(uint32_t numusers, std::string account_type);
          week getclaimweek();
          bool eligible_to_claim(const name& claimant, week this_week);
+         uint32_t updateclaimeventcount();
+         uint16_t getfreedaomultiplier(uint32_t claimevents);
 
    };
    /** @}*/ // end of @defgroup freeos freeos contract

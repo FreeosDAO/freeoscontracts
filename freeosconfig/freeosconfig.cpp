@@ -107,7 +107,7 @@ void freeosconfig::stakeerase (uint64_t threshold) {
 
 // upsert a week into the weeks table
 [[eosio::action]]
-void freeosconfig::weekupsert(uint64_t week_number, std::string start, std::string end, uint16_t claim_amount, uint16_t tokens_required, uint16_t freedao_payment) {
+void freeosconfig::weekupsert(uint64_t week_number, std::string start, std::string end, uint16_t claim_amount, uint16_t tokens_required) {
 
   require_auth(_self);
 
@@ -138,10 +138,9 @@ void freeosconfig::weekupsert(uint64_t week_number, std::string start, std::stri
          row.end_date = end;
          row.claim_amount = claim_amount;
          row.tokens_required = tokens_required;
-         row.freedao_payment = freedao_payment;
       });
 
-      print("week: ", week_number, " start: ", start, ", end: ", end, ", claim amount: ", claim_amount, ", tokens_required: ", tokens_required, ", freedao_payment: ", freedao_payment, " added to the weeks table");
+      print("week: ", week_number, " start: ", start, ", end: ", end, ", claim amount: ", claim_amount, ", tokens_required: ", tokens_required, " added to the weeks table");
 
   } else {
       // the week is in the table, so update
@@ -153,16 +152,16 @@ void freeosconfig::weekupsert(uint64_t week_number, std::string start, std::stri
         row.end_date = end;
         row.claim_amount = claim_amount;
         row.tokens_required = tokens_required;
-        row.freedao_payment = freedao_payment;
       });
 
-      print("week: ", week_number, " start: ", start, ", end: ", end, ", claim amount: ", claim_amount, ", tokens_required: ", tokens_required, ", freedao_payment: ", freedao_payment, " modified in the weeks table");
+      print("week: ", week_number, " start: ", start, ", end: ", end, ", claim amount: ", claim_amount, ", tokens_required: ", tokens_required, ", modified in the weeks table");
   }
 }
 
 // erase a week record from the weeks table
 [[eosio::action]]
 void freeosconfig::weekerase(uint64_t week_number) {
+  require_auth(_self);
 
   week_index freeosweeks(get_self(), get_self().value);
   auto iterator = freeosweeks.find(week_number);

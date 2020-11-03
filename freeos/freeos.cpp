@@ -11,9 +11,11 @@ void freeos::reguser(const name& user, const std::string account_type) {
   require_auth( user );
 
   // check that system is operational (global masterswitch parameter set to "1")
-  check(checkmasterswitch(), "freeos system is not operating");
+  check(checkmasterswitch(), msg_freeos_system_not_available);
 
-  check( is_account( user ), "user account does not exist");
+  // This error message is being prepared in case needed by the check account statement
+  std::string account_error = std::string("Account ") + user.to_string() + " not found";
+  check( is_account( user ), account_error);
   check(account_type.length() == 1, "account type should be 1 character");
 
   // calculate the user number when registered
@@ -45,12 +47,49 @@ void freeos::reguser(const name& user, const std::string account_type) {
        // update number of users in record_count singleton
        user_counter.set(entry, get_self());
 
-       print("account number ", entry.count, ": ", user, " registered with account type ", u.account_type, ", stake requirement = ", u.stake_requirement.to_string());
+       print(user, " successfully registered. Stake requirement is ", u.stake_requirement.to_string());
      });
 
   } else {
-    print("account ", user, " is already registered");
+    print(user, " is already registered");
   }
+}
+
+// This action for maintenance purposes
+[[eosio::action]]
+void freeos::maintain(std::string option) {
+  require_auth( get_self() );
+
+  /*
+  user_singleton user_counter(get_self(), get_self().value);  // owner was originally get_self()
+  if (!user_counter.exists()) {
+    user_counter.get_or_create(get_self(), ct);
+  }
+  auto entry = user_counter.get();
+
+  if (option == "increment") {
+      entry.count += 1;
+  } else if (option == "reset") {
+      entry.count = 1;
+  } else if (option == "remove") {
+      user_counter.remove();
+      return;
+  } else {
+    print("parameter option should be 'increment' or 'reset'");
+    return;
+  }
+
+  user_counter.set(entry, get_self());
+  */
+
+  // erasing record from stats table - which needs to be redefined - option contains name of token e.g. FREEOS
+  stats statstable( get_self(), symbol_code(option).raw() );
+  auto existing = statstable.find( symbol_code(option).raw() );
+
+  // erase the record
+  statstable.erase(existing);
+
+  print("token record erased: ", option);
 }
 
 
@@ -96,7 +135,7 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
   }
 
   // check that system is operational (global masterswitch parameter set to "1")
-  check(checkmasterswitch(), "freeos system is not operating");
+  check(checkmasterswitch(), msg_freeos_system_not_available);
 
   // get the user record - the amount of the stake requirement and the amount staked
   // find the account in the user table
@@ -130,20 +169,20 @@ void freeos::unstake(const name& user) {
   require_auth(user);
 
   // check that system is operational (global masterswitch parameter set to "1")
-  check(checkmasterswitch(), "freeos system is not operating");
+  check(checkmasterswitch(), msg_freeos_system_not_available);
 
   // find user record
   user_index usertable( get_self(), user.value );
   auto u = usertable.find( symbol_code("EOS").raw() );
 
   // check if the user is registered
-  check(u != usertable.end(), "account is not registered");
+  check(u != usertable.end(), msg_account_not_registered);
 
   // check if the user has an amount staked
   check(u->stake.amount > 0, "account has not staked");
 
   // if enough time elapsed then refund amount
-  check((u->staked_time.utc_seconds + 604800) <= current_time_point().sec_since_epoch(), "stake has not been held for required time and cannot be refunded");
+  check((u->staked_time.utc_seconds + 604800) <= current_time_point().sec_since_epoch(), "stake has not yet been held for one week and cannot be refunded");
 
   // refund the stake tokens
   // transfer stake from freeos to user account using the eosio.token contract
@@ -162,7 +201,7 @@ void freeos::unstake(const name& user) {
     row.staked_time = time_point_sec(0);
   });
 
-  print("stake refunded");
+  print("stake successfully refunded");
 
 }
 
@@ -195,6 +234,7 @@ void freeos::create( const name&   issuer,
 
     statstable.emplace( get_self(), [&]( auto& s ) {
        s.supply.symbol = maximum_supply.symbol;
+       s.conditional_supply.symbol = maximum_supply.symbol;
        s.max_supply    = maximum_supply;
        s.issuer        = issuer;
     });
@@ -398,7 +438,7 @@ void freeos::claim( const name& user )
    require_auth ( user );
 
    // check that system is operational (global masterswitch parameter set to "1")
-   check(checkmasterswitch(), "freeos system is not operating");
+   check(checkmasterswitch(), msg_freeos_system_not_available);
 
    // what week are we in?
    week this_week = getclaimweek();
@@ -410,13 +450,32 @@ void freeos::claim( const name& user )
    // check user eligibility to claim
    if (!eligible_to_claim(user, this_week)) return;
 
+   // update the claim-event counter
+   uint32_t claim_event_count = updateclaimeventcount();
+
+   // get freedao multiplier
+   uint16_t freedao_multiplier = getfreedaomultiplier(claim_event_count);
+
+
    // calculate amounts to be transferred to user and FreeDAO
    asset claim_amount = asset(this_week.claim_amount * 10000, symbol("FREEOS",4));
-   asset freedao_amount = asset(this_week.freedao_payment * 10000, symbol("FREEOS",4));
+   asset freedao_amount = claim_amount * freedao_multiplier;
    asset total_amount = claim_amount + freedao_amount;
 
    // prepare the memo string
    std::string memo = std::string("claim by ") + user.to_string();
+
+   // conditionally limited supply - increment the conditional_supply by total amount of issue
+   stats statstable( get_self(), symbol_code("FREEOS").raw() );
+   auto currency_record = statstable.find( symbol_code("FREEOS").raw() );
+
+   check( currency_record != statstable.end(), "token with symbol does not exist" );
+   const auto& st = *currency_record;
+
+   statstable.modify( st, same_payer, [&]( auto& s ) {
+      s.conditional_supply += total_amount;
+   });
+
 
    // Issue the required total amount to the freeos account
    action issue_action = action(
@@ -459,7 +518,7 @@ void freeos::claim( const name& user )
      claim.claim_time = current_time_point().sec_since_epoch();
    });
 
-   print("user ", user, " claimed ", claim_amount.to_string(), " for week ", this_week.week_number, " at ", current_time_point().sec_since_epoch());
+   print(user, " claimed ", claim_amount.to_string(), " for week ", this_week.week_number); // " at ", current_time_point().sec_since_epoch());
 
 }
 
@@ -588,8 +647,50 @@ bool freeos::eligible_to_claim(const name& claimant, week this_week) {
     }
   }
 
-
-
   // if the user passes all these checks then they are eligible
   return true;
+}
+
+
+uint32_t freeos::updateclaimeventcount() {
+  user_singleton user_counter(get_self(), get_self().value);  // owner was originally get_self()
+
+  if (!user_counter.exists()) {
+    user_counter.get_or_create(get_self(), ct);
+  }
+  auto entry = user_counter.get();
+
+  entry.claimevents += 1;
+  user_counter.set(entry, get_self());
+
+  return entry.claimevents;
+}
+
+uint16_t freeos::getfreedaomultiplier(uint32_t claimevents) {
+
+    if (claimevents <= 100) {
+      return 233;
+    } else if (claimevents <= 200) {
+      return 144;
+    } else if (claimevents <= 300) {
+      return 89;
+    } else if (claimevents <= 500) {
+      return 55;
+    } else if (claimevents <= 800) {
+      return 34;
+    } else if (claimevents <= 1300) {
+      return 21;
+    } else if (claimevents <= 2100) {
+      return 13;
+    } else if (claimevents <= 3400) {
+      return 8;
+    } else if (claimevents <= 5500) {
+      return 5;
+    } else if (claimevents <= 8900) {
+      return 3;
+    } else if (claimevents <= 14400) {
+      return 2;
+    } else {
+      return 1;
+    }
 }

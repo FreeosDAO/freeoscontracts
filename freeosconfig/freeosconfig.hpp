@@ -93,7 +93,6 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
      * @param end - string representing the end of week in YYYY-MM-DD HH:MM:SS format
      * @param claim_amount - the amount of FREEOS a user can claim in the week
      * @param claim_amount - the amount of FREEOS a user must hold before claiming
-     * @param freedao_payment - the amount of FREEOS that is contributed to the freedao account
      *
      * @pre requires permission of the contract account
      */
@@ -102,8 +101,7 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
     std::string start,
     std::string end,
     uint16_t  claim_amount,
-    uint16_t  tokens_required,
-    uint16_t  freedao_payment);
+    uint16_t  tokens_required);
 
     /**
      * getweek action.
@@ -197,7 +195,6 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
       std::string end_date;
       uint16_t    claim_amount;
       uint16_t    tokens_required;
-      uint16_t    freedao_payment;
 
       uint64_t primary_key() const { return week_number; }
     };
