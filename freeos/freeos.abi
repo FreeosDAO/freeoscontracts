@@ -112,6 +112,11 @@
             ]
         },
         {
+            "name": "getcounts",
+            "base": "",
+            "fields": []
+        },
+        {
             "name": "getuser",
             "base": "",
             "fields": [
@@ -351,6 +356,11 @@
         {
             "name": "dereg",
             "type": "dereg",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "getcounts",
+            "type": "getcounts",
             "ricardian_contract": ""
         },
         {

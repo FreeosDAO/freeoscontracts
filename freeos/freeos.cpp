@@ -60,7 +60,6 @@ void freeos::reguser(const name& user, const std::string account_type) {
 void freeos::maintain(std::string option) {
   require_auth( get_self() );
 
-  /*
   user_singleton user_counter(get_self(), get_self().value);  // owner was originally get_self()
   if (!user_counter.exists()) {
     user_counter.get_or_create(get_self(), ct);
@@ -80,7 +79,6 @@ void freeos::maintain(std::string option) {
   }
 
   user_counter.set(entry, get_self());
-  */
 
   // erasing record from stats table - which needs to be redefined - option contains name of token e.g. FREEOS
   stats statstable( get_self(), symbol_code(option).raw() );
@@ -182,7 +180,7 @@ void freeos::unstake(const name& user) {
   check(u->stake.amount > 0, "account has not staked");
 
   // if enough time elapsed then refund amount
-  check((u->staked_time.utc_seconds + 604800) <= current_time_point().sec_since_epoch(), "stake has not yet been held for one week and cannot be refunded");
+  check((u->staked_time.utc_seconds + STAKE_HOLD_TIME_SECONDS) <= current_time_point().sec_since_epoch(), "stake has not yet been held for one week and cannot be refunded");
 
   // refund the stake tokens
   // transfer stake from freeos to user account using the eosio.token contract
@@ -523,6 +521,18 @@ void freeos::claim( const name& user )
 }
 
 
+void freeos::getcounts() {
+  user_singleton user_counter(get_self(), get_self().value);
+  if (user_counter.exists()) {
+    auto entry = user_counter.get();
+    print("users registered: ", entry.count, ", claim events: ", entry.claimevents);
+  } else {
+    print("the count singleton has not been initialised");
+  }
+}
+
+
+
 // look up the required stake depending on number of users and account type
 uint32_t freeos::getthreshold(uint32_t numusers, std::string account_type) {
   uint64_t required_stake;
@@ -668,6 +678,7 @@ uint32_t freeos::updateclaimeventcount() {
 
 uint16_t freeos::getfreedaomultiplier(uint32_t claimevents) {
 
+/*  FOR PRODUCTION
     if (claimevents <= 100) {
       return 233;
     } else if (claimevents <= 200) {
@@ -692,5 +703,33 @@ uint16_t freeos::getfreedaomultiplier(uint32_t claimevents) {
       return 2;
     } else {
       return 1;
+    } */
+
+    // FOR TEST PURPOSES
+    if (claimevents <= 2) {
+      return 233;
+    } else if (claimevents <= 4) {
+      return 144;
+    } else if (claimevents <= 5) {
+      return 89;
+    } else if (claimevents <= 6) {
+      return 55;
+    } else if (claimevents <= 7) {
+      return 34;
+    } else if (claimevents <= 8) {
+      return 21;
+    } else if (claimevents <= 9) {
+      return 13;
+    } else if (claimevents <= 10) {
+      return 8;
+    } else if (claimevents <= 11) {
+      return 5;
+    } else if (claimevents <= 12) {
+      return 3;
+    } else if (claimevents <= 13) {
+      return 2;
+    } else {
+      return 1;
     }
+
 }

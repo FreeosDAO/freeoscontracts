@@ -213,6 +213,15 @@ namespace eosiosystem {
          void claim( const name& user);
 
          /**
+          * getcounts action.
+          *
+          * @details This action is run by anyone to print the counts of users registered and claim events.
+          *
+          */
+         [[eosio::action]]
+         void getcounts();
+
+         /**
           * Get supply method.
           *
           * @details Gets the supply for token `sym_code`, created by `token_contract_account` account.
