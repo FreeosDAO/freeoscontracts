@@ -12,6 +12,10 @@ namespace eosiosystem {
    using namespace eosio;
    using std::string;
 
+enum registration_status{ registered_already,
+                          registered_success,
+                          };
+
    /**
     * @defgroup freeos freeos contract
     * @ingroup eosiocontracts
@@ -25,6 +29,15 @@ namespace eosiosystem {
    class [[eosio::contract("freeos")]] freeos : public contract {
       public:
          using contract::contract;
+
+         /**
+          * version action.
+          *
+          * @details Prints the version of this contract.
+          */
+         [[eosio::action]]
+         void version();
+
 
          /**
           * reguser action.
@@ -268,6 +281,13 @@ namespace eosiosystem {
             uint64_t primary_key()const { return balance.symbol.code().raw(); }
          };
 
+         // maintains balance of 'vested' FREEOS
+         struct [[eosio::table]] vestaccount {
+            asset    balance;
+
+            uint64_t primary_key()const { return balance.symbol.code().raw(); }
+         };
+
          struct [[eosio::table]] currency_stats {
             asset    supply;
             asset    max_supply;
@@ -278,6 +298,7 @@ namespace eosiosystem {
          };
 
          typedef eosio::multi_index< "accounts"_n, account > accounts;
+         typedef eosio::multi_index< "vestaccounts"_n, vestaccount > vestaccounts;
          typedef eosio::multi_index< "stat"_n, currency_stats > stats;
 
          // ********************************
@@ -371,6 +392,8 @@ namespace eosiosystem {
 
          void sub_stake( const name& owner, const asset& value );
          void add_stake( const name& owner, const asset& value, const name& ram_payer );
+
+         registration_status register_user(const name& user, const std::string account_type);
 
          bool checkmasterswitch();
          uint32_t getthreshold(uint32_t numusers, std::string account_type);

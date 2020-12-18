@@ -5,6 +5,13 @@
 
 using namespace eosio;
 
+const std::string VERSION = "0.2";
+
+[[eosio::action]]
+void freeos::version() {
+  print("Version = ", VERSION);
+}
+
 
 [[eosio::action]]
 void freeos::reguser(const name& user, const std::string account_type) {
@@ -13,10 +20,62 @@ void freeos::reguser(const name& user, const std::string account_type) {
   // check that system is operational (global masterswitch parameter set to "1")
   check(checkmasterswitch(), msg_freeos_system_not_available);
 
-  // This error message is being prepared in case needed by the check account statement
-  std::string account_error = std::string("Account ") + user.to_string() + " not found";
-  check( is_account( user ), account_error);
-  check(account_type.length() == 1, "account type should be 1 character");
+  // check that the account type is correct
+  if (account_type.length() != 1) {
+    print("account type must be 1 character");
+    return;
+  }
+
+  if (account_type[0] != 'e' && account_type[0] != 'd' && account_type[0] != 'v') {
+    print("account type specified incorrectly");
+    return;
+  }
+
+  // is this a real account?
+  if (!is_account(user)) {
+    std::string account_error_msg = std::string("account ") + user.to_string() + " is not a valid account";
+    // display the error message
+    print(account_error_msg);
+    return;
+  }
+
+  // perform the registration
+  registration_status result = register_user(user, account_type);
+
+  // give feedback to user
+  if (result == registered_already) {
+    print("user is already registered");
+  } else if (result == registered_success) {
+    // get the user record to display the stake requirement
+    user_index usertable( get_self(), user.value );
+    auto u = usertable.find( symbol_code(CURRENCY_SYMBOL_CODE).raw() );
+
+    // prepare the success message
+    std::string account_success_msg = user.to_string() + std::string(" successfully registered. Stake requirement is ") + u->stake_requirement.to_string();
+
+    // display the success message including the stake requirement
+    print(account_success_msg);
+  }
+
+  return;
+}
+
+// register_user is a function available to other actions. This is to enable auto-registration i.e. user is automatically registered whenever they stake or claim.
+// return values are defined by enum registration_status.
+// N.B. This function is 'silent' - errors and user notifications are handled by the calling actions.
+// All prerequisities must be handled by the calling action.
+
+registration_status freeos::register_user(const name& user, const std::string account_type) {
+
+  // is the user already registered?
+  // find the account in the user table
+  user_index usertable( get_self(), user.value );
+  auto u = usertable.find( symbol_code(CURRENCY_SYMBOL_CODE).raw() );
+
+  if( u != usertable.end() ) {
+    return registered_already;
+  }
+
 
   // calculate the user number when registered
   user_singleton user_counter(get_self(), get_self().value);  // owner was originally get_self()
@@ -29,31 +88,22 @@ void freeos::reguser(const name& user, const std::string account_type) {
   // get the required stake for the user number
   uint32_t stake = getthreshold(entry.count, account_type);
   //uint32_t stake = 10;
-  asset stake_requirement = asset(stake * 10000, symbol("EOS",4)); // TODO: look up from the config table
+  asset stake_requirement = asset(stake * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
 
-  // find the account in the user table
-  user_index usertable( get_self(), user.value );
-  auto u = usertable.find( symbol_code("EOS").raw() );
+  // register the user
+  usertable.emplace( get_self(), [&]( auto& u ) {
+    u.stake = asset(0, symbol(CURRENCY_SYMBOL_CODE, 4));
+    u.account_type = account_type.at(0);
+    u.stake_requirement = stake_requirement;
+    u.registered_time = time_point_sec(current_time_point().sec_since_epoch());
+    u.staked_time = time_point_sec(0);
+    });
 
-  // add the user if not already registered
-  if( u == usertable.end() ) {
-     usertable.emplace( get_self(), [&]( auto& u ) {
-       u.stake = asset(0, symbol("EOS", 4));
-       u.account_type = account_type.at(0);
-       u.stake_requirement = stake_requirement;
-       u.registered_time = time_point_sec(current_time_point().sec_since_epoch());
-       u.staked_time = time_point_sec(0);
+   // update number of users in record_count singleton
+   user_counter.set(entry, get_self());
 
-       // update number of users in record_count singleton
-       user_counter.set(entry, get_self());
-
-       print(user, " successfully registered. Stake requirement is ", u.stake_requirement.to_string());
-     });
-
-  } else {
-    print(user, " is already registered");
-  }
-}
+   return registered_success;
+ }
 
 // This action for maintenance purposes
 [[eosio::action]]
@@ -97,7 +147,7 @@ void freeos::dereg(const name& user) {
   require_auth( get_self() );
 
   user_index usertable( get_self(), user.value );
-  auto u = usertable.find( symbol_code("EOS").raw() );
+  auto u = usertable.find( symbol_code(CURRENCY_SYMBOL_CODE).raw() );
 
   if(u != usertable.end()) {
     if (u->stake.amount == 0) {
@@ -135,10 +185,18 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
   // check that system is operational (global masterswitch parameter set to "1")
   check(checkmasterswitch(), msg_freeos_system_not_available);
 
+  //****************************************************
+
+  // auto-register the user - if user is already registered then that is ok, the register_user function responds silently
+  registration_status result = register_user(user, "e");
+
+  //****************************************************
+
+
   // get the user record - the amount of the stake requirement and the amount staked
   // find the account in the user table
   user_index usertable( get_self(), user.value );
-  auto u = usertable.find( symbol_code("EOS").raw() );
+  auto u = usertable.find( symbol_code(CURRENCY_SYMBOL_CODE).raw() );
 
   // check if the user is registered
   check(u != usertable.end(), "user is not registered");
@@ -171,7 +229,7 @@ void freeos::unstake(const name& user) {
 
   // find user record
   user_index usertable( get_self(), user.value );
-  auto u = usertable.find( symbol_code("EOS").raw() );
+  auto u = usertable.find( symbol_code(CURRENCY_SYMBOL_CODE).raw() );
 
   // check if the user is registered
   check(u != usertable.end(), msg_account_not_registered);
@@ -195,7 +253,7 @@ void freeos::unstake(const name& user) {
 
   // update the user record
   usertable.modify(u, user, [&](auto& row) {   // second argument is scope
-    row.stake = asset(0, symbol("EOS", 4));
+    row.stake = asset(0, symbol(CURRENCY_SYMBOL_CODE, 4));
     row.staked_time = time_point_sec(0);
   });
 
@@ -207,7 +265,7 @@ void freeos::unstake(const name& user) {
 [[eosio::action]]
 void freeos::getuser(const name& user) {
   user_index usertable( get_self(), user.value );
-  auto u = usertable.find( symbol_code("EOS").raw() );
+  auto u = usertable.find( symbol_code(CURRENCY_SYMBOL_CODE).raw() );
 
   // check if the user is registered
   check(u != usertable.end(), "user is not registered");
@@ -438,9 +496,21 @@ void freeos::claim( const name& user )
    // check that system is operational (global masterswitch parameter set to "1")
    check(checkmasterswitch(), msg_freeos_system_not_available);
 
+   // is this a real account?
+   if (!is_account(user)) {
+     std::string account_error_msg = std::string("account ") + user.to_string() + " is not a valid account";
+     // display the error message
+     print(account_error_msg);
+     return;
+   }
+
+   // auto-register the user - if user is already registered then that is ok, the register_user function responds silently
+   registration_status result = register_user(user, "e");
+
+
    // what week are we in?
    week this_week = getclaimweek();
-   check(this_week.week_number != 0, "not in a claim period");
+   check(this_week.week_number != 0, "freeos is not in a claim period");
 
    // for debugging
    // print("this_week: ", this_week.week_number, " ", this_week.start, " ", this_week.start_date, " ", this_week.end, " ", this_week.end_date, " ", this_week.claim_amount, " ", this_week.tokens_required);

@@ -303,6 +303,21 @@
             ]
         },
         {
+            "name": "version",
+            "base": "",
+            "fields": []
+        },
+        {
+            "name": "vestaccount",
+            "base": "",
+            "fields": [
+                {
+                    "name": "balance",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
             "name": "week",
             "base": "",
             "fields": [
@@ -402,6 +417,11 @@
             "name": "unstake",
             "type": "unstake",
             "ricardian_contract": ""
+        },
+        {
+            "name": "version",
+            "type": "version",
+            "ricardian_contract": ""
         }
     ],
     "tables": [
@@ -450,6 +470,13 @@
         {
             "name": "users",
             "type": "user",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "vestaccounts",
+            "type": "vestaccount",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

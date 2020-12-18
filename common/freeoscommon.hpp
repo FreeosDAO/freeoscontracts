@@ -6,6 +6,9 @@ const std::string freeos_acct = "freeos333333";
 const std::string freeosconfig_acct = "freeosconfig";
 const std::string freedao_acct = "freedao33333";
 
+// currency symbol for network
+const std::string CURRENCY_SYMBOL_CODE = "EOS";
+
 // amount of time to hold user stake for before unstaking is permitted
 const uint32_t STAKE_HOLD_TIME_SECONDS = 300;  // one week = 604800
 
