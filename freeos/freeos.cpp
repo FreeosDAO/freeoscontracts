@@ -78,7 +78,7 @@ registration_status freeos::register_user(const name& user, const std::string ac
 
 
   // calculate the user number when registered
-  user_singleton user_counter(get_self(), get_self().value);  // owner was originally get_self()
+  user_singleton user_counter(get_self(), get_self().value);
   if (!user_counter.exists()) {
     user_counter.get_or_create(get_self(), ct);
   }
@@ -87,7 +87,6 @@ registration_status freeos::register_user(const name& user, const std::string ac
 
   // get the required stake for the user number
   uint32_t stake = getthreshold(entry.count, account_type);
-  //uint32_t stake = 10;
   asset stake_requirement = asset(stake * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
 
   // register the user
@@ -102,14 +101,38 @@ registration_status freeos::register_user(const name& user, const std::string ac
    // update number of users in record_count singleton
    user_counter.set(entry, get_self());
 
+   // set the stake requirement for an unregistered user i.e. a user who has not staked or claimed and therefore does not have a user record
+   uint32_t next_user_stake = getthreshold(entry.count + 1, account_type);  // using count+1 to calculate for the next user
+   asset next_user_stake_requirement = asset(next_user_stake * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+   store_unregistered_stake(next_user_stake_requirement);
+
    return registered_success;
- }
+}
+
+
+// store the unregistered user stake requirement
+void freeos::store_unregistered_stake(asset next_user_stake_requirement) {
+  stake_index stake_table(get_self(), get_self().value);
+
+  auto stake = stake_table.find( 0 ); // using 0 because this is a single row table
+
+  if( stake == stake_table.end() ) {
+     stake_table.emplace(get_self(), [&]( auto& s ){
+       s.default_stake = next_user_stake_requirement;
+     });
+  } else {
+     stake_table.modify( stake, same_payer, [&]( auto& s ) {
+       s.default_stake = next_user_stake_requirement;
+     });
+  }
+}
 
 // This action for maintenance purposes
 [[eosio::action]]
 void freeos::maintain(std::string option) {
   require_auth( get_self() );
 
+  /*
   user_singleton user_counter(get_self(), get_self().value);  // owner was originally get_self()
   if (!user_counter.exists()) {
     user_counter.get_or_create(get_self(), ct);
@@ -123,21 +146,34 @@ void freeos::maintain(std::string option) {
   } else if (option == "remove") {
       user_counter.remove();
       return;
+  } */
+
+  if (option == "initialise") {
+      // initialise the default stake value
+
+      // the default stake is calculated below
+      asset next_user_stake_requirement = asset(DEFAULT_STAKE * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      stake_index stake_table(get_self(), get_self().value);
+      auto stake = stake_table.find( 0 ); // using 0 because this is a single row table
+
+      if( stake == stake_table.end() ) {
+         stake_table.emplace(get_self(), [&]( auto& s ){
+           s.default_stake = next_user_stake_requirement;
+         });
+      } else {
+         stake_table.modify( stake, same_payer, [&]( auto& s ) {
+           s.default_stake = next_user_stake_requirement;
+         });
+      }
+
+      print("default stake set to ", next_user_stake_requirement.to_string());
+
   } else {
-    print("parameter option should be 'increment' or 'reset'");
+    print("parameter option should be increment, reset, remove, initialise");
     return;
   }
 
-  user_counter.set(entry, get_self());
-
-  // erasing record from stats table - which needs to be redefined - option contains name of token e.g. FREEOS
-  stats statstable( get_self(), symbol_code(option).raw() );
-  auto existing = statstable.find( symbol_code(option).raw() );
-
-  // erase the record
-  statstable.erase(existing);
-
-  print("token record erased: ", option);
 }
 
 

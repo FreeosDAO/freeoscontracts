@@ -267,6 +267,16 @@
             ]
         },
         {
+            "name": "unregstake",
+            "base": "",
+            "fields": [
+                {
+                    "name": "default_stake",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
             "name": "unstake",
             "base": "",
             "fields": [
@@ -449,6 +459,13 @@
         {
             "name": "parameters",
             "type": "parameter",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "stake",
+            "type": "unregstake",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

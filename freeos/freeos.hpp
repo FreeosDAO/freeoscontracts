@@ -325,6 +325,16 @@ enum registration_status{ registered_already,
 
          using user_singleton = eosio::singleton<"usercount"_n, count>;
 
+
+         // the unregistered user stake requirement
+         struct [[eosio::table]] unregstake {
+           asset    default_stake;
+
+           uint64_t primary_key() const { return 0; }
+         };
+
+         using stake_index = eosio::multi_index<"stake"_n, unregstake>;
+
          // ********************************
 
          // parameter table
@@ -401,6 +411,7 @@ enum registration_status{ registered_already,
          bool eligible_to_claim(const name& claimant, week this_week);
          uint32_t updateclaimeventcount();
          uint16_t getfreedaomultiplier(uint32_t claimevents);
+         void store_unregistered_stake(asset next_user_stake_requirement);
 
    };
    /** @}*/ // end of @defgroup freeos freeos contract
