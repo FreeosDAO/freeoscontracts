@@ -151,9 +151,19 @@ void freeos::maintain(std::string option) {
   if (option == "initialise") {
       // initialise the default stake value
 
-      // the default stake is calculated below
-      asset next_user_stake_requirement = asset(DEFAULT_STAKE * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+      // get the value from the config 'stakereqs' table
+      stakereq_index stakereqs(name(freeosconfig_acct), name(freeosconfig_acct).value);
+      // get the stake-requirements record for threshold 0
+      auto sr = stakereqs.find(0);
+      if (sr == stakereqs.end()) {
+        print("the stake requirements table does not have a record for threshold 0");
+        return;
+      }
 
+      // the default stake is calculated below
+      uint32_t req = sr->requirement_e;
+      asset next_user_stake_requirement = asset(req * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+      
       stake_index stake_table(get_self(), get_self().value);
       auto stake = stake_table.find( 0 ); // using 0 because this is a single row table
 
@@ -168,10 +178,6 @@ void freeos::maintain(std::string option) {
       }
 
       print("default stake set to ", next_user_stake_requirement.to_string());
-
-  } else {
-    print("parameter option should be increment, reset, remove, initialise");
-    return;
   }
 
 }
@@ -648,7 +654,7 @@ uint32_t freeos::getthreshold(uint32_t numusers, std::string account_type) {
   stakereq_index stakereqs(name(freeosconfig_acct), name(freeosconfig_acct).value);
   auto iterator = stakereqs.end();
 
-  // find which band to apply
+  // find which band to apply - iterate from the end of the table upwards until the matching threshold is found
   do {
     iterator--;
     if (numusers >= iterator->threshold) break;

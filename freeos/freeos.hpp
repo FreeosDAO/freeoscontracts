@@ -330,7 +330,7 @@ enum registration_status{ registered_already,
          struct [[eosio::table]] unregstake {
            asset    default_stake;
 
-           uint64_t primary_key() const { return 0; }
+           uint64_t primary_key() const { return 0; } // return a constant (0 in this case) to ensure a single-row table
          };
 
          using stake_index = eosio::multi_index<"stake"_n, unregstake>;
