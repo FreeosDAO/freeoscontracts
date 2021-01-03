@@ -191,6 +191,20 @@
             ]
         },
         {
+            "name": "price",
+            "base": "",
+            "fields": [
+                {
+                    "name": "currentprice",
+                    "type": "float64"
+                },
+                {
+                    "name": "targetprice",
+                    "type": "float64"
+                }
+            ]
+        },
+        {
             "name": "reguser",
             "base": "",
             "fields": [
@@ -243,6 +257,11 @@
                     "type": "uint32"
                 }
             ]
+        },
+        {
+            "name": "tick",
+            "base": "",
+            "fields": []
         },
         {
             "name": "transfer",
@@ -419,6 +438,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "tick",
+            "type": "tick",
+            "ricardian_contract": ""
+        },
+        {
             "name": "transfer",
             "type": "transfer",
             "ricardian_contract": ""
@@ -452,6 +476,13 @@
         {
             "name": "count",
             "type": "count",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "exchangerate",
+            "type": "price",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

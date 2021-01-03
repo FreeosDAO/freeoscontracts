@@ -4,6 +4,16 @@
     "types": [],
     "structs": [
         {
+            "name": "currentrate",
+            "base": "",
+            "fields": [
+                {
+                    "name": "price",
+                    "type": "float64"
+                }
+            ]
+        },
+        {
             "name": "getconfig",
             "base": "",
             "fields": [
@@ -88,6 +98,25 @@
             ]
         },
         {
+            "name": "price",
+            "base": "",
+            "fields": [
+                {
+                    "name": "currentprice",
+                    "type": "float64"
+                },
+                {
+                    "name": "targetprice",
+                    "type": "float64"
+                }
+            ]
+        },
+        {
+            "name": "rateerase",
+            "base": "",
+            "fields": []
+        },
+        {
             "name": "stakeerase",
             "base": "",
             "fields": [
@@ -146,6 +175,16 @@
                 {
                     "name": "value_x",
                     "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "targetrate",
+            "base": "",
+            "fields": [
+                {
+                    "name": "price",
+                    "type": "float64"
                 }
             ]
         },
@@ -222,6 +261,11 @@
     ],
     "actions": [
         {
+            "name": "currentrate",
+            "type": "currentrate",
+            "ricardian_contract": ""
+        },
+        {
             "name": "getconfig",
             "type": "getconfig",
             "ricardian_contract": ""
@@ -247,6 +291,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "rateerase",
+            "type": "rateerase",
+            "ricardian_contract": ""
+        },
+        {
             "name": "stakeerase",
             "type": "stakeerase",
             "ricardian_contract": ""
@@ -254,6 +303,11 @@
         {
             "name": "stakeupsert",
             "type": "stakeupsert",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "targetrate",
+            "type": "targetrate",
             "ricardian_contract": ""
         },
         {
@@ -268,6 +322,13 @@
         }
     ],
     "tables": [
+        {
+            "name": "exchangerate",
+            "type": "price",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
         {
             "name": "parameters",
             "type": "parameter",

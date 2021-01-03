@@ -38,6 +38,14 @@ enum registration_status{ registered_already,
          [[eosio::action]]
          void version();
 
+         /**
+          * tick action.
+          *
+          * @details Triggers scheduled actions.
+          */
+         [[eosio::action]]
+         void tick();
+
 
          /**
           * reguser action.
@@ -334,6 +342,17 @@ enum registration_status{ registered_already,
          };
 
          using stake_index = eosio::multi_index<"stake"_n, unregstake>;
+
+
+         // FREEOS USD-price - code: freeosconfig, scope: freeosconfig
+         struct [[eosio::table]] price {
+           double    currentprice;
+           double    targetprice;
+
+           uint64_t primary_key() const { return 0; } // return a constant (0 in this case) to ensure a single-row table
+         };
+
+         using exchange_index = eosio::multi_index<"exchangerate"_n, price>;
 
          // ********************************
 

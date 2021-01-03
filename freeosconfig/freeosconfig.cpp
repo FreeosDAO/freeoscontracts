@@ -51,6 +51,70 @@ void freeosconfig::paramerase ( name paramname ) {
 }
 
 
+[[eosio::action]]
+void freeosconfig::currentrate(
+        double price
+        ) {
+
+    require_auth(_self);
+    exchange_index rate(get_self(), get_self().value);
+    auto iterator = rate.begin();
+
+    // check if the rate exists in the table
+    if (iterator == rate.end() ) {
+        // the rate is not in the table, so insert
+        rate.emplace(_self, [&](auto & row) {  // first argument was "freeosconfig"_n
+           row.currentprice = price;
+        });
+
+    } else {
+        // the rate is in the table, so update
+        rate.modify(iterator, _self, [&](auto& row) {   // second argument was "freeosconfig"_n
+          row.currentprice = price;
+        });
+    }
+}
+
+[[eosio::action]]
+void freeosconfig::targetrate(
+        double price
+        ) {
+
+    require_auth(_self);
+    exchange_index rate(get_self(), get_self().value);
+    auto iterator = rate.begin();
+
+    // check if the rate exists in the table
+    if (iterator == rate.end() ) {
+        // the rate is not in the table, so insert
+        rate.emplace(_self, [&](auto & row) {  // first argument was "freeosconfig"_n
+           row.targetprice = price;
+        });
+
+    } else {
+        // the rate is in the table, so update
+        rate.modify(iterator, _self, [&](auto& row) {   // second argument was "freeosconfig"_n
+          row.targetprice = price;
+        });
+    }
+}
+
+// erase rate from the table
+[[eosio::action]]
+void freeosconfig::rateerase () {
+    require_auth(_self);
+
+    exchange_index rate(get_self(), get_self().value);
+    auto iterator = rate.begin();
+
+    // check if the rate is in the table
+    check(iterator != rate.end(), "rate record does not exist");
+
+    // the rate record is in the table, so delete
+    rate.erase(iterator);
+}
+
+
 // stake requirements table actions
 
 [[eosio::action]]

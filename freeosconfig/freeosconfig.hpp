@@ -128,6 +128,40 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
     void weekerase(uint64_t week_number);
 
     /**
+     * currentrate action.
+     *
+     * @details This action creates a new record, or modifies the existing (single) record, in the 'exchangerate' table. Sets the usdprice field.
+     *
+     * @param price - the current US Dollar price for 1 FREEOS
+     *
+     * @pre requires permission of the contract account
+     */
+    [[eosio::action]]
+    void currentrate(double price);
+
+    /**
+     * targetrate action.
+     *
+     * @details This action creates a new record, or modifies the existing (single) record, in the 'exchangerate' table. Sets the targetrate field.
+     *
+     * @param price - the target US Dollar price for 1 FREEOS
+     *
+     * @pre requires permission of the contract account
+     */
+    [[eosio::action]]
+    void targetrate(double price);
+
+    /**
+     * rateerase action.
+     *
+     * @details This action deletes the (single) record from the 'exchangerate' table.
+     *
+     * @pre requires permission of the contract account
+     */
+    [[eosio::action]]
+    void rateerase();
+
+    /**
      * getconfig action.
      *
      * @details This action is intended for testers. It displays the values associated with the threshold in the 'stakereqs' table and the parameter in the 'parameters' table.
@@ -200,6 +234,16 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
     };
 
     using week_index = eosio::multi_index<"weeks"_n, week>;
+
+    // FREEOS USD-price - code: freeosconfig, scope: freeosconfig
+    struct [[eosio::table]] price {
+      double    currentprice;
+      double    targetprice;
+
+      uint64_t primary_key() const { return 0; } // return a constant (0 in this case) to ensure a single-row table
+    };
+
+    using exchange_index = eosio::multi_index<"exchangerate"_n, price>;
 
     // ************************************
 

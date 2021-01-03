@@ -5,11 +5,32 @@
 
 using namespace eosio;
 
-const std::string VERSION = "0.2";
+const std::string VERSION = "0.2h";
 
 [[eosio::action]]
 void freeos::version() {
   print("Version = ", VERSION);
+}
+
+
+[[eosio::action]]
+void freeos::tick() {
+
+  require_auth(permission_level("freeosticker"_n, "active"_n));
+
+  // user to receive the FREEOS
+  // std::string to = "alanappleton";
+
+  asset one_tick = asset(1, symbol("FREEOS",4));
+
+  action transfer = action(
+    permission_level{get_self(),"active"_n},
+    name(freeos_acct),
+    "transfer"_n,
+    std::make_tuple(get_self(), "alanappleton"_n, one_tick, std::string("tick test transfer"))
+  );
+
+  transfer.send();
 }
 
 
@@ -163,7 +184,7 @@ void freeos::maintain(std::string option) {
       // the default stake is calculated below
       uint32_t req = sr->requirement_e;
       asset next_user_stake_requirement = asset(req * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-      
+
       stake_index stake_table(get_self(), get_self().value);
       auto stake = stake_table.find( 0 ); // using 0 because this is a single row table
 
@@ -401,7 +422,7 @@ void freeos::transfer( const name&    from,
     check( is_account( to ), "to account does not exist");
 
     // AIRKEY tokens are non-transferable, except by the freeostokens account
-    check(!(quantity.symbol.code().to_string().compare("AIRKEY") != 0 && from != name(freeos_acct)), "AIRKEY tokens are non-transferable");
+    check(quantity.symbol.code().to_string().compare("AIRKEY") != 0 || from == name(freeos_acct), "AIRKEY tokens are non-transferable");
 
     auto sym = quantity.symbol.code();
     stats statstable( get_self(), sym.raw() );
