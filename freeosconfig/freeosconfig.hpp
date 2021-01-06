@@ -18,7 +18,14 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
      */
     freeosconfig(name receiver, name code, datastream<const char*> ds):contract(receiver, code, ds) {}
 
-
+    /**
+     * version action.
+     *
+     * @details Prints the version of this contract.
+     */
+    [[eosio::action]]
+    void version();
+    
     /**
      * paramupsert action
      *

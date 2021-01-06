@@ -431,6 +431,7 @@ enum registration_status{ registered_already,
          uint32_t updateclaimeventcount();
          uint16_t getfreedaomultiplier(uint32_t claimevents);
          void store_unregistered_stake(asset next_user_stake_requirement);
+         float get_vested_proportion();
 
    };
    /** @}*/ // end of @defgroup freeos freeos contract

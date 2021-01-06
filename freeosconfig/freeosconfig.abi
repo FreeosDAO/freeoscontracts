@@ -189,6 +189,11 @@
             ]
         },
         {
+            "name": "version",
+            "base": "",
+            "fields": []
+        },
+        {
             "name": "week",
             "base": "",
             "fields": [
@@ -308,6 +313,11 @@
         {
             "name": "targetrate",
             "type": "targetrate",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "version",
+            "type": "version",
             "ricardian_contract": ""
         },
         {

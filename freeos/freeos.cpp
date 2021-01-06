@@ -5,7 +5,7 @@
 
 using namespace eosio;
 
-const std::string VERSION = "0.2h";
+const std::string VERSION = "0.3a";
 
 [[eosio::action]]
 void freeos::version() {
@@ -199,6 +199,16 @@ void freeos::maintain(std::string option) {
       }
 
       print("default stake set to ", next_user_stake_requirement.to_string());
+  }
+
+  if (option == "vested") {
+      float vested_proportion = get_vested_proportion();
+
+      uint16_t claim_amount = 100;
+      uint16_t vested_amount = claim_amount * 0.009f;
+
+      print("vested amount is ", vested_amount);
+      return;
   }
 
 }
@@ -581,7 +591,7 @@ void freeos::claim( const name& user )
    // check user eligibility to claim
    if (!eligible_to_claim(user, this_week)) return;
 
-   // update the claim-event counter
+   // update the number of claimevents
    uint32_t claim_event_count = updateclaimeventcount();
 
    // get freedao multiplier
@@ -589,9 +599,25 @@ void freeos::claim( const name& user )
 
 
    // calculate amounts to be transferred to user and FreeDAO
-   asset claim_amount = asset(this_week.claim_amount * 10000, symbol("FREEOS",4));
-   asset freedao_amount = claim_amount * freedao_multiplier;
-   asset total_amount = claim_amount + freedao_amount;
+   // first get the proportion that is vested
+   float vested_proportion = get_vested_proportion();
+
+   // work out the vested proportion and liquid proportion of FREEOS to be claimed
+   uint16_t claim_tokens = this_week.claim_amount;
+   asset claim_amount = asset(claim_tokens * 10000, symbol("FREEOS",4));
+
+   uint16_t vested_tokens = claim_tokens * vested_proportion;
+   asset vested_amount = asset(vested_tokens * 10000, symbol("FREEOS",4));
+
+   uint16_t liquid_tokens = claim_tokens - vested_tokens;
+   asset liquid_amount = asset(liquid_tokens * 10000, symbol("FREEOS",4));
+
+   uint16_t freedao_tokens = claim_tokens * freedao_multiplier;
+   asset freedao_amount = asset(freedao_tokens * 10000, symbol("FREEOS",4));
+
+   uint16_t minted_tokens = liquid_tokens + freedao_tokens;
+   asset minted_amount = asset(minted_tokens * 10000, symbol("FREEOS",4));
+
 
    // prepare the memo string
    std::string memo = std::string("claim by ") + user.to_string();
@@ -604,27 +630,27 @@ void freeos::claim( const name& user )
    const auto& st = *currency_record;
 
    statstable.modify( st, same_payer, [&]( auto& s ) {
-      s.conditional_supply += total_amount;
+      s.conditional_supply += minted_amount;
    });
 
 
-   // Issue the required total amount to the freeos account
+   // Issue the required minted amount to the freeos account
    action issue_action = action(
      permission_level{get_self(),"active"_n},
      name(freeos_acct),
      "issue"_n,
-     std::make_tuple(get_self(), total_amount, memo)
+     std::make_tuple(get_self(), minted_amount, memo)
    );
 
    issue_action.send();
 
 
-   // transfer FREEOS to user
+   // transfer liquid FREEOS to user
    action user_transfer = action(
      permission_level{get_self(),"active"_n},
      name(freeos_acct),
      "transfer"_n,
-     std::make_tuple(get_self(), user, claim_amount, memo)
+     std::make_tuple(get_self(), user, liquid_amount, memo)
    );
 
    user_transfer.send();
@@ -641,6 +667,22 @@ void freeos::claim( const name& user )
    freedao_transfer.send();
 
 
+   // update the user's vested FREEOS balance
+   if (liquid_tokens > 0) {
+     vestaccounts to_acnts( get_self(), user.value );
+     auto to = to_acnts.find( vested_amount.symbol.code().raw() );
+     if( to == to_acnts.end() ) {
+        to_acnts.emplace(get_self(), [&]( auto& a ){
+          a.balance = vested_amount;
+        });
+     } else {
+        to_acnts.modify(to, same_payer, [&]( auto& a ) {
+          a.balance += vested_amount;
+        });
+     }
+   }
+
+
    // write the claim event to the claim history table
    claim_index claims(get_self(), user.value);
    auto iterator = claims.find(this_week.week_number);
@@ -653,6 +695,29 @@ void freeos::claim( const name& user )
 
 }
 
+
+float freeos::get_vested_proportion() {
+  // default rate if exchange rate record not found, or if current price >= target price (so no need to vest)
+  float proportion = 0.0f;
+
+  exchange_index rate(name(freeosconfig_acct), name(freeosconfig_acct).value);
+
+  // there is a single record so we can position iterator on first record
+  auto iterator = rate.begin();
+
+  // if the exchange rate exists in the table
+  if (iterator != rate.end() ) {
+      // get current and target rates
+      double currentprice = iterator->currentprice;
+      double targetprice = iterator->targetprice;
+
+      if (targetprice > 0 && currentprice < targetprice) {
+        proportion = 1.0f - (currentprice / targetprice);
+      }
+  }
+
+  return proportion;
+}
 
 void freeos::getcounts() {
   user_singleton user_counter(get_self(), get_self().value);

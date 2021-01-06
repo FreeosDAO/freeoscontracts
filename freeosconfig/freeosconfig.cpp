@@ -5,6 +5,13 @@
 
 using namespace eosio;
 
+const std::string VERSION = "0.1";
+
+[[eosio::action]]
+void freeosconfig::version() {
+  print("Version = ", VERSION);
+}
+
 [[eosio::action]]
 void freeosconfig::paramupsert(
         name virtualtable,
