@@ -46,6 +46,30 @@ enum registration_status{ registered_already,
          [[eosio::action]]
          void tick();
 
+         /**
+          * hourly action.
+          *
+          * @details Triggers hourly scheduled actions.
+          */
+         [[eosio::action]]
+         void hourly();
+
+         /**
+          * daily action.
+          *
+          * @details Triggers daily scheduled actions.
+          */
+         [[eosio::action]]
+         void daily();
+
+         /**
+          * weekly action.
+          *
+          * @details Triggers weekly scheduled actions.
+          */
+         [[eosio::action]]
+         void weekly();
+
 
          /**
           * reguser action.
@@ -283,11 +307,29 @@ enum registration_status{ registered_already,
          using close_action = eosio::action_wrapper<"close"_n, &freeos::close>;
 
       private:
+
+         // record of last time timed processes were run - there is one record hence zero is returned as primary_key
+         struct [[eosio::table]] ticker {
+            time_point_sec  tickly;
+            time_point_sec  hourly;
+            time_point_sec  daily;
+            time_point_sec  weekly;
+
+            uint64_t primary_key()const { return 0; }
+         };
+
+         typedef eosio::multi_index< "tickers"_n, ticker > tickers;
+
+
+         // asset ledger
          struct [[eosio::table]] account {
             asset    balance;
 
             uint64_t primary_key()const { return balance.symbol.code().raw(); }
          };
+
+         typedef eosio::multi_index< "accounts"_n, account > accounts;
+
 
          // maintains balance of 'vested' FREEOS
          struct [[eosio::table]] vestaccount {
@@ -295,6 +337,9 @@ enum registration_status{ registered_already,
 
             uint64_t primary_key()const { return balance.symbol.code().raw(); }
          };
+
+         typedef eosio::multi_index< "vestaccounts"_n, vestaccount > vestaccounts;
+
 
          struct [[eosio::table]] currency_stats {
             asset    supply;
@@ -305,8 +350,6 @@ enum registration_status{ registered_already,
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
          };
 
-         typedef eosio::multi_index< "accounts"_n, account > accounts;
-         typedef eosio::multi_index< "vestaccounts"_n, vestaccount > vestaccounts;
          typedef eosio::multi_index< "stat"_n, currency_stats > stats;
 
          // ********************************
@@ -329,6 +372,8 @@ enum registration_status{ registered_already,
          struct [[eosio::table]] count {
            uint32_t  count;
            uint32_t  claimevents;
+           uint32_t  unvestweek;
+           float     unvestpercent;
          } ct;
 
          using user_singleton = eosio::singleton<"usercount"_n, count>;

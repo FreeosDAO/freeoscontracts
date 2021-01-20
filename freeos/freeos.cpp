@@ -5,7 +5,7 @@
 
 using namespace eosio;
 
-const std::string VERSION = "0.3a";
+const std::string VERSION = "0.300b XPR";
 
 [[eosio::action]]
 void freeos::version() {
@@ -18,8 +18,7 @@ void freeos::tick() {
 
   require_auth(permission_level("freeosticker"_n, "active"_n));
 
-  // user to receive the FREEOS
-  // std::string to = "alanappleton";
+  // THIS IS TEST CODE - TO BE REMOVED BEFORE DEPLOYMENT
 
   asset one_tick = asset(1, symbol("FREEOS",4));
 
@@ -31,6 +30,32 @@ void freeos::tick() {
   );
 
   transfer.send();
+
+}
+
+
+// action to run every hour
+[[eosio::action]]
+void freeos::hourly() {
+
+  require_auth(permission_level("freeosticker"_n, "active"_n));
+
+}
+
+// action to run every day
+[[eosio::action]]
+void freeos::daily() {
+
+  require_auth(permission_level("freeosticker"_n, "active"_n));
+
+}
+
+// action to run every week
+[[eosio::action]]
+void freeos::weekly() {
+
+  require_auth(permission_level("freeosticker"_n, "active"_n));
+
 }
 
 
@@ -153,13 +178,30 @@ void freeos::store_unregistered_stake(asset next_user_stake_requirement) {
 void freeos::maintain(std::string option) {
   require_auth( get_self() );
 
-  /*
-  user_singleton user_counter(get_self(), get_self().value);  // owner was originally get_self()
-  if (!user_counter.exists()) {
-    user_counter.get_or_create(get_self(), ct);
-  }
-  auto entry = user_counter.get();
+  if (option == "counter remove") {
+    user_singleton user_counter(get_self(), get_self().value);  // owner was originally get_self()
+    if (!user_counter.exists()) {
+      user_counter.get_or_create(get_self(), ct);
+    }
 
+    user_counter.remove();
+  }
+
+  if (option == "counter initialise") {
+    user_singleton user_counter(get_self(), get_self().value);  // owner was originally get_self()
+    if (!user_counter.exists()) {
+      user_counter.get_or_create(get_self(), ct);
+    }
+
+    auto entry = user_counter.get();
+    entry.count = 1;
+    entry.claimevents = 1;
+    entry.unvestweek = 0;
+
+    user_counter.set(entry, get_self());
+  }
+
+  /*
   if (option == "increment") {
       entry.count += 1;
   } else if (option == "reset") {
@@ -723,7 +765,7 @@ void freeos::getcounts() {
   user_singleton user_counter(get_self(), get_self().value);
   if (user_counter.exists()) {
     auto entry = user_counter.get();
-    print("users registered: ", entry.count, ", claim events: ", entry.claimevents);
+    print("users registered: ", entry.count, ", claim events: ", entry.claimevents, " unvest week: ", entry.unvestweek);
   } else {
     print("the count singleton has not been initialised");
   }

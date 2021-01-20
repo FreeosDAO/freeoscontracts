@@ -59,11 +59,10 @@ void freeosconfig::paramerase ( name paramname ) {
 
 
 [[eosio::action]]
-void freeosconfig::currentrate(
-        double price
-        ) {
+void freeosconfig::currentrate(double price) {
 
     require_auth(_self);
+    
     exchange_index rate(get_self(), get_self().value);
     auto iterator = rate.begin();
 
@@ -83,11 +82,10 @@ void freeosconfig::currentrate(
 }
 
 [[eosio::action]]
-void freeosconfig::targetrate(
-        double price
-        ) {
+void freeosconfig::targetrate(double price) {
 
     require_auth(_self);
+
     exchange_index rate(get_self(), get_self().value);
     auto iterator = rate.begin();
 
