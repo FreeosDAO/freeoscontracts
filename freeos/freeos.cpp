@@ -5,7 +5,11 @@
 
 using namespace eosio;
 
-const std::string VERSION = "0.300b XPR";
+// versions
+// 301 - with vestaccounts migration to userext_table
+// 302 - changed schema of usercount table
+
+const std::string VERSION = "0.302b XPR";
 
 [[eosio::action]]
 void freeos::version() {
@@ -129,10 +133,10 @@ registration_status freeos::register_user(const name& user, const std::string ac
     user_counter.get_or_create(get_self(), ct);
   }
   auto entry = user_counter.get();
-  entry.count += 1;   // new user number
+  entry.usercount += 1;   // new user number
 
   // get the required stake for the user number
-  uint32_t stake = getthreshold(entry.count, account_type);
+  uint32_t stake = getthreshold(entry.usercount, account_type);
   asset stake_requirement = asset(stake * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
 
   // register the user
@@ -144,11 +148,22 @@ registration_status freeos::register_user(const name& user, const std::string ac
     u.staked_time = time_point_sec(0);
     });
 
+   // add the user to the user extension table
+   userext_index usr_ext_table( get_self(), get_self().value );
+   auto usr = usr_ext_table.find( user.value );
+   if( usr == usr_ext_table.end() ) {
+      usr_ext_table.emplace(get_self(), [&]( auto& u ){
+        u.user = user;
+        u.vested = asset(0, symbol("FREEOS",4));
+      });
+   }
+
+
    // update number of users in record_count singleton
    user_counter.set(entry, get_self());
 
    // set the stake requirement for an unregistered user i.e. a user who has not staked or claimed and therefore does not have a user record
-   uint32_t next_user_stake = getthreshold(entry.count + 1, account_type);  // using count+1 to calculate for the next user
+   uint32_t next_user_stake = getthreshold(entry.usercount + 1, account_type);  // using usercount+1 to calculate for the next user
    asset next_user_stake_requirement = asset(next_user_stake * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
    store_unregistered_stake(next_user_stake_requirement);
 
@@ -194,18 +209,72 @@ void freeos::maintain(std::string option) {
     }
 
     auto entry = user_counter.get();
-    entry.count = 1;
-    entry.claimevents = 1;
+    entry.usercount = 6;
+    entry.claimevents = 4;
     entry.unvestweek = 0;
 
     user_counter.set(entry, get_self());
   }
 
+  /* OBSOLETE
+  if (option == "migrate vested") {
+    symbol freeos = symbol("FREEOS",4);
+
+    userext_index userext_table(get_self(), get_self().value);
+    name thisuser = ""_n;
+
+    // array of users
+    name candidates[5] = {"alanappleton"_n, "billbeaumont"_n, "dennisedolan"_n, "ethanedwards"_n, "frankyfellon"_n};
+
+    for(int i = 0; i < 5; i++) {
+      thisuser = candidates[i];
+
+      vestaccounts to_acnts( get_self(), thisuser.value );
+      auto to = to_acnts.find( freeos.code().raw() );
+      if( to != to_acnts.end() ) {
+         userext_table.emplace(get_self(), [&]( auto& a ){
+           a.user = thisuser;
+           a.vested = asset(to->balance);
+         });
+
+         // erase the user record from vestaccounts
+         to_acnts.erase(to);
+       }
+    }
+
+  }
+
+  if (option == "set vested values") {
+    userext_index userext_table(get_self(), get_self().value);
+
+    // ethanedwards
+    name thisuser = "ethanedwards"_n;
+
+    auto u = userext_table.find(thisuser.value);
+    if (u != userext_table.end()) {
+      userext_table.modify(u, same_payer, [&]( auto& a ) {
+        a.vested = asset(210 * 10000, symbol("FREEOS",4));
+      });
+    }
+
+    // frankyfellon
+    thisuser = "frankyfellon"_n;
+
+    auto v = userext_table.find(thisuser.value);
+    if (v != userext_table.end()) {
+      userext_table.modify(v, same_payer, [&]( auto& a ) {
+        a.vested = asset(40 * 10000, symbol("FREEOS",4));
+      });
+    }
+  }
+  */
+
+
   /*
   if (option == "increment") {
-      entry.count += 1;
+      entry.usercount += 1;
   } else if (option == "reset") {
-      entry.count = 1;
+      entry.usercount = 1;
   } else if (option == "remove") {
       user_counter.remove();
       return;
@@ -275,7 +344,7 @@ void freeos::dereg(const name& user) {
         user_counter.get_or_create(get_self(), ct);
       }
       auto entry = user_counter.get();
-      entry.count -= 1;
+      entry.usercount -= 1;
       user_counter.set(entry, get_self());
     } else {
       print("account ", user, " has staked amount and cannot be deregistered");
@@ -711,15 +780,16 @@ void freeos::claim( const name& user )
 
    // update the user's vested FREEOS balance
    if (liquid_tokens > 0) {
-     vestaccounts to_acnts( get_self(), user.value );
-     auto to = to_acnts.find( vested_amount.symbol.code().raw() );
+     userext_index to_acnts( get_self(), get_self().value );
+     auto to = to_acnts.find( user.value );
      if( to == to_acnts.end() ) {
-        to_acnts.emplace(get_self(), [&]( auto& a ){
-          a.balance = vested_amount;
+        to_acnts.emplace(get_self(), [&]( auto& u ){
+          u.user = user;
+          u.vested = vested_amount;
         });
      } else {
-        to_acnts.modify(to, same_payer, [&]( auto& a ) {
-          a.balance += vested_amount;
+        to_acnts.modify(to, same_payer, [&]( auto& u ) {
+          u.vested += vested_amount;
         });
      }
    }
@@ -765,7 +835,7 @@ void freeos::getcounts() {
   user_singleton user_counter(get_self(), get_self().value);
   if (user_counter.exists()) {
     auto entry = user_counter.get();
-    print("users registered: ", entry.count, ", claim events: ", entry.claimevents, " unvest week: ", entry.unvestweek);
+    print("users registered: ", entry.usercount, ", claim events: ", entry.claimevents, " unvest week: ", entry.unvestweek);
   } else {
     print("the count singleton has not been initialised");
   }

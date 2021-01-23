@@ -331,7 +331,7 @@ enum registration_status{ registered_already,
          typedef eosio::multi_index< "accounts"_n, account > accounts;
 
 
-         // maintains balance of 'vested' FREEOS
+         /* OBSOLETE -maintains balance of 'vested' FREEOS
          struct [[eosio::table]] vestaccount {
             asset    balance;
 
@@ -339,6 +339,7 @@ enum registration_status{ registered_already,
          };
 
          typedef eosio::multi_index< "vestaccounts"_n, vestaccount > vestaccounts;
+         */
 
 
          struct [[eosio::table]] currency_stats {
@@ -370,10 +371,9 @@ enum registration_status{ registered_already,
 
          // the record counter table
          struct [[eosio::table]] count {
-           uint32_t  count;
+           uint32_t  usercount;
            uint32_t  claimevents;
            uint32_t  unvestweek;
-           float     unvestpercent;
          } ct;
 
          using user_singleton = eosio::singleton<"usercount"_n, count>;
@@ -458,6 +458,18 @@ enum registration_status{ registered_already,
          };
 
          using claim_index = eosio::multi_index<"claims"_n, claimevent>;
+
+
+         // userext (user extension) table - for processing all users - contract scoped
+         struct [[eosio::table]] userext {
+           name   user;
+           asset  vested;
+
+           uint64_t primary_key() const { return user.value;}
+         };
+
+         using userext_index = eosio::multi_index<"userext"_n, userext>;
+
 
          // ********************************
 

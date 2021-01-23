@@ -56,7 +56,7 @@
             "base": "",
             "fields": [
                 {
-                    "name": "count",
+                    "name": "usercount",
                     "type": "uint32"
                 },
                 {
@@ -66,10 +66,6 @@
                 {
                     "name": "unvestweek",
                     "type": "uint32"
-                },
-                {
-                    "name": "unvestpercent",
-                    "type": "float32"
                 }
             ]
         },
@@ -372,19 +368,23 @@
             ]
         },
         {
-            "name": "version",
-            "base": "",
-            "fields": []
-        },
-        {
-            "name": "vestaccount",
+            "name": "userext",
             "base": "",
             "fields": [
                 {
-                    "name": "balance",
+                    "name": "user",
+                    "type": "name"
+                },
+                {
+                    "name": "vested",
                     "type": "asset"
                 }
             ]
+        },
+        {
+            "name": "version",
+            "base": "",
+            "fields": []
         },
         {
             "name": "week",
@@ -583,15 +583,15 @@
             "key_types": []
         },
         {
-            "name": "users",
-            "type": "user",
+            "name": "userext",
+            "type": "userext",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "vestaccounts",
-            "type": "vestaccount",
+            "name": "users",
+            "type": "user",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
