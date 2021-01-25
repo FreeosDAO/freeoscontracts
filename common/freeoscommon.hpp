@@ -4,7 +4,7 @@
 // account names
 const std::string freeos_acct = "freeos333333";
 const std::string freeosconfig_acct = "freeosconfig";
-const std::string freedao_acct = "fredivregist";
+const std::string freedao_acct = "freeosdivide";
 
 // currency symbol for network
 const std::string CURRENCY_SYMBOL_CODE = "XPR";
