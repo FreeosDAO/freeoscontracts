@@ -16,6 +16,17 @@ enum registration_status{ registered_already,
                           registered_success,
                           };
 
+const std::string HOURLY = "hourly";
+const std::string DAILY  = "daily";
+const std::string WEEKLY = "weekly";
+
+// ??? test figures
+const uint32_t  HOUR_SECONDS  = 50;
+const uint32_t  DAY_SECONDS   = 100;
+const uint32_t  WEEK_SECONDS  = 300;
+// const uint32_t  SCHEDULE_TOLERANCE = 3;     // schedule tolerance in seconds - required because a previous tick may have been late
+
+
    /**
     * @defgroup freeos freeos contract
     * @ingroup eosiocontracts
@@ -39,6 +50,20 @@ enum registration_status{ registered_already,
          void version();
 
          /**
+          * runscheduled action.
+          *
+          * @details Explicitly run a scheduled process.
+          * @param process_specifier - hourly, daily or weekly
+          * @param schedule_override - true forces the process to run regardless of scheduled times.
+          *
+          * @pre Requires permission of the freeosticker account
+          *
+          */
+         [[eosio::action]]
+         void runscheduled(std::string process_specifier, bool schedule_override);
+
+
+         /**
           * tick action.
           *
           * @details Triggers scheduled actions.
@@ -46,29 +71,14 @@ enum registration_status{ registered_already,
          [[eosio::action]]
          void tick();
 
-         /**
-          * hourly action.
-          *
-          * @details Triggers hourly scheduled actions.
-          */
-         [[eosio::action]]
-         void hourly();
 
          /**
-          * daily action.
+          * clearlog action.
           *
-          * @details Triggers daily scheduled actions.
+          * @details clears schedulelog table.
           */
          [[eosio::action]]
-         void daily();
-
-         /**
-          * weekly action.
-          *
-          * @details Triggers weekly scheduled actions.
-          */
-         [[eosio::action]]
-         void weekly();
+         void clearlog();
 
 
          /**
@@ -308,18 +318,6 @@ enum registration_status{ registered_already,
 
       private:
 
-         // record of last time timed processes were run - there is one record hence zero is returned as primary_key
-         struct [[eosio::table]] ticker {
-            time_point_sec  tickly;
-            time_point_sec  hourly;
-            time_point_sec  daily;
-            time_point_sec  weekly;
-
-            uint64_t primary_key()const { return 0; }
-         };
-
-         typedef eosio::multi_index< "tickers"_n, ticker > tickers;
-
 
          // asset ledger
          struct [[eosio::table]] account {
@@ -471,6 +469,30 @@ enum registration_status{ registered_already,
          using userext_index = eosio::multi_index<"userext"_n, userext>;
 
 
+         // record of last time timed processes were run - there is one record hence zero is returned as primary_key
+         struct [[eosio::table]] ticker {
+            uint32_t  tickly;
+            uint32_t  hourly;
+            uint32_t  daily;
+            uint32_t  weekly;
+
+            uint64_t primary_key()const { return 0; }
+         };
+
+         typedef eosio::multi_index< "tickers"_n, ticker > tickers;
+
+
+         // schedulelog - recording scheduled task runs
+         struct [[eosio::table]] schedulelog {
+           std::string        task;
+           uint64_t           time;
+
+           uint64_t primary_key() const { return time;}
+         };
+
+         using schedulelog_index = eosio::multi_index<"schedulelog"_n, schedulelog>;
+
+
          // ********************************
 
          void sub_balance( const name& owner, const asset& value );
@@ -489,6 +511,10 @@ enum registration_status{ registered_already,
          uint16_t getfreedaomultiplier(uint32_t claimevents);
          void store_unregistered_stake(asset next_user_stake_requirement);
          float get_vested_proportion();
+         void tick_process();
+         void hourly_process();
+         void daily_process();
+         void weekly_process();
 
    };
    /** @}*/ // end of @defgroup freeos freeos contract

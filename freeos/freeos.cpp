@@ -8,8 +8,10 @@ using namespace eosio;
 // versions
 // 301 - with vestaccounts migration to userext_table
 // 302 - changed schema of usercount table
+// 303 - with scheduled actions and functions
+// 304 - with (rounded) scheduled actions and functions
 
-const std::string VERSION = "0.302b XPR";
+const std::string VERSION = "0.304 EOS";
 
 [[eosio::action]]
 void freeos::version() {
@@ -20,9 +22,220 @@ void freeos::version() {
 [[eosio::action]]
 void freeos::tick() {
 
+  // flags to indicate if a time period has elapsed - default values
+  bool  hour_elapsed = false;
+  bool  day_elapsed = false;
+  bool  week_elapsed = false;
+
+  // current time
+  uint32_t now = current_time_point().sec_since_epoch();
+
+  // work out if any time periods have elapsed
+  tickers ticks(get_self(), get_self().value);
+  auto iterator = ticks.begin();
+
+  // check if the ticks record exists in the table (there is only one record)
+  if (iterator == ticks.end() ) {
+      // no record in the table, so insert initialised values
+      ticks.emplace(_self, [&](auto & row) {
+         row.tickly = now;
+         row.hourly = 0;
+         row.daily  = 0;
+         row.weekly = 0;
+      });
+
+      return; // do nothing in this 'initialisation' tick
+
+  } else {
+      uint32_t previous_hourly = iterator->hourly;
+      uint32_t previous_daily  = iterator->daily;
+      uint32_t previous_weekly = iterator->weekly;
+
+      // default new values if a period has not been elapsed
+      uint32_t new_hourly = previous_hourly;
+      uint32_t new_daily  = previous_daily;
+      uint32_t new_weekly = previous_weekly;
+
+      // Have we crossed an hourly boundary?
+      if (now >= (previous_hourly + HOUR_SECONDS)) {
+        new_hourly = now - (now % HOUR_SECONDS);  // the earliest time the new hour could have started
+        hour_elapsed = true;
+      }
+
+      // Have we crossed a daily boundary?
+      if (now >= (previous_daily + DAY_SECONDS)) {
+        new_daily = now - (now % DAY_SECONDS);    // the earliest time the new day could have started
+        day_elapsed = true;
+      }
+
+      // Have we crossed a weekly boundary?
+      if (now >= (previous_weekly + WEEK_SECONDS)) {
+        new_weekly = now - (now % WEEK_SECONDS);      // the earliest time the new week could have started
+        week_elapsed = true;
+      }
+
+      // the record is in the table, so update
+      ticks.modify(iterator, _self, [&](auto& row) {
+          row.tickly = now;
+          row.hourly = new_hourly;
+          row.daily  = new_daily;
+          row.weekly = new_weekly;
+      });
+
+      // run the tick process
+      tick_process();
+
+      // run the hourly process
+      if (hour_elapsed == true) {
+        hourly_process();
+      }
+
+      // run the daily process
+      if (day_elapsed == true) {
+        daily_process();
+      }
+
+      // run the weekly process
+      if (week_elapsed == true) {
+        weekly_process();
+      }
+
+    }
+
+}
+
+
+[[eosio::action]]
+void freeos::clearlog() {
+  // clear schedule log
+  schedulelog_index log(get_self(), get_self().value);
+
+  auto iterator = log.begin();
+
+  while (iterator != log.end()) {
+    auto next_iterator = iterator;
+    next_iterator++;
+    log.erase(iterator);
+    iterator = next_iterator;
+  }
+
+  // clear ticker table
+  tickers ticks(get_self(), get_self().value);
+
+  auto itick = ticks.begin();
+
+  while (itick != ticks.end()) {
+    auto next_itick = itick;
+    next_itick++;
+    ticks.erase(itick);
+    itick = next_itick;
+  }
+
+}
+
+
+// These actions allow the scheduled processes to be invoked explicitly by the freeosticker account
+
+// run scheduled process action
+void freeos::runscheduled(std::string process_specifier, bool schedule_override) {
+
   require_auth(permission_level("freeosticker"_n, "active"_n));
 
-  // THIS IS TEST CODE - TO BE REMOVED BEFORE DEPLOYMENT
+  // validate the parameters - prepare error message get_first
+  std::string validation_error_msg = "valid process specifiers are '" + HOURLY + "', '" + DAILY + "', '" + WEEKLY + "'";
+  check(process_specifier == HOURLY || process_specifier == DAILY || process_specifier == WEEKLY, validation_error_msg);
+
+  // get the current time
+  uint32_t now = current_time_point().sec_since_epoch();
+
+  // work out if any time periods have elapsed
+  tickers ticks(get_self(), get_self().value);
+  auto iterator = ticks.begin();
+
+  // check if the ticks record exists in the table (there is only one record)
+  // if the record doesn't exist then create/initialise it and do nothing
+  if (iterator == ticks.end() ) {
+      // no record in the table, so insert initialised values
+      ticks.emplace(_self, [&](auto & row) {
+         row.tickly = now;
+         row.hourly = 0;
+         row.daily  = 0;
+         row.weekly = 0;
+      });
+
+  print("schedule timers have been initialised, process is not yet scheduled to run");
+  return;
+  }
+
+  // get previous run times
+  uint32_t previous_hourly = iterator->hourly;
+  uint32_t previous_daily  = iterator->daily;
+  uint32_t previous_weekly = iterator->weekly;
+
+  // check whether the scheduled process is eligible to run
+  bool process_ran = false;
+
+  // Have we crossed an hourly boundary?
+  if (process_specifier == HOURLY) {
+    if (schedule_override == true || now >= (previous_hourly + HOUR_SECONDS)) {
+      // record the run
+      ticks.modify(iterator, _self, [&](auto& row) {
+          row.hourly = now - (now % HOUR_SECONDS);    // the earliest time the new hour could have started
+      });
+
+      // run the process
+      hourly_process();
+
+      process_ran = true;
+      print("hourly process ran");
+    }
+  }
+
+
+  // Have we crossed a daily boundary?
+  if (process_specifier == DAILY) {
+    if (schedule_override == true || now >= (previous_daily + DAY_SECONDS)) {
+      // record the run
+      ticks.modify(iterator, _self, [&](auto& row) {
+          row.daily  = now - (now % DAY_SECONDS);    // the earliest time the new day could have started
+      });
+
+      // run the process
+      daily_process();
+
+      process_ran = true;
+      print("daily process ran");
+    }
+  }
+
+
+  // Have we crossed a weekly boundary?
+  if (process_specifier == WEEKLY) {
+    if (schedule_override == true || now >= (previous_weekly + WEEK_SECONDS)) {
+      // record the run
+      ticks.modify(iterator, _self, [&](auto& row) {
+          row.weekly = now - (now % WEEK_SECONDS);    // the earliest time the new week could have started
+      });
+
+      // run the process
+      weekly_process();
+
+      process_ran = true;
+      print("weekly process ran");
+    }
+  }
+
+  if (process_ran == false) {
+    print(process_specifier, " process has not run (did not override schedule)");
+  }
+
+}
+
+
+// process to run every tick
+void freeos::tick_process() {
+
+  // ??? THIS IS TEST CODE - TO BE REMOVED BEFORE DEPLOYMENT
 
   asset one_tick = asset(1, symbol("FREEOS",4));
 
@@ -38,28 +251,37 @@ void freeos::tick() {
 }
 
 
-// action to run every hour
-[[eosio::action]]
-void freeos::hourly() {
+// process to run every hour
+void freeos::hourly_process() {
+  // log the run
+  schedulelog_index log(get_self(), get_self().value);
+  log.emplace(_self, [&](auto & row) {
+     row.task = "H";
+     row.time = current_time_point().sec_since_epoch() + 10000000000; // 64 bit number added to provide primary-key uniqueness
+  });
 
-  require_auth(permission_level("freeosticker"_n, "active"_n));
 
-}
-
-// action to run every day
-[[eosio::action]]
-void freeos::daily() {
-
-  require_auth(permission_level("freeosticker"_n, "active"_n));
 
 }
 
-// action to run every week
-[[eosio::action]]
-void freeos::weekly() {
+// process to run every day
+void freeos::daily_process() {
+  // log the run
+  schedulelog_index log(get_self(), get_self().value);
+  log.emplace(_self, [&](auto & row) {
+     row.task = "D";
+     row.time = current_time_point().sec_since_epoch() + 20000000000; // 64 bit number added to provide primary-key uniqueness
+  });
+}
 
-  require_auth(permission_level("freeosticker"_n, "active"_n));
-
+// process to run every week
+void freeos::weekly_process() {
+  // log the run
+  schedulelog_index log(get_self(), get_self().value);
+  log.emplace(_self, [&](auto & row) {
+     row.task = "W";
+     row.time = current_time_point().sec_since_epoch() + 30000000000; // 64 bit number added to provide primary-key uniqueness
+  });
 }
 
 
@@ -458,6 +680,27 @@ void freeos::getuser(const name& user) {
 }
 
 
+bool freeos::checkmasterswitch() {
+  parameter_index parameters("freeosconfig"_n, "freeosconfig"_n.value);
+  auto iterator = parameters.find("masterswitch"_n.value);
+
+  // check if the parameter is in the table or not
+  if (iterator == parameters.end() ) {
+      // the parameter is not in the table, or table not found, return false because it should be accessible (failsafe)
+      return false;
+  } else {
+      // the parameter is in the table
+      const auto& parameter = *iterator;
+
+      if (parameter.value.compare("1") == 0) {
+        return true;
+      } else {
+        return false;
+      }
+  }
+}
+
+
 void freeos::create( const name&   issuer,
                     const asset&  maximum_supply )
 {
@@ -561,27 +804,6 @@ void freeos::transfer( const name&    from,
 
     sub_balance( from, quantity );
     add_balance( to, quantity, payer );
-}
-
-
-bool freeos::checkmasterswitch() {
-  parameter_index parameters("freeosconfig"_n, "freeosconfig"_n.value);
-  auto iterator = parameters.find("masterswitch"_n.value);
-
-  // check if the parameter is in the table or not
-  if (iterator == parameters.end() ) {
-      // the parameter is not in the table, or table not found, return false because it should be accessible (failsafe)
-      return false;
-  } else {
-      // the parameter is in the table
-      const auto& parameter = *iterator;
-
-      if (parameter.value.compare("1") == 0) {
-        return true;
-      } else {
-        return false;
-      }
-  }
 }
 
 
