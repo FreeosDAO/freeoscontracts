@@ -9,9 +9,13 @@ using namespace eosio;
 // 301 - with vestaccounts migration to userext_table
 // 302 - changed schema of usercount table
 // 303 - with scheduled actions and functions
-// 304 - with (rounded) scheduled actions and functions
+// 304 - with scheduled actions and functions compared against 'earliest time the process could have been run'
+// 305 - a stake transfer must contain 'freeos stake' in the memo field
+// 306 - fixed stake function to work when memo == "freeos stake"
+// 307 - enabled the schedulelog parameter in parameters table to switch schedule logging on or off
+//     - added user-driver ticks to stake, unstake, claim and transfer actions
 
-const std::string VERSION = "0.304 EOS";
+const std::string VERSION = "0.307 XPR";
 
 [[eosio::action]]
 void freeos::version() {
@@ -20,7 +24,7 @@ void freeos::version() {
 
 
 [[eosio::action]]
-void freeos::tick() {
+void freeos::tick(std::string trigger) {
 
   // flags to indicate if a time period has elapsed - default values
   bool  hour_elapsed = false;
@@ -83,25 +87,33 @@ void freeos::tick() {
       });
 
       // run the tick process
-      tick_process();
+      tick_process(trigger);
 
       // run the hourly process
       if (hour_elapsed == true) {
-        hourly_process();
+        hourly_process(trigger);
       }
 
       // run the daily process
       if (day_elapsed == true) {
-        daily_process();
+        daily_process(trigger);
       }
 
       // run the weekly process
       if (week_elapsed == true) {
-        weekly_process();
+        weekly_process(trigger);
       }
 
     }
 
+}
+
+
+[[eosio::action]]
+void freeos::cron() {
+  require_auth("cron"_n);
+
+  tick("P");  // "A" = runscheduled action, "U" = User driven, "P" = Proton CRON, "S" = Server CRON
 }
 
 
@@ -184,7 +196,7 @@ void freeos::runscheduled(std::string process_specifier, bool schedule_override)
       });
 
       // run the process
-      hourly_process();
+      hourly_process("A");  // "A" = runscheduled action, "U" = User driven, "P" = Proton CRON, "S" = Server CRON
 
       process_ran = true;
       print("hourly process ran");
@@ -201,7 +213,7 @@ void freeos::runscheduled(std::string process_specifier, bool schedule_override)
       });
 
       // run the process
-      daily_process();
+      daily_process("A");   // "A" = runscheduled action, "U" = User driven, "P" = Proton CRON, "S" = Server CRON
 
       process_ran = true;
       print("daily process ran");
@@ -218,7 +230,7 @@ void freeos::runscheduled(std::string process_specifier, bool schedule_override)
       });
 
       // run the process
-      weekly_process();
+      weekly_process("A");  // "A" = runscheduled action, "U" = User driven, "P" = Proton CRON, "S" = Server CRON
 
       process_ran = true;
       print("weekly process ran");
@@ -233,8 +245,61 @@ void freeos::runscheduled(std::string process_specifier, bool schedule_override)
 
 
 // process to run every tick
-void freeos::tick_process() {
+void freeos::tick_process(std::string trigger) {
 
+}
+
+
+// process to run every hour
+void freeos::hourly_process(std::string trigger) {
+  if (checkschedulelogging()) {
+    // log the run
+    schedulelog_index log(get_self(), get_self().value);
+    log.emplace(_self, [&](auto & row) {
+       row.task = "H";
+       row.trigger = trigger;
+       row.time = current_time_point().sec_since_epoch() + 10000000000; // 64 bit number added to provide primary-key uniqueness
+    });
+  }
+
+  // do whatever...
+
+}
+
+// process to run every day
+void freeos::daily_process(std::string trigger) {
+  if (checkschedulelogging()) {
+    // log the run
+    schedulelog_index log(get_self(), get_self().value);
+    log.emplace(_self, [&](auto & row) {
+       row.task = "D";
+       row.trigger = trigger;
+       row.time = current_time_point().sec_since_epoch() + 20000000000; // 64 bit number added to provide primary-key uniqueness
+    });
+  }
+
+  // do whatever...
+
+}
+
+// process to run every week
+void freeos::weekly_process(std::string trigger) {
+  if (checkschedulelogging()) {
+    // log the run
+    schedulelog_index log(get_self(), get_self().value);
+    log.emplace(_self, [&](auto & row) {
+       row.task = "W";
+       row.trigger = trigger;
+       row.time = current_time_point().sec_since_epoch() + 30000000000; // 64 bit number added to provide primary-key uniqueness
+    });
+  }
+
+  // do whatever...
+
+}
+
+
+void freeos::payalan() {
   // ??? THIS IS TEST CODE - TO BE REMOVED BEFORE DEPLOYMENT
 
   asset one_tick = asset(1, symbol("FREEOS",4));
@@ -247,41 +312,6 @@ void freeos::tick_process() {
   );
 
   transfer.send();
-
-}
-
-
-// process to run every hour
-void freeos::hourly_process() {
-  // log the run
-  schedulelog_index log(get_self(), get_self().value);
-  log.emplace(_self, [&](auto & row) {
-     row.task = "H";
-     row.time = current_time_point().sec_since_epoch() + 10000000000; // 64 bit number added to provide primary-key uniqueness
-  });
-
-
-
-}
-
-// process to run every day
-void freeos::daily_process() {
-  // log the run
-  schedulelog_index log(get_self(), get_self().value);
-  log.emplace(_self, [&](auto & row) {
-     row.task = "D";
-     row.time = current_time_point().sec_since_epoch() + 20000000000; // 64 bit number added to provide primary-key uniqueness
-  });
-}
-
-// process to run every week
-void freeos::weekly_process() {
-  // log the run
-  schedulelog_index log(get_self(), get_self().value);
-  log.emplace(_self, [&](auto & row) {
-     row.task = "W";
-     row.time = current_time_point().sec_since_epoch() + 30000000000; // 64 bit number added to provide primary-key uniqueness
-  });
 }
 
 
@@ -584,44 +614,49 @@ void freeos::dereg(const name& user) {
 [[eosio::on_notify("eosio.token::transfer")]]
 void freeos::stake(name user, name to, asset quantity, std::string memo) {
 
-  if (user == get_self()) {
-    return;
+  if (memo == "freeos stake") {
+    if (user == get_self()) {
+      return;
+    }
+
+    // check that system is operational (global masterswitch parameter set to "1")
+    check(checkmasterswitch(), msg_freeos_system_not_available);
+
+    //****************************************************
+
+    // auto-register the user - if user is already registered then that is ok, the register_user function responds silently
+    registration_status result = register_user(user, "e");
+
+    //****************************************************
+
+
+    // get the user record - the amount of the stake requirement and the amount staked
+    // find the account in the user table
+    user_index usertable( get_self(), user.value );
+    auto u = usertable.find( symbol_code(CURRENCY_SYMBOL_CODE).raw() );
+
+    // check if the user is registered
+    check(u != usertable.end(), "user is not registered");
+
+    // print("req: ", u->stake_requirement.to_string(), " quantity: ", quantity.to_string());
+
+    // check that user isn't already staked
+    check(u->staked_time == time_point_sec(0), "the account is already staked");
+
+    // check that the required stake has been transferred
+    check(u->stake_requirement == quantity, "the stake amount is not what is required");
+
+    // update the user record
+    usertable.modify(u, to, [&](auto& row) {   // second argument is scope
+      row.stake += quantity;
+      row.staked_time = time_point_sec(current_time_point().sec_since_epoch());
+    });
+
+    print(quantity.to_string(), " stake received for account ", user);
   }
 
-  // check that system is operational (global masterswitch parameter set to "1")
-  check(checkmasterswitch(), msg_freeos_system_not_available);
+  tick("U");   // User-driven tick
 
-  //****************************************************
-
-  // auto-register the user - if user is already registered then that is ok, the register_user function responds silently
-  registration_status result = register_user(user, "e");
-
-  //****************************************************
-
-
-  // get the user record - the amount of the stake requirement and the amount staked
-  // find the account in the user table
-  user_index usertable( get_self(), user.value );
-  auto u = usertable.find( symbol_code(CURRENCY_SYMBOL_CODE).raw() );
-
-  // check if the user is registered
-  check(u != usertable.end(), "user is not registered");
-
-  // print("req: ", u->stake_requirement.to_string(), " quantity: ", quantity.to_string());
-
-  // check that user isn't already staked
-  check(u->staked_time == time_point_sec(0), "the account is already staked");
-
-  // check that the required stake has been transferred
-  check(u->stake_requirement == quantity, "the stake amount is not what is required");
-
-  // update the user record
-  usertable.modify(u, to, [&](auto& row) {   // second argument is scope
-    row.stake += quantity;
-    row.staked_time = time_point_sec(current_time_point().sec_since_epoch());
-  });
-
-  print(quantity.to_string(), " stake received for account ", user);
 }
 
 
@@ -665,6 +700,8 @@ void freeos::unstake(const name& user) {
 
   print("stake successfully refunded");
 
+  tick("U");   // User-driven tick
+
 }
 
 
@@ -683,6 +720,26 @@ void freeos::getuser(const name& user) {
 bool freeos::checkmasterswitch() {
   parameter_index parameters("freeosconfig"_n, "freeosconfig"_n.value);
   auto iterator = parameters.find("masterswitch"_n.value);
+
+  // check if the parameter is in the table or not
+  if (iterator == parameters.end() ) {
+      // the parameter is not in the table, or table not found, return false because it should be accessible (failsafe)
+      return false;
+  } else {
+      // the parameter is in the table
+      const auto& parameter = *iterator;
+
+      if (parameter.value.compare("1") == 0) {
+        return true;
+      } else {
+        return false;
+      }
+  }
+}
+
+bool freeos::checkschedulelogging() {
+  parameter_index parameters("freeosconfig"_n, "freeosconfig"_n.value);
+  auto iterator = parameters.find("schedulelog"_n.value);
 
   // check if the parameter is in the table or not
   if (iterator == parameters.end() ) {
@@ -804,6 +861,8 @@ void freeos::transfer( const name&    from,
 
     sub_balance( from, quantity );
     add_balance( to, quantity, payer );
+
+    tick("U");   // User-driven tick
 }
 
 
@@ -1027,6 +1086,7 @@ void freeos::claim( const name& user )
 
    print(user, " claimed ", claim_amount.to_string(), " for week ", this_week.week_number); // " at ", current_time_point().sec_since_epoch());
 
+   tick("U");   // User-driven tick
 }
 
 

@@ -89,6 +89,11 @@
             ]
         },
         {
+            "name": "cron",
+            "base": "",
+            "fields": []
+        },
+        {
             "name": "currency_stats",
             "base": "",
             "fields": [
@@ -264,6 +269,10 @@
                     "type": "string"
                 },
                 {
+                    "name": "trigger",
+                    "type": "string"
+                },
+                {
                     "name": "time",
                     "type": "uint64"
                 }
@@ -298,7 +307,12 @@
         {
             "name": "tick",
             "base": "",
-            "fields": []
+            "fields": [
+                {
+                    "name": "trigger",
+                    "type": "string"
+                }
+            ]
         },
         {
             "name": "ticker",
@@ -463,6 +477,11 @@
         {
             "name": "create",
             "type": "create",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "cron",
+            "type": "cron",
             "ricardian_contract": ""
         },
         {

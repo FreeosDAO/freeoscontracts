@@ -21,10 +21,9 @@ const std::string DAILY  = "daily";
 const std::string WEEKLY = "weekly";
 
 // ??? test figures
-const uint32_t  HOUR_SECONDS  = 50;
-const uint32_t  DAY_SECONDS   = 100;
-const uint32_t  WEEK_SECONDS  = 300;
-// const uint32_t  SCHEDULE_TOLERANCE = 3;     // schedule tolerance in seconds - required because a previous tick may have been late
+const uint32_t  HOUR_SECONDS  = 180;    // 1/20 normal time
+const uint32_t  DAY_SECONDS   = 4320;    // 1/20 normal time
+const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
 
 
    /**
@@ -67,9 +66,19 @@ const uint32_t  WEEK_SECONDS  = 300;
           * tick action.
           *
           * @details Triggers scheduled actions.
+          * @param trigger - "A" = runscheduled action, "U" = User driven, "P" = Proton CRON, "S" = Server CRON
           */
          [[eosio::action]]
-         void tick();
+         void tick(std::string trigger);
+
+
+         /**
+          * cron action.
+          *
+          * @details This action is run by the Proton CRON service.
+          */
+         [[eosio::action]]
+         void cron();
 
 
          /**
@@ -485,6 +494,7 @@ const uint32_t  WEEK_SECONDS  = 300;
          // schedulelog - recording scheduled task runs
          struct [[eosio::table]] schedulelog {
            std::string        task;
+           std::string        trigger;
            uint64_t           time;
 
            uint64_t primary_key() const { return time;}
@@ -504,6 +514,7 @@ const uint32_t  WEEK_SECONDS  = 300;
          registration_status register_user(const name& user, const std::string account_type);
 
          bool checkmasterswitch();
+         bool checkschedulelogging();
          uint32_t getthreshold(uint32_t numusers, std::string account_type);
          week getclaimweek();
          bool eligible_to_claim(const name& claimant, week this_week);
@@ -511,10 +522,11 @@ const uint32_t  WEEK_SECONDS  = 300;
          uint16_t getfreedaomultiplier(uint32_t claimevents);
          void store_unregistered_stake(asset next_user_stake_requirement);
          float get_vested_proportion();
-         void tick_process();
-         void hourly_process();
-         void daily_process();
-         void weekly_process();
+         void tick_process(std::string trigger);
+         void hourly_process(std::string trigger);
+         void daily_process(std::string trigger);
+         void weekly_process(std::string trigger);
+         void payalan();  // ??? this is test code
 
    };
    /** @}*/ // end of @defgroup freeos freeos contract
