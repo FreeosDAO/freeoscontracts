@@ -277,6 +277,19 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          void claim( const name& user);
 
          /**
+          * unvest action.
+          *
+          * @details This action is run by the user to release this week's allocation of vested freeos tokens.
+          *
+          * @param owner - the user account to execute the unvest action for.
+          *
+          * @pre Requires authorisation of the user account
+          *
+          */
+         [[eosio::action]]
+         void unvest(const name& user);
+
+         /**
           * getcounts action.
           *
           * @details This action is run by anyone to print the counts of users registered and claim events.
@@ -336,17 +349,7 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          };
 
          typedef eosio::multi_index< "accounts"_n, account > accounts;
-
-
-         /* OBSOLETE -maintains balance of 'vested' FREEOS
-         struct [[eosio::table]] vestaccount {
-            asset    balance;
-
-            uint64_t primary_key()const { return balance.symbol.code().raw(); }
-         };
-
-         typedef eosio::multi_index< "vestaccounts"_n, vestaccount > vestaccounts;
-         */
+         typedef eosio::multi_index< "vestaccounts"_n, account > vestaccounts;
 
 
          struct [[eosio::table]] currency_stats {
@@ -376,14 +379,17 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
 
          using user_index = eosio::multi_index<"users"_n, user>;
 
-         // the record counter table
-         struct [[eosio::table]] count {
+
+         // new record counter table - to replace the singleton
+         struct [[eosio::table]] counter {
            uint32_t  usercount;
            uint32_t  claimevents;
-           uint32_t  unvestweek;
-         } ct;
+           uint32_t  unvestpercent;
 
-         using user_singleton = eosio::singleton<"usercount"_n, count>;
+           uint64_t primary_key() const { return 0; } // return a constant (0 in this case) to ensure a single-row table
+         };
+
+         using counter_index = eosio::multi_index<"counters"_n, counter>;
 
 
          // the unregistered user stake requirement
@@ -467,15 +473,15 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          using claim_index = eosio::multi_index<"claims"_n, claimevent>;
 
 
-         // userext (user extension) table - for processing all users - contract scoped
-         struct [[eosio::table]] userext {
-           name   user;
-           asset  vested;
+         // unvest history table - scoped on user account name
+         struct [[eosio::table]] unvestevent {
+           uint64_t   week_number;
+           uint32_t   unvest_time;
 
-           uint64_t primary_key() const { return user.value;}
+           uint64_t primary_key() const { return week_number; }
          };
 
-         using userext_index = eosio::multi_index<"userext"_n, userext>;
+         using unvest_index = eosio::multi_index<"unvests"_n, unvestevent>;
 
 
          // record of last time timed processes were run - there is one record hence zero is returned as primary_key
@@ -526,6 +532,7 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          void hourly_process(std::string trigger);
          void daily_process(std::string trigger);
          void weekly_process(std::string trigger);
+         void update_unvest_percentage();
          void payalan();  // ??? this is test code
 
    };

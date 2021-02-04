@@ -57,7 +57,7 @@
             ]
         },
         {
-            "name": "count",
+            "name": "counter",
             "base": "",
             "fields": [
                 {
@@ -69,7 +69,7 @@
                     "type": "uint32"
                 },
                 {
-                    "name": "unvestweek",
+                    "name": "unvestpercent",
                     "type": "uint32"
                 }
             ]
@@ -379,6 +379,30 @@
             ]
         },
         {
+            "name": "unvest",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "unvestevent",
+            "base": "",
+            "fields": [
+                {
+                    "name": "week_number",
+                    "type": "uint64"
+                },
+                {
+                    "name": "unvest_time",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
             "name": "user",
             "base": "",
             "fields": [
@@ -401,20 +425,6 @@
                 {
                     "name": "staked_time",
                     "type": "time_point_sec"
-                }
-            ]
-        },
-        {
-            "name": "userext",
-            "base": "",
-            "fields": [
-                {
-                    "name": "user",
-                    "type": "name"
-                },
-                {
-                    "name": "vested",
-                    "type": "asset"
                 }
             ]
         },
@@ -545,6 +555,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "unvest",
+            "type": "unvest",
+            "ricardian_contract": ""
+        },
+        {
             "name": "version",
             "type": "version",
             "ricardian_contract": ""
@@ -566,8 +581,8 @@
             "key_types": []
         },
         {
-            "name": "count",
-            "type": "count",
+            "name": "counters",
+            "type": "counter",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
@@ -622,8 +637,8 @@
             "key_types": []
         },
         {
-            "name": "userext",
-            "type": "userext",
+            "name": "unvests",
+            "type": "unvestevent",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
@@ -631,6 +646,13 @@
         {
             "name": "users",
             "type": "user",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "vestaccounts",
+            "type": "account",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
