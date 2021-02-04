@@ -321,13 +321,19 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
           *
           * @param token_contract_account - the token creator account,
           * @param owner - the account for which the token balance is returned,
-          * @param sym_code - the token for which the balance is returned.
+          * @param currency_symbol - the token for which the balance is returned.
           */
-         static asset get_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
+         static asset get_balance( const name& token_contract_account, const name& owner, const symbol& currency_symbol )
          {
+            asset return_balance = asset(0, currency_symbol); // default if accounts record does not exist
+
             accounts accountstable( token_contract_account, owner.value );
-            const auto& ac = accountstable.get( sym_code.raw() );
-            return ac.balance;
+            const auto& ac = accountstable.find( currency_symbol.code().raw() );
+            if (ac != accountstable.end()) {
+              return_balance = ac->balance;
+            }
+
+            return return_balance;
          }
 
 

@@ -19,8 +19,10 @@ using namespace eosio;
 // 309 - dummy 'unvest' action
 // 310 - single record 'counters' table replaces old singleton
 // 311 - unvest action completed
+// 312 - FREEOS holding requirement for a claim also considers vested FREEOS
+//     - getuser action upgraded to show user's staking and various balances
 
-const std::string VERSION = "0.311 XPR";
+const std::string VERSION = "0.312 XPR";
 
 [[eosio::action]]
 void freeos::version() {
@@ -700,6 +702,7 @@ void freeos::dereg(const name& user) {
 void freeos::stake(name user, name to, asset quantity, std::string memo) {
 
   if (memo == "freeos stake") {
+
     if (user == get_self()) {
       return;
     }
@@ -718,7 +721,7 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
     // get the user record - the amount of the stake requirement and the amount staked
     // find the account in the user table
     user_index usertable( get_self(), user.value );
-    auto u = usertable.find( symbol_code(CURRENCY_SYMBOL_CODE).raw() );
+    auto u = usertable.begin();
 
     // check if the user is registered
     check(u != usertable.end(), "user is not registered");
@@ -792,13 +795,47 @@ void freeos::unstake(const name& user) {
 
 [[eosio::action]]
 void freeos::getuser(const name& user) {
+
   user_index usertable( get_self(), user.value );
-  auto u = usertable.find( symbol_code(CURRENCY_SYMBOL_CODE).raw() );
+  auto u = usertable.begin();
 
   // check if the user is registered
   check(u != usertable.end(), "user is not registered");
 
-  print("account: ", user, " account type ", u->account_type, ", stake req = ", u->stake_requirement.to_string(), ", stake = ", u->stake.to_string(), ", staked on ", u->staked_time.utc_seconds);
+  // get the user's XPR balance
+  asset xpr_balance = get_balance("eosio.token"_n, user, symbol("XPR",4));
+
+  // get the user's liquid FREEOS balance
+  asset liquid_freeos_balance = get_balance(get_self(), user, symbol("FREEOS",4));
+
+  // get the user's vested FREEOS balance
+  asset vested_freeos_balance = asset(0, symbol("FREEOS",4)); // default if account record not found
+  vestaccounts v_accounts(get_self(), user.value );
+  const auto& ac = v_accounts.find(symbol_code("FREEOS").raw());
+  if (ac != v_accounts.end()) {
+    vested_freeos_balance = ac->balance;;
+  }
+
+
+  // get the user's AIRKEY balance
+  asset airkey_balance = get_balance(get_self(), user, symbol("AIRKEY",0));
+
+  // has user claimed in the current week?
+  // what week is it
+  week this_week = getclaimweek();
+
+  bool claimed_flag = false;
+  claim_index claims(get_self(), user.value);
+  auto iterator = claims.find(this_week.week_number);
+  // if the claim record exists for this week then the user has claimed
+  if (iterator != claims.end()) {
+    claimed_flag = true;
+  }
+
+  print("account: ", user, ", type: ", u->account_type, ", stake-req: ", u->stake_requirement.to_string(), ", stake: ", u->stake.to_string(),
+        ", staked-on: ", u->staked_time.utc_seconds, ", XPR: ", xpr_balance.to_string(), ", liquid: ", liquid_freeos_balance.to_string(), ", vested: ", vested_freeos_balance.to_string(),
+         ", airkey: ", airkey_balance.to_string(), ", week: ", this_week.week_number, ", claimed: ", claimed_flag);
+
 }
 
 
@@ -1454,21 +1491,32 @@ bool freeos::eligible_to_claim(const name& claimant, week this_week) {
   // only perform the FREEOS holding requirement check if the user does NOT have an AIRKEY token
   if (user_airkey_balance.amount == 0) {
     // check that the user has the required balance of FREEOS
-    asset user_freeos_balance = asset(0, symbol("FREEOS",4));  // default holding = 0 FREEOS
+    asset liquid_freeos_balance = asset(0, symbol("FREEOS",4));  // default holding = 0 FREEOS
 
     symbol_code freeos = symbol_code("FREEOS");
     auto user_freeos_account = user_accounts.find(freeos.raw());
 
     if (user_freeos_account != user_accounts.end()) {
-      user_freeos_balance = user_freeos_account->balance;
+      liquid_freeos_balance = user_freeos_account->balance;
     }
+
+    // check the user's vested FREEOS balance
+    asset vested_freeos_balance = asset(0, symbol("FREEOS",4)); // default if account record not found
+    vestaccounts v_accounts(get_self(), claimant.value );
+    const auto& ac = v_accounts.find(symbol_code("FREEOS").raw());
+    if (ac != v_accounts.end()) {
+      vested_freeos_balance = ac->balance;;
+    }
+
+    // user's total FREEOS balance is liquid-FREEOS plus vested-FREEOS
+    asset total_freeos_balance = liquid_freeos_balance + vested_freeos_balance;
 
     // the 'holding' balance requirement for this week's claim
     asset week_holding_requirement = asset(this_week.tokens_required * 10000, symbol("FREEOS",4));
     // print("holding balance required for week ", this_week.week_number, " is ", holding_balance.to_string());
 
-    if (user_freeos_balance < week_holding_requirement) {
-      print("user ", claimant, " has ", user_freeos_balance.to_string(), " which is less than the holding requirement of ", week_holding_requirement.to_string());
+    if (total_freeos_balance < week_holding_requirement) {
+      print("user ", claimant, " has ", total_freeos_balance.to_string(), " which is less than the holding requirement of ", week_holding_requirement.to_string());
       return false;
     }
   }
