@@ -279,6 +279,66 @@
             ]
         },
         {
+            "name": "stake",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "stakereq",
+            "base": "",
+            "fields": [
+                {
+                    "name": "threshold",
+                    "type": "uint64"
+                },
+                {
+                    "name": "requirement_a",
+                    "type": "asset"
+                },
+                {
+                    "name": "requirement_b",
+                    "type": "asset"
+                },
+                {
+                    "name": "requirement_c",
+                    "type": "asset"
+                },
+                {
+                    "name": "requirement_d",
+                    "type": "asset"
+                },
+                {
+                    "name": "requirement_e",
+                    "type": "asset"
+                },
+                {
+                    "name": "requirement_u",
+                    "type": "asset"
+                },
+                {
+                    "name": "requirement_v",
+                    "type": "asset"
+                },
+                {
+                    "name": "requirement_w",
+                    "type": "asset"
+                },
+                {
+                    "name": "requirement_x",
+                    "type": "asset"
+                },
+                {
+                    "name": "requirement_y",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
             "name": "stakerequire",
             "base": "",
             "fields": [
@@ -287,7 +347,15 @@
                     "type": "uint64"
                 },
                 {
-                    "name": "requirement_e",
+                    "name": "requirement_a",
+                    "type": "uint32"
+                },
+                {
+                    "name": "requirement_b",
+                    "type": "uint32"
+                },
+                {
+                    "name": "requirement_c",
                     "type": "uint32"
                 },
                 {
@@ -295,11 +363,27 @@
                     "type": "uint32"
                 },
                 {
+                    "name": "requirement_e",
+                    "type": "uint32"
+                },
+                {
+                    "name": "requirement_u",
+                    "type": "uint32"
+                },
+                {
                     "name": "requirement_v",
                     "type": "uint32"
                 },
                 {
+                    "name": "requirement_w",
+                    "type": "uint32"
+                },
+                {
                     "name": "requirement_x",
+                    "type": "uint32"
+                },
+                {
+                    "name": "requirement_y",
                     "type": "uint32"
                 }
             ]
@@ -359,16 +443,6 @@
             ]
         },
         {
-            "name": "unregstake",
-            "base": "",
-            "fields": [
-                {
-                    "name": "default_stake",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
             "name": "unstake",
             "base": "",
             "fields": [
@@ -415,16 +489,16 @@
                     "type": "int8"
                 },
                 {
-                    "name": "stake_requirement",
-                    "type": "asset"
-                },
-                {
                     "name": "registered_time",
                     "type": "time_point_sec"
                 },
                 {
                     "name": "staked_time",
                     "type": "time_point_sec"
+                },
+                {
+                    "name": "votes",
+                    "type": "uint16"
                 }
             ]
         },
@@ -540,6 +614,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "stake",
+            "type": "stake",
+            "ricardian_contract": ""
+        },
+        {
             "name": "tick",
             "type": "tick",
             "ricardian_contract": ""
@@ -609,15 +688,15 @@
             "key_types": []
         },
         {
-            "name": "stake",
-            "type": "unregstake",
+            "name": "stakereqs",
+            "type": "stakerequire",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "stakereqs",
-            "type": "stakerequire",
+            "name": "stakes",
+            "type": "stakereq",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

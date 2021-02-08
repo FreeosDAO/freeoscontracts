@@ -5,7 +5,10 @@
 
 using namespace eosio;
 
-const std::string VERSION = "0.1";
+// versions
+// 100 - refactored the stakereqs table to have 10 columns a-e and u-y
+
+const std::string VERSION = "0.100";
 
 [[eosio::action]]
 void freeosconfig::version() {
@@ -62,7 +65,7 @@ void freeosconfig::paramerase ( name paramname ) {
 void freeosconfig::currentrate(double price) {
 
     require_auth(_self);
-    
+
     exchange_index rate(get_self(), get_self().value);
     auto iterator = rate.begin();
 
@@ -125,10 +128,16 @@ void freeosconfig::rateerase () {
 [[eosio::action]]
 void freeosconfig::stakeupsert(
         uint64_t threshold,
-        uint32_t  value_e,
+        uint32_t  value_a,
+        uint32_t  value_b,
+        uint32_t  value_c,
         uint32_t  value_d,
+        uint32_t  value_e,
+        uint32_t  value_u,
         uint32_t  value_v,
-        uint32_t  value_x
+        uint32_t  value_w,
+        uint32_t  value_x,
+        uint32_t  value_y
         ) {
 
     require_auth(_self);
@@ -138,22 +147,34 @@ void freeosconfig::stakeupsert(
     // check if the threshold is in the table or not
     if (iterator == stakereqs.end() ) {
         // the threshold is not in the table, so insert
-        stakereqs.emplace(_self, [&](auto & row) {  // first argument was "freeosconfig"_n
+        stakereqs.emplace(_self, [&](auto & row) {
            row.threshold = threshold;
-           row.requirement_e = value_e;
+           row.requirement_a = value_a;
+           row.requirement_b = value_b;
+           row.requirement_c = value_c;
            row.requirement_d = value_d;
+           row.requirement_e = value_e;
+           row.requirement_u = value_u;
            row.requirement_v = value_v;
+           row.requirement_w = value_w;
            row.requirement_x = value_x;
+           row.requirement_y = value_y;
         });
 
     } else {
         // the threshold is in the table, so update
         stakereqs.modify(iterator, _self, [&](auto& row) {   // second argument was "freeosconfig"_n
         row.threshold = threshold;
-        row.requirement_e = value_e;
+        row.requirement_a = value_a;
+        row.requirement_b = value_b;
+        row.requirement_c = value_c;
         row.requirement_d = value_d;
+        row.requirement_e = value_e;
+        row.requirement_u = value_u;
         row.requirement_v = value_v;
+        row.requirement_w = value_w;
         row.requirement_x = value_x;
+        row.requirement_y = value_y;
         });
     }
 }
@@ -263,30 +284,20 @@ void freeosconfig::getweek(uint64_t week_number) {
 
 
 // Required for testing
-// Reads the tables and prints out a config parameter value and a stake requirements value
+// Prints out a stake requirements value record
 [[eosio::action]]
-void freeosconfig::getconfig(uint64_t threshold, name paramname) {
+void freeosconfig::getstakes(uint64_t threshold) {
   // stakereqs
   stakereq_index stakereqs(get_self(), get_first_receiver().value);
   auto iterator = stakereqs.find(threshold);
 
   if (iterator == stakereqs.end()) {
-    print("threshold does not exist - ");
+    print("threshold does not exist");
   } else {
     const auto& s = *iterator;
-    print(s.threshold, ": ", s.requirement_e, " ", s.requirement_d, " ", s.requirement_v, " ", s.requirement_x, " ");
-  }
-
-  // config
-  parameter_index parameters(get_self(), get_first_receiver().value);
-  auto it = parameters.find(paramname.value);
-
-  // check if the parameter is in the table or not
-  if (it == parameters.end()) {
-    print("config parameter does not exist");
-  } else {
-    const auto& c = *it;
-    print(paramname, ": ", c.value);
+    //print(s.threshold, ": ", s.requirement_e, " ", s.requirement_d, " ", s.requirement_v, " ", s.requirement_x, " ");
+    print(s.threshold, ": a=", s.requirement_a, " b=", s.requirement_b, " c=", s.requirement_c, " d=", s.requirement_d, " e=", s.requirement_e,
+                        " u=", s.requirement_u, " v=", s.requirement_v, " w=", s.requirement_w, " x=", s.requirement_x, " y=", s.requirement_y);
   }
 
 }
@@ -307,14 +318,36 @@ void freeosconfig::getthreshold(uint64_t numusers, std::string account_type) {
 
   // which value to look up depends on the type of account
   switch (account_type[0]) {
-    case 'e':
-      required_stake = iterator->requirement_e;
+
+    case 'a':
+      required_stake = iterator->requirement_a;
+      break;
+    case 'b':
+      required_stake = iterator->requirement_b;
+      break;
+    case 'c':
+      required_stake = iterator->requirement_c;
       break;
     case 'd':
       required_stake = iterator->requirement_d;
       break;
+    case 'e':
+      required_stake = iterator->requirement_e;
+      break;
+    case 'u':
+      required_stake = iterator->requirement_u;
+      break;
     case 'v':
       required_stake = iterator->requirement_v;
+      break;
+    case 'w':
+      required_stake = iterator->requirement_w;
+      break;
+    case 'x':
+      required_stake = iterator->requirement_x;
+      break;
+    case 'y':
+      required_stake = iterator->requirement_y;
       break;
     default:
       required_stake = 9999;

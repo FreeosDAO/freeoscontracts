@@ -21,8 +21,13 @@ using namespace eosio;
 // 311 - unvest action completed
 // 312 - FREEOS holding requirement for a claim also considers vested FREEOS
 //     - getuser action upgraded to show user's staking and various balances
+// 313 - stakes table contains the staking requirements for all types of users - it is subject to change rather set at registration
+//     - stake_requirement field removed from user record
+// 314 - added 'stake' action
+// 315 - capped vested proportion at 0.9
 
-const std::string VERSION = "0.312 XPR";
+
+const std::string VERSION = "0.315 XPR";
 
 [[eosio::action]]
 void freeos::version() {
@@ -426,7 +431,7 @@ void freeos::reguser(const name& user, const std::string account_type) {
     auto u = usertable.find( symbol_code(CURRENCY_SYMBOL_CODE).raw() );
 
     // prepare the success message
-    std::string account_success_msg = user.to_string() + std::string(" successfully registered. Stake requirement is ") + u->stake_requirement.to_string();
+    std::string account_success_msg = user.to_string() + std::string(" successfully registered");
 
     // display the success message including the stake requirement
     print(account_success_msg);
@@ -470,15 +475,10 @@ registration_status freeos::register_user(const name& user, const std::string ac
     });
   }
 
-  // get the required stake for the user number
-  uint32_t stake = getthreshold(numusers, account_type);
-  asset stake_requirement = asset(stake * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
   // register the user
   usertable.emplace( get_self(), [&]( auto& u ) {
     u.stake = asset(0, symbol(CURRENCY_SYMBOL_CODE, 4));
     u.account_type = account_type.at(0);
-    u.stake_requirement = stake_requirement;
     u.registered_time = time_point_sec(current_time_point().sec_since_epoch());
     u.staked_time = time_point_sec(0);
     });
@@ -492,32 +492,106 @@ registration_status freeos::register_user(const name& user, const std::string ac
       });
    }
 
-
-   // set the stake requirement for an unregistered user i.e. a user who has not staked or claimed and therefore does not have a user record
-   uint32_t next_user_stake = getthreshold(numusers + 1, account_type);  // using numusers+1 to calculate for the next user
-   asset next_user_stake_requirement = asset(next_user_stake * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-   store_unregistered_stake(next_user_stake_requirement);
+   // update the stake requirements record if we have reached a new threshold of users
+   update_stakes(numusers);
 
    return registered_success;
 }
 
+// update the stakes if we have reached a new threshold of users
+void freeos::update_stakes(uint32_t numusers) {
 
-// store the unregistered user stake requirement
-void freeos::store_unregistered_stake(asset next_user_stake_requirement) {
-  stake_index stake_table(get_self(), get_self().value);
+  // check the potentially new threshold
+  uint64_t new_threshold = getthreshold(numusers);
 
-  auto stake = stake_table.find( 0 ); // using 0 because this is a single row table
+  // check the current threshold in the stakes table
+  stakes_index stakes(get_self(), get_self().value);
+  auto iterator = stakes.begin();
+  uint64_t current_threshold = iterator->threshold;
 
-  if( stake == stake_table.end() ) {
-     stake_table.emplace(get_self(), [&]( auto& s ){
-       s.default_stake = next_user_stake_requirement;
-     });
-  } else {
-     stake_table.modify( stake, same_payer, [&]( auto& s ) {
-       s.default_stake = next_user_stake_requirement;
-     });
+  if (current_threshold != new_threshold) {
+    // repopulate the stakes table with the new values from the config stakereqs table
+    // get the value from the config 'stakereqs' table
+    stakereq_index stakereqs(name(freeosconfig_acct), name(freeosconfig_acct).value);
+    // get the stake-requirements record for threshold 0
+    auto config_sr = stakereqs.find(new_threshold);
+    if (config_sr == stakereqs.end()) {
+      print("the config stake requirements table does not have a record for threshold 0");
+      return;
+    }
+
+    // the new stakes are calculated below
+
+    uint64_t threshold = config_sr->threshold;
+
+    uint32_t req_a = config_sr->requirement_a;
+    asset stake_requirement_a = asset(req_a * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+    uint32_t req_b = config_sr->requirement_b;
+    asset stake_requirement_b = asset(req_b * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+    uint32_t req_c = config_sr->requirement_c;
+    asset stake_requirement_c = asset(req_c * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+    uint32_t req_d = config_sr->requirement_d;
+    asset stake_requirement_d = asset(req_d * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+    uint32_t req_e = config_sr->requirement_e;
+    asset stake_requirement_e = asset(req_e * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+    uint32_t req_u = config_sr->requirement_u;
+    asset stake_requirement_u = asset(req_u * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+    uint32_t req_v = config_sr->requirement_v;
+    asset stake_requirement_v = asset(req_v * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+    uint32_t req_w = config_sr->requirement_w;
+    asset stake_requirement_w = asset(req_w * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+    uint32_t req_x = config_sr->requirement_x;
+    asset stake_requirement_x = asset(req_x * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+    uint32_t req_y = config_sr->requirement_y;
+    asset stake_requirement_y = asset(req_y * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+    // Place the values in the table
+    stakes_index stakes_table(get_self(), get_self().value);
+    auto stake = stakes_table.find( 0 ); // using 0 because this is a single row table
+
+    if( stake == stakes_table.end() ) {
+       stakes_table.emplace(get_self(), [&]( auto& s ){
+         s.threshold = threshold;
+         s.requirement_a = stake_requirement_a;
+         s.requirement_b = stake_requirement_b;
+         s.requirement_c = stake_requirement_c;
+         s.requirement_d = stake_requirement_d;
+         s.requirement_e = stake_requirement_e;
+         s.requirement_u = stake_requirement_u;
+         s.requirement_v = stake_requirement_v;
+         s.requirement_w = stake_requirement_w;
+         s.requirement_x = stake_requirement_x;
+         s.requirement_y = stake_requirement_y;
+       });
+    } else {
+       stakes_table.modify( stake, same_payer, [&]( auto& s ) {
+         s.threshold = threshold;
+         s.requirement_a = stake_requirement_a;
+         s.requirement_b = stake_requirement_b;
+         s.requirement_c = stake_requirement_c;
+         s.requirement_d = stake_requirement_d;
+         s.requirement_e = stake_requirement_e;
+         s.requirement_u = stake_requirement_u;
+         s.requirement_v = stake_requirement_v;
+         s.requirement_w = stake_requirement_w;
+         s.requirement_x = stake_requirement_x;
+         s.requirement_y = stake_requirement_y;
+       });
+     }
   }
+
 }
+
+
 
 // This action for maintenance purposes
 [[eosio::action]]
@@ -526,6 +600,15 @@ void freeos::maintain(std::string option) {
 
   if (option == "counter remove") {
 
+  }
+
+  if (option == "migrate stake_index table") {
+    stakes_index stake(get_self(), get_self().value);
+    auto iterator = stake.begin();
+
+    if (iterator != stake.end()) {
+        stake.erase(iterator);
+    }
   }
 
   if (option == "counter initialise") {
@@ -560,8 +643,126 @@ void freeos::maintain(std::string option) {
          a.balance = asset(40 * 10000, symbol("FREEOS",4));
        });
     }
+  }
+
+  // script 1 to migrate stake_requirement out of the users table
+  if (option == "migrate user stakes part 1") {
+
+    // erase existing user table
+    // array of users
+    name candidates[10] = {"alanappleton"_n, "billbeaumont"_n, "celiacollins"_n, "dennisedolan"_n, "ethanedwards"_n, "frankyfellon"_n, "geraldgarson"_n, "jamiejackson"_n, "powderblue"_n, "wlcm.proton"_n};
+
+    for(int i = 0; i < 10; i++) {
+      // clear the users table
+      user_index users(get_self(), candidates[i].value);
+      auto iterator = users.begin();
+      if (iterator != users.end()) {
+        // erase the record
+        users.erase(iterator);
+      }
+    }
+
+    print("check that the users table is cleared, then implement new user table design and run 'migrate user stakes part 2'");
 
   }
+
+  // script 2 to migrate stake_requirement out of the users table
+  if (option == "migrate user stakes part 2") {
+
+    // repopulate user table
+
+    // alanappleton
+    user_index users1(get_self(), "alanappleton"_n.value);
+    users1.emplace( get_self(), [&]( auto& u ){
+      u.stake = asset(10 * 10000, symbol("XPR",4));
+      u.account_type = 101;
+      u.registered_time = time_point_sec(1610959240);
+      u.staked_time = time_point_sec(1611300166);
+    });
+
+    // billbeaumont
+    user_index users2(get_self(), "billbeaumont"_n.value);
+    users2.emplace( get_self(), [&]( auto& u ){
+      u.stake = asset(10 * 10000, symbol("XPR",4));
+      u.account_type = 101;
+      u.registered_time = time_point_sec(1611199914);
+      u.staked_time = time_point_sec(1611299265);
+    });
+
+    // celiacollins
+    user_index users3(get_self(), "celiacollins"_n.value);
+    users3.emplace( get_self(), [&]( auto& u ){
+      u.stake = asset(10 * 10000, symbol("XPR",4));
+      u.account_type = 101;
+      u.registered_time = time_point_sec(1611523114);
+      u.staked_time = time_point_sec(1611553422);
+    });
+
+    // dennisedolan
+    user_index users4(get_self(), "dennisedolan"_n.value);
+    users4.emplace( get_self(), [&]( auto& u ){
+      u.stake = asset(10 * 10000, symbol("XPR",4));
+      u.account_type = 101;
+      u.registered_time = time_point_sec(1610937129);
+      u.staked_time = time_point_sec(1611268907);
+    });
+
+    // ethanedwards
+    user_index users5(get_self(), "ethanedwards"_n.value);
+    users5.emplace( get_self(), [&]( auto& u ){
+      u.stake = asset(10 * 10000, symbol("XPR",4));
+      u.account_type = 101;
+      u.registered_time = time_point_sec(1611038356);
+      u.staked_time = time_point_sec(1611038356);
+    });
+
+    // frankyfellon
+    user_index users6(get_self(), "frankyfellon"_n.value);
+    users6.emplace( get_self(), [&]( auto& u ){
+      u.stake = asset(0 * 10000, symbol("XPR",4));
+      u.account_type = 101;
+      u.registered_time = time_point_sec(1611039546);
+      u.staked_time = time_point_sec(0);
+    });
+
+    // geraldgarson
+    user_index users7(get_self(), "geraldgarson"_n.value);
+    users7.emplace( get_self(), [&]( auto& u ){
+      u.stake = asset(0 * 10000, symbol("XPR",4));
+      u.account_type = 101;
+      u.registered_time = time_point_sec(1612228005);
+      u.staked_time = time_point_sec(0);
+    });
+
+    // jamiejackson
+    user_index users8(get_self(), "jamiejackson"_n.value);
+    users8.emplace( get_self(), [&]( auto& u ){
+      u.stake = asset(1 * 10000, symbol("XPR",4));
+      u.account_type = 101;
+      u.registered_time = time_point_sec(1612403824);
+      u.staked_time = time_point_sec(1612404247);
+    });
+
+    // powderblue
+    user_index users9(get_self(), "powderblue"_n.value);
+    users9.emplace( get_self(), [&]( auto& u ){
+      u.stake = asset(1 * 10000, symbol("XPR",4));
+      u.account_type = 101;
+      u.registered_time = time_point_sec(1612316322);
+      u.staked_time = time_point_sec(1612319413);
+    });
+
+    // wlcm.proton
+    user_index users10(get_self(), "wlcm.proton"_n.value);
+    users10.emplace( get_self(), [&]( auto& u ){
+      u.stake = asset(10 * 10000, symbol("XPR",4));
+      u.account_type = 101;
+      u.registered_time = time_point_sec(1610955975);
+      u.staked_time = time_point_sec(1610955975);
+    });
+
+
+  } // end of block
 
   /*
   if (option == "clear userext") {
@@ -625,30 +826,81 @@ void freeos::maintain(std::string option) {
       // get the value from the config 'stakereqs' table
       stakereq_index stakereqs(name(freeosconfig_acct), name(freeosconfig_acct).value);
       // get the stake-requirements record for threshold 0
-      auto sr = stakereqs.find(0);
-      if (sr == stakereqs.end()) {
-        print("the stake requirements table does not have a record for threshold 0");
+      auto config_sr = stakereqs.find(0);
+      if (config_sr == stakereqs.end()) {
+        print("the config stake requirements table does not have a record for threshold 0");
         return;
       }
 
       // the default stake is calculated below
-      uint32_t req = sr->requirement_e;
-      asset next_user_stake_requirement = asset(req * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
 
-      stake_index stake_table(get_self(), get_self().value);
-      auto stake = stake_table.find( 0 ); // using 0 because this is a single row table
+      uint64_t threshold = config_sr->threshold;
 
-      if( stake == stake_table.end() ) {
-         stake_table.emplace(get_self(), [&]( auto& s ){
-           s.default_stake = next_user_stake_requirement;
+      uint32_t req_a = config_sr->requirement_a;
+      asset stake_requirement_a = asset(req_a * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      uint32_t req_b = config_sr->requirement_b;
+      asset stake_requirement_b = asset(req_b * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      uint32_t req_c = config_sr->requirement_c;
+      asset stake_requirement_c = asset(req_c * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      uint32_t req_d = config_sr->requirement_d;
+      asset stake_requirement_d = asset(req_d * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      uint32_t req_e = config_sr->requirement_e;
+      asset stake_requirement_e = asset(req_e * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      uint32_t req_u = config_sr->requirement_u;
+      asset stake_requirement_u = asset(req_u * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      uint32_t req_v = config_sr->requirement_v;
+      asset stake_requirement_v = asset(req_v * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      uint32_t req_w = config_sr->requirement_w;
+      asset stake_requirement_w = asset(req_w * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      uint32_t req_x = config_sr->requirement_x;
+      asset stake_requirement_x = asset(req_x * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      uint32_t req_y = config_sr->requirement_y;
+      asset stake_requirement_y = asset(req_y * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      // Place the values in the table
+      stakes_index stakes_table(get_self(), get_self().value);
+      auto stake = stakes_table.find( 0 ); // using 0 because this is a single row table
+
+      if( stake == stakes_table.end() ) {
+         stakes_table.emplace(get_self(), [&]( auto& s ){
+           s.threshold = threshold;
+           s.requirement_a = stake_requirement_a;
+           s.requirement_b = stake_requirement_b;
+           s.requirement_c = stake_requirement_c;
+           s.requirement_d = stake_requirement_d;
+           s.requirement_e = stake_requirement_e;
+           s.requirement_u = stake_requirement_u;
+           s.requirement_v = stake_requirement_v;
+           s.requirement_w = stake_requirement_w;
+           s.requirement_x = stake_requirement_x;
+           s.requirement_y = stake_requirement_y;
          });
       } else {
-         stake_table.modify( stake, same_payer, [&]( auto& s ) {
-           s.default_stake = next_user_stake_requirement;
+         stakes_table.modify( stake, same_payer, [&]( auto& s ) {
+           s.threshold = threshold;
+           s.requirement_a = stake_requirement_a;
+           s.requirement_b = stake_requirement_b;
+           s.requirement_c = stake_requirement_c;
+           s.requirement_d = stake_requirement_d;
+           s.requirement_e = stake_requirement_e;
+           s.requirement_u = stake_requirement_u;
+           s.requirement_v = stake_requirement_v;
+           s.requirement_w = stake_requirement_w;
+           s.requirement_x = stake_requirement_x;
+           s.requirement_y = stake_requirement_y;
          });
-      }
 
-      print("default stake set to ", next_user_stake_requirement.to_string());
+      print("current stakes set");
+    }
   }
 
   if (option == "vested") {
@@ -696,8 +948,55 @@ void freeos::dereg(const name& user) {
 
 }
 
-
 // stake action
+[[eosio::action]]
+void freeos::stake(const name& user) {
+
+  require_auth(user);
+
+  // determine required stake and then transfer to the freeos account
+
+  // auto-register the user - if user is already registered then that is ok, the register_user function responds silently
+  registration_status result = register_user(user, "e");
+
+  // get the user record
+  user_index users(get_self(), user.value);
+  auto u = users.begin();
+  if (u == users.end()) {
+    print("user ", user, " is not registered with Freeos");
+    return;
+  }
+
+  // check if user has already staked
+  if (u->staked_time != time_point_sec(0)) {
+    print("you have already staked");
+    return;
+  }
+
+  asset stake_requirement = get_stake_requirement(u->account_type);
+
+  // determine if the user has sufficient balance
+  asset user_balance = get_balance("eosio.token"_n, user, symbol("XPR",4));
+
+  if (user_balance < stake_requirement) {
+    print("you do not have the required ", stake_requirement.to_string(), " in your account to be able to stake");
+    return;
+  }
+
+  // perform the transfer
+  action transfer = action(
+    permission_level{get_self(),"active"_n},
+    name("eosio.token"),
+    "transfer"_n,
+    std::make_tuple(user, name(freeos_acct), stake_requirement, std::string("freeos stake"))
+  );
+
+  transfer.send();
+
+} // end of stake action
+
+
+// stake confirmation
 [[eosio::on_notify("eosio.token::transfer")]]
 void freeos::stake(name user, name to, asset quantity, std::string memo) {
 
@@ -732,7 +1031,8 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
     check(u->staked_time == time_point_sec(0), "the account is already staked");
 
     // check that the required stake has been transferred
-    check(u->stake_requirement == quantity, "the stake amount is not what is required");
+    asset stake_requirement = get_stake_requirement(u->account_type);
+    check(stake_requirement == quantity, "the stake amount is not what is required");
 
     // update the user record
     usertable.modify(u, to, [&](auto& row) {   // second argument is scope
@@ -746,6 +1046,45 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
   tick("U");   // User-driven tick
 
 }
+
+// get the current stake requirement for the user's account type
+asset freeos::get_stake_requirement(char account_type) {
+
+  // default stake value
+  asset stake_requirement = asset(0, symbol(CURRENCY_SYMBOL_CODE,4));
+
+  stakes_index stakes(get_self(), get_self().value);
+  auto iterator = stakes.begin();
+
+  if (iterator != stakes.end()) {
+
+    switch (account_type) {
+      case 'a' :  stake_requirement = iterator->requirement_a;
+                  break;
+      case 'b' :  stake_requirement = iterator->requirement_b;
+                  break;
+      case 'c' :  stake_requirement = iterator->requirement_c;
+                  break;
+      case 'd' :  stake_requirement = iterator->requirement_d;
+                  break;
+      case 'e' :  stake_requirement = iterator->requirement_e;
+                  break;
+      case 'u' :  stake_requirement = iterator->requirement_u;
+                  break;
+      case 'v' :  stake_requirement = iterator->requirement_v;
+                  break;
+      case 'w' :  stake_requirement = iterator->requirement_w;
+                  break;
+      case 'x' :  stake_requirement = iterator->requirement_x;
+                  break;
+      case 'y' :  stake_requirement = iterator->requirement_y;
+                  break;
+    }
+  }
+
+  return stake_requirement;
+}
+
 
 
 [[eosio::action]]
@@ -832,7 +1171,7 @@ void freeos::getuser(const name& user) {
     claimed_flag = true;
   }
 
-  print("account: ", user, ", type: ", u->account_type, ", stake-req: ", u->stake_requirement.to_string(), ", stake: ", u->stake.to_string(),
+  print("account: ", user, ", registered: ", u->registered_time.utc_seconds, ", type: ", u->account_type, ", stake: ", u->stake.to_string(),
         ", staked-on: ", u->staked_time.utc_seconds, ", XPR: ", xpr_balance.to_string(), ", liquid: ", liquid_freeos_balance.to_string(), ", vested: ", vested_freeos_balance.to_string(),
          ", airkey: ", airkey_balance.to_string(), ", week: ", this_week.week_number, ", claimed: ", claimed_flag);
 
@@ -1370,6 +1709,11 @@ float freeos::get_vested_proportion() {
       }
   }
 
+  // apply a cap of 0.9
+  if (proportion > 0.9f) {
+    proportion = 0.0f;
+  }
+
   return proportion;
 }
 
@@ -1386,12 +1730,10 @@ void freeos::getcounts() {
 
 
 
-// look up the required stake depending on number of users and account type
-uint32_t freeos::getthreshold(uint32_t numusers, std::string account_type) {
-  uint64_t required_stake;
+// look up the required threshold for the number of users
+uint64_t freeos::getthreshold(uint32_t numusers) {
 
-  // require_auth(get_self()); -- read only, so will not require authentication
-
+  // look up the config stakereqs table
   stakereq_index stakereqs(name(freeosconfig_acct), name(freeosconfig_acct).value);
   auto iterator = stakereqs.end();
 
@@ -1401,23 +1743,7 @@ uint32_t freeos::getthreshold(uint32_t numusers, std::string account_type) {
     if (numusers >= iterator->threshold) break;
   } while (iterator  != stakereqs.begin());
 
-  // which value to look up depends on the type of account
-  switch (account_type[0]) {
-    case 'e':
-      required_stake = iterator->requirement_e;
-      break;
-    case 'd':
-      required_stake = iterator->requirement_d;
-      break;
-    case 'v':
-      required_stake = iterator->requirement_v;
-      break;
-    default:
-      required_stake = 9999;
-      break;
-  }
-
-  return required_stake;
+  return iterator->threshold;;
 }
 
 
@@ -1467,9 +1793,10 @@ bool freeos::eligible_to_claim(const name& claimant, week this_week) {
     return false;
   }
 
-  // has the user met their staking requirement
-  if (user_record->stake != user_record->stake_requirement) {
-    print("user ", claimant, " has not staked the required ", user_record->stake_requirement.to_string());
+  // has the user met their staking requirement?
+  asset stake_requirement = get_stake_requirement(user_record->account_type);
+  if (user_record->stake != stake_requirement) {
+    print("user ", claimant, " has not staked the required ", stake_requirement.to_string());
     return false;
   }
 

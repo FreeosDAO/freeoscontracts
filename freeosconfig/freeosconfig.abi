@@ -14,16 +14,12 @@
             ]
         },
         {
-            "name": "getconfig",
+            "name": "getstakes",
             "base": "",
             "fields": [
                 {
                     "name": "threshold",
                     "type": "uint64"
-                },
-                {
-                    "name": "paramname",
-                    "type": "name"
                 }
             ]
         },
@@ -135,7 +131,15 @@
                     "type": "uint64"
                 },
                 {
-                    "name": "requirement_e",
+                    "name": "requirement_a",
+                    "type": "uint32"
+                },
+                {
+                    "name": "requirement_b",
+                    "type": "uint32"
+                },
+                {
+                    "name": "requirement_c",
                     "type": "uint32"
                 },
                 {
@@ -143,11 +147,27 @@
                     "type": "uint32"
                 },
                 {
+                    "name": "requirement_e",
+                    "type": "uint32"
+                },
+                {
+                    "name": "requirement_u",
+                    "type": "uint32"
+                },
+                {
                     "name": "requirement_v",
                     "type": "uint32"
                 },
                 {
+                    "name": "requirement_w",
+                    "type": "uint32"
+                },
+                {
                     "name": "requirement_x",
+                    "type": "uint32"
+                },
+                {
+                    "name": "requirement_y",
                     "type": "uint32"
                 }
             ]
@@ -161,7 +181,15 @@
                     "type": "uint64"
                 },
                 {
-                    "name": "value_e",
+                    "name": "value_a",
+                    "type": "uint32"
+                },
+                {
+                    "name": "value_b",
+                    "type": "uint32"
+                },
+                {
+                    "name": "value_c",
                     "type": "uint32"
                 },
                 {
@@ -169,11 +197,27 @@
                     "type": "uint32"
                 },
                 {
+                    "name": "value_e",
+                    "type": "uint32"
+                },
+                {
+                    "name": "value_u",
+                    "type": "uint32"
+                },
+                {
                     "name": "value_v",
                     "type": "uint32"
                 },
                 {
+                    "name": "value_w",
+                    "type": "uint32"
+                },
+                {
                     "name": "value_x",
+                    "type": "uint32"
+                },
+                {
+                    "name": "value_y",
                     "type": "uint32"
                 }
             ]
@@ -271,8 +315,8 @@
             "ricardian_contract": ""
         },
         {
-            "name": "getconfig",
-            "type": "getconfig",
+            "name": "getstakes",
+            "type": "getstakes",
             "ricardian_contract": ""
         },
         {

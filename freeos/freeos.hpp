@@ -144,6 +144,21 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          void stake(name user, name to, asset quantity, std::string memo);
 
          /**
+          * stake action.
+          *
+          * @details Transfer stake requirement from the user to the freeos account.
+          * @details Updates the record of staked tokens in the user account record.
+          *
+          * @param user - the user account
+          *
+          * @pre The user account must be previously registered and has a sufficient balance to pay the stake
+          *
+          * If transfer is successful the record for the user account is updated to set the amount staked and stake time/date to the current time.
+          */
+         [[eosio::action]]
+         void stake(const name& user);
+
+         /**
           * unstake action.
           *
           * @details Transfer staked EOS back to the user if the waiting time of 1 week has elapsed since staking.
@@ -374,11 +389,11 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
 
          // the registered user table
          struct [[eosio::table]] user {
-           asset stake;                    // how many EOS tokens staked
-           char account_type;              // user has EOS-login account, Dapp Account-login or other
-           asset stake_requirement;        // the number of tokens the user is required to stake
-           time_point_sec registered_time; // when the user was registered
-           time_point_sec staked_time;     // when the user staked their tokens (staked tokens have a time lock)
+           asset          stake;            // how many EOS tokens staked
+           char           account_type;     // user has EOS-login account, Dapp Account-login or other
+           time_point_sec registered_time;  // when the user was registered
+           time_point_sec staked_time;      // when the user staked their tokens (staked tokens have a time lock)
+           uint16_t       votes;            // how many votes the user has made
 
            uint64_t primary_key() const {return stake.symbol.code().raw();}
          };
@@ -398,14 +413,24 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          using counter_index = eosio::multi_index<"counters"_n, counter>;
 
 
-         // the unregistered user stake requirement
-         struct [[eosio::table]] unregstake {
-           asset    default_stake;
+         // the user stake requirements
+         struct [[eosio::table]] stakereq {
+           uint64_t threshold;
+           asset    requirement_a;
+           asset    requirement_b;
+           asset    requirement_c;
+           asset    requirement_d;
+           asset    requirement_e;
+           asset    requirement_u;
+           asset    requirement_v;
+           asset    requirement_w;
+           asset    requirement_x;
+           asset    requirement_y;
 
            uint64_t primary_key() const { return 0; } // return a constant (0 in this case) to ensure a single-row table
          };
 
-         using stake_index = eosio::multi_index<"stake"_n, unregstake>;
+         using stakes_index = eosio::multi_index<"stakes"_n, stakereq>;
 
 
          // FREEOS USD-price - code: freeosconfig, scope: freeosconfig
@@ -436,14 +461,20 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          >;
 
 
-         // stake requirement table
+         // CONFIG stake requirements table
 
          struct [[eosio::table]] stakerequire {
            uint64_t    threshold;
-           uint32_t    requirement_e;
+           uint32_t    requirement_a;
+           uint32_t    requirement_b;
+           uint32_t    requirement_c;
            uint32_t    requirement_d;
+           uint32_t    requirement_e;
+           uint32_t    requirement_u;
            uint32_t    requirement_v;
+           uint32_t    requirement_w;
            uint32_t    requirement_x;
+           uint32_t    requirement_y;
 
            uint64_t primary_key() const { return threshold;}
          };
@@ -527,7 +558,8 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
 
          bool checkmasterswitch();
          bool checkschedulelogging();
-         uint32_t getthreshold(uint32_t numusers, std::string account_type);
+         uint64_t getthreshold(uint32_t numusers);
+         asset get_stake_requirement(char account_type);
          week getclaimweek();
          bool eligible_to_claim(const name& claimant, week this_week);
          uint32_t updateclaimeventcount();
@@ -539,6 +571,7 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          void daily_process(std::string trigger);
          void weekly_process(std::string trigger);
          void update_unvest_percentage();
+         void update_stakes(uint32_t numusers);
          void payalan();  // ??? this is test code
 
    };

@@ -25,7 +25,7 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
      */
     [[eosio::action]]
     void version();
-    
+
     /**
      * paramupsert action
      *
@@ -63,19 +63,31 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
      * @details This action creates a new entry, or modifies an existing entry, in the 'stakereqs' table.
      *
      * @param threshold - the lower bound of the range of user population (e.g. if 5,000-10,000 users require a stake of 10 EOS, then enter 5000). This is the promary key of the table,
-     * @param value_e - the amount of EOS stake required for an EOS wallet user,
-     * @param value_d - the amount of EOS stake required for a Dapp Account user,
-     * @param value_e - the amount of EOS stake required for a Voice verified user,
-     * @param value_e - (reserved for future use, enter 0)
+     * @param value_a - the amount of EOS stake required for a 'type a' user,
+     * @param value_b - the amount of EOS stake required for a 'type b' user,
+     * @param value_c - the amount of EOS stake required for a 'type c' user,
+     * @param value_d - the amount of EOS stake required for a 'type d' user,
+     * @param value_e - the amount of EOS stake required for an 'type e' user - EOS wallet,
+     * @param value_u - the amount of EOS stake required for a 'type u' user,
+     * @param value_v - the amount of EOS stake required for a 'type v' user,
+     * @param value_w - the amount of EOS stake required for a 'type w' user,
+     * @param value_x - the amount of EOS stake required for a 'type x' user,
+     * @param value_y - the amount of EOS stake required for a 'type y' user,
      *
      * @pre requires permission of the contract account
      */
     [[eosio::action]]
     void stakeupsert(uint64_t threshold,
-    uint32_t  value_e,
+    uint32_t  value_a,
+    uint32_t  value_b,
+    uint32_t  value_c,
     uint32_t  value_d,
+    uint32_t  value_e,
+    uint32_t  value_u,
     uint32_t  value_v,
-    uint32_t  value_x);
+    uint32_t  value_w,
+    uint32_t  value_x,
+    uint32_t  value_y);
 
     /**
      * stakeerase action.
@@ -109,6 +121,7 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
     std::string end,
     uint16_t  claim_amount,
     uint16_t  tokens_required);
+
 
     /**
      * getweek action.
@@ -169,16 +182,15 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
     void rateerase();
 
     /**
-     * getconfig action.
+     * getstakes action.
      *
-     * @details This action is intended for testers. It displays the values associated with the threshold in the 'stakereqs' table and the parameter in the 'parameters' table.
+     * @details This action is intended for testers. It displays the values associated with the threshold in the 'stakereqs' table.
      *
      * @param threshold - the lower bound of the range of user population (e.g. if the band is for 5,000-10,000 users, then enter 5000)
-     * @param paramname - the name of the parameter
      *
      */
     [[eosio::action]]
-    void getconfig(uint64_t threshold, name paramname);
+    void getstakes(uint64_t threshold);
 
     /**
      * getthreshold action.
@@ -215,10 +227,16 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
 
     struct [[eosio::table]] stakerequire {
       uint64_t    threshold;
-      uint32_t    requirement_e;
+      uint32_t    requirement_a;
+      uint32_t    requirement_b;
+      uint32_t    requirement_c;
       uint32_t    requirement_d;
+      uint32_t    requirement_e;
+      uint32_t    requirement_u;
       uint32_t    requirement_v;
+      uint32_t    requirement_w;
       uint32_t    requirement_x;
+      uint32_t    requirement_y;
 
       uint64_t primary_key() const { return threshold;}
     };
