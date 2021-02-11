@@ -7,8 +7,10 @@ using namespace eosio;
 
 // versions
 // 100 - refactored the stakereqs table to have 10 columns a-e and u-y
+// 101 - weeks table renamed to iterations - with iteration_number as primary key
+// 102 - added the usersinfo verification table, with actions for upserting and erasing records
 
-const std::string VERSION = "0.100";
+const std::string VERSION = "0.102";
 
 [[eosio::action]]
 void freeosconfig::version() {
@@ -195,13 +197,13 @@ void freeosconfig::stakeerase (uint64_t threshold) {
 }
 
 
-// upsert a week into the weeks table
+// upsert an iteration into the iterations table
 [[eosio::action]]
-void freeosconfig::weekupsert(uint64_t week_number, std::string start, std::string end, uint16_t claim_amount, uint16_t tokens_required) {
+void freeosconfig::iterupsert(uint64_t iteration_number, std::string start, std::string end, uint16_t claim_amount, uint16_t tokens_required) {
 
   require_auth(_self);
 
-  // parse the week start and end strings
+  // parse the iteration start and end strings
   uint32_t nstart = parsetime(start);
   if (nstart == 0) {
     print("start date ", start, " cannot be parsed; must be in YYYY-MM-DD HH:MM:SS format");
@@ -214,14 +216,14 @@ void freeosconfig::weekupsert(uint64_t week_number, std::string start, std::stri
     return;
   }
 
-  week_index freeosweeks(get_self(), get_self().value);
-  auto iterator = freeosweeks.find(week_number);
+  iteration_index iterations(get_self(), get_self().value);
+  auto iterator = iterations.find(iteration_number);
 
-  // check if the week is in the table or not
-  if (iterator == freeosweeks.end() ) {
-      // the week is not in the table, so insert
-      freeosweeks.emplace(_self, [&](auto & row) {
-         row.week_number = week_number;
+  // check if the iteration is in the table or not
+  if (iterator == iterations.end() ) {
+      // the iteration is not in the table, so insert
+      iterations.emplace(_self, [&](auto & row) {
+         row.iteration_number = iteration_number;
          row.start = nstart;
          row.start_date = start;
          row.end = nend;
@@ -230,12 +232,12 @@ void freeosconfig::weekupsert(uint64_t week_number, std::string start, std::stri
          row.tokens_required = tokens_required;
       });
 
-      print("week: ", week_number, " start: ", start, ", end: ", end, ", claim amount: ", claim_amount, ", tokens_required: ", tokens_required, " added to the weeks table");
+      print("iteration: ", iteration_number, " start: ", start, ", end: ", end, ", claim amount: ", claim_amount, ", tokens_required: ", tokens_required, " added to the iterations table");
 
   } else {
-      // the week is in the table, so update
-      freeosweeks.modify(iterator, _self, [&](auto& row) {
-        row.week_number = week_number;
+      // the iteration is in the table, so update
+      iterations.modify(iterator, _self, [&](auto& row) {
+        row.iteration_number = iteration_number;
         row.start = nstart;
         row.start_date = start;
         row.end = nend;
@@ -244,39 +246,39 @@ void freeosconfig::weekupsert(uint64_t week_number, std::string start, std::stri
         row.tokens_required = tokens_required;
       });
 
-      print("week: ", week_number, " start: ", start, ", end: ", end, ", claim amount: ", claim_amount, ", tokens_required: ", tokens_required, ", modified in the weeks table");
+      print("iteration: ", iteration_number, " start: ", start, ", end: ", end, ", claim amount: ", claim_amount, ", tokens_required: ", tokens_required, ", modified in the iterations table");
   }
 }
 
-// erase a week record from the weeks table
+// erase an iteration record from the iterations table
 [[eosio::action]]
-void freeosconfig::weekerase(uint64_t week_number) {
+void freeosconfig::itererase(uint64_t iteration_number) {
   require_auth(_self);
 
-  week_index freeosweeks(get_self(), get_self().value);
-  auto iterator = freeosweeks.find(week_number);
+  iteration_index iterations(get_self(), get_self().value);
+  auto iterator = iterations.find(iteration_number);
 
   // check if the parameter is in the table or not
-  check(iterator != freeosweeks.end(), "week record does not exist in the weeks table");
+  check(iterator != iterations.end(), "iteration record does not exist in the iterations table");
 
-  // the parameter is in the table, so delete
-  freeosweeks.erase(iterator);
+  // the iteration is in the table, so delete
+  iterations.erase(iterator);
 
-  print("record for week ", week_number, " deleted from weeks table");
+  print("record for iteration ", iteration_number, " deleted from iterations table");
 }
 
-// for testing - get a week from the weeks table
+// for testing - get an iteration from the iterations table
 [[eosio::action]]
-void freeosconfig::getweek(uint64_t week_number) {
+void freeosconfig::getiter(uint64_t iteration_number) {
 
-  week_index freeosweeks(get_self(), get_self().value);
-  auto iterator = freeosweeks.find(week_number);
+  iteration_index iterations(get_self(), get_self().value);
+  auto iterator = iterations.find(iteration_number);
 
-  // check if the week is in the table or not
-  if (iterator == freeosweeks.end() ) {
-    print("a record for week ", week_number, " does not exist in the weeks table" );
+  // check if the iteration is in the table or not
+  if (iterator == iterations.end() ) {
+    print("a record for iteration ", iteration_number, " does not exist in the iterations table" );
   } else {
-    print("week ", week_number, " start: ", iterator->start_date, " (", iterator->start, "), end: ", iterator->end_date,
+    print("iteration ", iteration_number, " start: ", iterator->start_date, " (", iterator->start, "), end: ", iterator->end_date,
     " (", iterator->end, "), claim amount: ", iterator->claim_amount, ", tokens required: ", iterator->tokens_required);
   }
 }
@@ -357,6 +359,77 @@ void freeosconfig::getthreshold(uint64_t numusers, std::string account_type) {
   print("In band ", iterator->threshold, ", required_stake: ", required_stake);
 
 }
+
+
+// ************************************************************************************
+// ************* eosio.proton actions for populating usersinfo table ******************
+// ************************************************************************************
+
+void freeosconfig::userverify(name acc, name verifier, bool  verified) {
+
+		check( is_account( acc ), "Account does not exist.");
+
+		usersinfo usrinf( get_self(), get_self().value );
+		auto existing = usrinf.find( acc.value );
+
+		if ( existing != usrinf.end() ) {
+			check (existing->verified != verified, "This status alredy set");
+			usrinf.modify( existing, get_self(), [&]( auto& p ){
+				p.verified = verified;
+				if ( verified ) {
+					p.verifiedon = eosio::current_time_point().sec_since_epoch();
+					p.verifier = verifier;
+				} else  {
+					p.verifiedon = 0;
+					p.verifier = ""_n;
+				}
+				p.date = eosio::current_time_point().sec_since_epoch();
+			});
+		} else {
+			usrinf.emplace( get_self(), [&]( auto& p ){
+				p.acc = acc;
+				p.name = "";
+				p.avatar = "";
+				p.verified = verified;
+
+				if ( verified ) {
+					p.verifiedon = eosio::current_time_point().sec_since_epoch();
+					p.verifier = verifier;
+				} else  {
+					p.verifiedon = 0;
+					p.verifier = ""_n;
+				}
+				p.date = eosio::current_time_point().sec_since_epoch();
+			});
+		}
+
+}  // end of userverify
+
+void freeosconfig::addkyc( name acc, name kyc_provider, std::string kyc_level, uint64_t kyc_date) {
+
+    kyc_prov kyc;
+    kyc.kyc_provider = kyc_provider;
+    kyc.kyc_level = kyc_level;
+    kyc.kyc_date = kyc_date;
+
+    usersinfo usrinf( get_self(), get_self().value );
+		auto itr_usrs = usrinf.require_find( acc.value, string("User " + acc.to_string() + " not found").c_str() );
+
+		for (auto i = 0; i < itr_usrs->kyc.size(); i++) {
+			if ( itr_usrs->kyc[i].kyc_provider == kyc.kyc_provider) {
+				check (false, string("There is already approval from " + kyc.kyc_provider.to_string()).c_str());
+				break;
+			}
+		}
+
+		usrinf.modify( itr_usrs, get_self(), [&]( auto& p ){
+			p.kyc.push_back(kyc);
+		});
+	}
+
+// ************************************************************************************
+// ************************************************************************************
+// ************************************************************************************
 
 // helper functions
 

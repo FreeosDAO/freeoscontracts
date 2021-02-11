@@ -161,7 +161,7 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          /**
           * unstake action.
           *
-          * @details Transfer staked EOS back to the user if the waiting time of 1 week has elapsed since staking.
+          * @details Transfer staked EOS back to the user if the waiting time of <holding period> has elapsed since staking.
           * @details Updates the record of staked EOS tokens in the user account record in the 'stakereqs' table.\n
           *
           * @param user - the account to transfer the previously EOS tokens to,
@@ -277,14 +277,14 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          /**
           * claim action.
           *
-          * @details This action is run by the user to claim this week's allocation of freeos tokens.
+          * @details This action is run by the user to claim this iteration's allocation of freeos tokens.
           *
-          * @param owner - the user account to execute the claim action for.
+          * @param user - the user account to execute the claim action for.
           *
           * @pre Requires authorisation of the user account
           * @pre The user must pass claim eligibility requirements:
           * - must be registered as a freeos user (has a record in the users table)
-          * - must not have already claimed for the current week
+          * - must not have already claimed for the current iteration
           * - must have staked the required amount of EOS tokens
           * - must hold the required amount of freeos tokens.
           */
@@ -292,9 +292,22 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          void claim( const name& user);
 
          /**
+          * unclaim action.
+          *
+          * @details This action is run by the contract account to reset the user's claim record and set their balances
+          * @details of liquid and vested FREEOS to zero.
+          *
+          * @param user - the user account to execute the unclaim action for.
+          *
+          * @pre Requires authorisation of the contract account
+          */
+         [[eosio::action]]
+         void unclaim( const name& user);
+
+         /**
           * unvest action.
           *
-          * @details This action is run by the user to release this week's allocation of vested freeos tokens.
+          * @details This action is run by the user to release this iteration's allocation of vested freeos tokens.
           *
           * @param owner - the user account to execute the unvest action for.
           *
@@ -401,11 +414,12 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          using user_index = eosio::multi_index<"users"_n, user>;
 
 
-         // new record counter table - to replace the singleton
+         // new counters table - to replace the singleton
          struct [[eosio::table]] counter {
            uint32_t  usercount;
            uint32_t  claimevents;
            uint32_t  unvestpercent;
+           uint32_t  iteration;
 
            uint64_t primary_key() const { return 0; } // return a constant (0 in this case) to ensure a single-row table
          };
@@ -499,12 +513,29 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          using week_index = eosio::multi_index<"weeks"_n, week>;
 
 
+         // freeos airclaim week calendar
+
+         struct [[eosio::table]] iteration {
+           uint64_t    iteration_number;
+           uint32_t    start;
+           std::string start_date;
+           uint32_t    end;
+           std::string end_date;
+           uint16_t    claim_amount;
+           uint16_t    tokens_required;
+
+           uint64_t primary_key() const { return iteration_number; }
+         };
+
+         using iteration_index = eosio::multi_index<"iterations"_n, iteration>;
+
+
          // claim history table - scoped on user account name
          struct [[eosio::table]] claimevent {
-           uint64_t   week_number;
+           uint64_t   iteration_number;
            uint32_t   claim_time;
 
-           uint64_t primary_key() const { return week_number; }
+           uint64_t primary_key() const { return iteration_number; }
          };
 
          using claim_index = eosio::multi_index<"claims"_n, claimevent>;
@@ -512,10 +543,10 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
 
          // unvest history table - scoped on user account name
          struct [[eosio::table]] unvestevent {
-           uint64_t   week_number;
+           uint64_t   iteration_number;
            uint32_t   unvest_time;
 
-           uint64_t primary_key() const { return week_number; }
+           uint64_t primary_key() const { return iteration_number; }
          };
 
          using unvest_index = eosio::multi_index<"unvests"_n, unvestevent>;
@@ -546,6 +577,32 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          using schedulelog_index = eosio::multi_index<"schedulelog"_n, schedulelog>;
 
 
+         // ***************** KYC from eosio.proton *************
+         struct kyc_prov {
+         	name kyc_provider;
+         	string kyc_level;
+         	uint64_t kyc_date;
+         };
+
+         struct [[eosio::table]] userinfo {
+     			name                                     acc;
+     			std::string                              name;
+     			std::string                              avatar;
+     			bool                                     verified;
+     			uint64_t                                 date;
+     			uint64_t                                 verifiedon;
+     			eosio::name                              verifier;
+     			std::vector<eosio::name>                 raccs;
+     			std::vector<std::tuple<eosio::name, eosio::name>>  aacts;
+     			std::vector<std::tuple<eosio::name, std::string>>  ac;
+     			std::vector<kyc_prov>                              kyc;
+
+     			uint64_t primary_key()const { return acc.value; }
+     		};
+
+         typedef eosio::multi_index< "usersinfo"_n, userinfo > usersinfo;
+
+
          // ********************************
 
          void sub_balance( const name& owner, const asset& value );
@@ -560,8 +617,8 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          bool checkschedulelogging();
          uint64_t getthreshold(uint32_t numusers);
          asset get_stake_requirement(char account_type);
-         week getclaimweek();
-         bool eligible_to_claim(const name& claimant, week this_week);
+         iteration getclaimiteration();
+         bool eligible_to_claim(const name& claimant, iteration this_iteration);
          uint32_t updateclaimeventcount();
          uint16_t getfreedaomultiplier(uint32_t claimevents);
          void store_unregistered_stake(asset next_user_stake_requirement);

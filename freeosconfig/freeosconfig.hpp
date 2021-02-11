@@ -1,4 +1,5 @@
 #include <eosio/eosio.hpp>
+#include "eosio.proton.hpp"
 
 using namespace eosio;
 
@@ -103,20 +104,20 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
 
 
     /**
-     * weekupsert action.
+     * iterupsert action.
      *
-     * @details This action creates a new entry, or modifies an existing entry, in the 'weeks' table.
+     * @details This action creates a new entry, or modifies an existing entry, in the 'iterations' table.
      *
-     * @param week_number - the airclaim week number
-     * @param start - string representing the start of week in YYYY-MM-DD HH:MM:SS format,
-     * @param end - string representing the end of week in YYYY-MM-DD HH:MM:SS format
-     * @param claim_amount - the amount of FREEOS a user can claim in the week
+     * @param iteration_number - the airclaim iteration number
+     * @param start - string representing the start of iteration in YYYY-MM-DD HH:MM:SS format,
+     * @param end - string representing the end of iteration in YYYY-MM-DD HH:MM:SS format
+     * @param claim_amount - the amount of FREEOS a user can claim in the iteration
      * @param claim_amount - the amount of FREEOS a user must hold before claiming
      *
      * @pre requires permission of the contract account
      */
     [[eosio::action]]
-    void weekupsert(uint64_t week_number,
+    void iterupsert(uint64_t iteration_number,
     std::string start,
     std::string end,
     uint16_t  claim_amount,
@@ -124,28 +125,29 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
 
 
     /**
-     * getweek action.
+     * getiter action.
      *
-     * @details For testing purposes. This action prints a record from the 'weeks' table.
+     * @details For testing purposes. This action prints a record from the 'iterations' table.
      *
-     * @param week_number - the week number
+     * @param iteration_number - the iteration number
      *
      * @pre requires permission of the contract account
      */
     [[eosio::action]]
-    void getweek(uint64_t week_number);
+    void getiter(uint64_t iteration_number);
 
     /**
-     * weekerase action.
+     * itererase action.
      *
-     * @details This action deletes a record from the 'weeks' table.
+     * @details This action deletes a record from the 'iterations' table.
      *
-     * @param week_number - the week number
+     * @param iteration_number - the iteration number
      *
      * @pre requires permission of the contract account
      */
     [[eosio::action]]
-    void weekerase(uint64_t week_number);
+    void itererase(uint64_t iteration_number);
+
 
     /**
      * currentrate action.
@@ -204,6 +206,17 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
     [[eosio::action]]
     void getthreshold(uint64_t numusers, std::string account_type);
 
+    // ************************************************************************************
+    // ************* eosio.proton actions for populating usersinfo table ******************
+    // ************************************************************************************
+    [[eosio::action]]
+    void userverify(name acc, name verifier, bool  verified);
+
+    [[eosio::action]]
+    void addkyc( name acc, name kyc_provider, std::string kyc_level, uint64_t kyc_date);
+
+    // ************************************************************************************
+
 
   private:
     // ************************************
@@ -246,8 +259,8 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
 
     // freeos airclaim week calendar
 
-    struct [[eosio::table]] week {
-      uint64_t    week_number;
+    struct [[eosio::table]] iteration {
+      uint64_t    iteration_number;
       uint32_t    start;
       std::string start_date;
       uint32_t    end;
@@ -255,10 +268,11 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
       uint16_t    claim_amount;
       uint16_t    tokens_required;
 
-      uint64_t primary_key() const { return week_number; }
+      uint64_t primary_key() const { return iteration_number; }
     };
 
-    using week_index = eosio::multi_index<"weeks"_n, week>;
+    using iteration_index = eosio::multi_index<"iterations"_n, iteration>;
+
 
     // FREEOS USD-price - code: freeosconfig, scope: freeosconfig
     struct [[eosio::table]] price {
@@ -270,12 +284,37 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
 
     using exchange_index = eosio::multi_index<"exchangerate"_n, price>;
 
+
+    // Verification table - a mockup of the verification table on Proton - so that we can test how to determine a user's account_type
+    // Taken from https://github.com/ProtonProtocol/proton.contracts/blob/master/contracts/eosio.proton/include/eosio.proton/eosio.proton.hpp
+    struct [[eosio::table]] userinfo {
+			name                                     acc;
+			std::string                              name;
+			std::string                              avatar;
+			bool                                     verified;
+			uint64_t                                 date;
+			uint64_t                                 verifiedon;
+			eosio::name                              verifier;
+
+			std::vector<eosio::name>                 raccs;
+			std::vector<std::tuple<eosio::name, eosio::name>>  aacts;
+			std::vector<std::tuple<eosio::name, std::string>>       ac;
+
+			std::vector<kyc_prov>                         kyc;
+
+			uint64_t primary_key()const { return acc.value; }
+		};
+
+    typedef eosio::multi_index< "usersinfo"_n, userinfo > usersinfo;
+
+
     // ************************************
 
     // helper functions
     uint32_t parsetime(std::string datetime);
     uint32_t GetTimeStamp(  int year, int month, int day,
                             int hour, int minute, int second);
+
 
 };
 /** @}*/ // end of @defgroup freeosconfig freeosconfig contract

@@ -28,7 +28,7 @@
             "base": "",
             "fields": [
                 {
-                    "name": "week_number",
+                    "name": "iteration_number",
                     "type": "uint64"
                 },
                 {
@@ -70,6 +70,10 @@
                 },
                 {
                     "name": "unvestpercent",
+                    "type": "uint32"
+                },
+                {
+                    "name": "iteration",
                     "type": "uint32"
                 }
             ]
@@ -155,6 +159,58 @@
                 {
                     "name": "memo",
                     "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "iteration",
+            "base": "",
+            "fields": [
+                {
+                    "name": "iteration_number",
+                    "type": "uint64"
+                },
+                {
+                    "name": "start",
+                    "type": "uint32"
+                },
+                {
+                    "name": "start_date",
+                    "type": "string"
+                },
+                {
+                    "name": "end",
+                    "type": "uint32"
+                },
+                {
+                    "name": "end_date",
+                    "type": "string"
+                },
+                {
+                    "name": "claim_amount",
+                    "type": "uint16"
+                },
+                {
+                    "name": "tokens_required",
+                    "type": "uint16"
+                }
+            ]
+        },
+        {
+            "name": "kyc_prov",
+            "base": "",
+            "fields": [
+                {
+                    "name": "kyc_provider",
+                    "type": "name"
+                },
+                {
+                    "name": "kyc_level",
+                    "type": "string"
+                },
+                {
+                    "name": "kyc_date",
+                    "type": "uint64"
                 }
             ]
         },
@@ -443,6 +499,44 @@
             ]
         },
         {
+            "name": "tuple_name_name",
+            "base": "",
+            "fields": [
+                {
+                    "name": "field_0",
+                    "type": "name"
+                },
+                {
+                    "name": "field_1",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "tuple_name_string",
+            "base": "",
+            "fields": [
+                {
+                    "name": "field_0",
+                    "type": "name"
+                },
+                {
+                    "name": "field_1",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "unclaim",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                }
+            ]
+        },
+        {
             "name": "unstake",
             "base": "",
             "fields": [
@@ -467,7 +561,7 @@
             "base": "",
             "fields": [
                 {
-                    "name": "week_number",
+                    "name": "iteration_number",
                     "type": "uint64"
                 },
                 {
@@ -499,6 +593,56 @@
                 {
                     "name": "votes",
                     "type": "uint16"
+                }
+            ]
+        },
+        {
+            "name": "userinfo",
+            "base": "",
+            "fields": [
+                {
+                    "name": "acc",
+                    "type": "name"
+                },
+                {
+                    "name": "name",
+                    "type": "string"
+                },
+                {
+                    "name": "avatar",
+                    "type": "string"
+                },
+                {
+                    "name": "verified",
+                    "type": "bool"
+                },
+                {
+                    "name": "date",
+                    "type": "uint64"
+                },
+                {
+                    "name": "verifiedon",
+                    "type": "uint64"
+                },
+                {
+                    "name": "verifier",
+                    "type": "name"
+                },
+                {
+                    "name": "raccs",
+                    "type": "name[]"
+                },
+                {
+                    "name": "aacts",
+                    "type": "tuple_name_name[]"
+                },
+                {
+                    "name": "ac",
+                    "type": "tuple_name_string[]"
+                },
+                {
+                    "name": "kyc",
+                    "type": "kyc_prov[]"
                 }
             ]
         },
@@ -629,6 +773,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "unclaim",
+            "type": "unclaim",
+            "ricardian_contract": ""
+        },
+        {
             "name": "unstake",
             "type": "unstake",
             "ricardian_contract": ""
@@ -669,6 +818,13 @@
         {
             "name": "exchangerate",
             "type": "price",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "iterations",
+            "type": "iteration",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
@@ -725,6 +881,13 @@
         {
             "name": "users",
             "type": "user",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "usersinfo",
+            "type": "userinfo",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

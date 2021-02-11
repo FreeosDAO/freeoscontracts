@@ -25,9 +25,16 @@ using namespace eosio;
 //     - stake_requirement field removed from user record
 // 314 - added 'stake' action
 // 315 - capped vested proportion at 0.9
+// 316 - weeks table renamed to iterations
+//       claims table - field: week_number renamed to iteration_number
+//       unvests table - field: week_number renamed to iteration_number
+//       counters table contains a field called 'iteration' which equals the current claim iteration
+// 317 - added the unclaim action which removes user's records from claim history table and sets liquid and freeos balance to zero.
+// 318 - put in a fix in eligibilty to change how we check if the user has staked
+// 319 - added querying the verification table (stored in freeosconfig) so that we can determine user's account_type
 
 
-const std::string VERSION = "0.315 XPR";
+const std::string VERSION = "0.318 XPR";
 
 [[eosio::action]]
 void freeos::version() {
@@ -308,7 +315,7 @@ void freeos::weekly_process(std::string trigger) {
 
   // do whatever...
 
-  // calculate the weekly unvest percentage
+  // calculate the iteration's unvest percentage
   update_unvest_percentage();
 
 
@@ -340,7 +347,7 @@ void freeos::update_unvest_percentage() {
       });
 
   } else {
-    // counters record found - work out whether we need to advance weekly percentage
+    // counters record found - work out whether we need to advance iteration's percentage
     current_unvest_percentage = iterator->unvestpercent;
 
     // if the exchange rate is favourable then move it on to next level
@@ -598,7 +605,105 @@ void freeos::update_stakes(uint32_t numusers) {
 void freeos::maintain(std::string option) {
   require_auth( get_self() );
 
-  if (option == "counter remove") {
+  if (option == "kyc") {
+    usersinfo kyctable(name(freeosconfig_acct), name(freeosconfig_acct).value);
+    auto kycrecord = kyctable.begin();
+
+    auto kyc_prov = kycrecord->kyc;
+
+    //print("kyc_provider = ", kyc_prov[0].kyc_provider, " kyc_level = ", kyc_prov[0].kyc_level, " kyc_date = ", kyc_prov[0].kyc_date);
+    size_t fn_pos = kyc_prov[0].kyc_level.find("trulioo:firstname");
+    size_t ln_pos = kyc_prov[0].kyc_level.find("trulioo:lastname");
+
+    if (fn_pos != std::string::npos && ln_pos != std::string::npos) {
+      print("firstname and lastname were detected, size of array = ", kyc_prov.size());
+    } else {
+      print("firstname and lastname were not detected");
+    }
+  }
+
+  if (option == "migrate claims table clear")  {
+
+    claim_index claims1(get_self(), name("alanappleton").value);
+    auto iterator1 = claims1.begin();
+    claims1.erase(iterator1);
+
+    claim_index claims2(get_self(), name("billbeaumont").value);
+    auto iterator2 = claims2.begin();
+    claims2.erase(iterator2);
+
+    claim_index claims3(get_self(), name("celiacollins").value);
+    auto iterator3 = claims3.begin();
+    claims3.erase(iterator3);
+
+    claim_index claims4(get_self(), name("dennisedolan").value);
+    auto iterator4 = claims4.begin();
+    claims4.erase(iterator4);
+
+    claim_index claims5(get_self(), name("frankyfellon").value);
+    auto iterator5 = claims5.begin();
+    claims5.erase(iterator5);
+
+    claim_index claims6(get_self(), name("jamiejackson").value);
+    auto iterator6 = claims6.begin();
+    claims6.erase(iterator6);
+
+    claim_index claims7(get_self(), name("powderblue").value);
+    auto iterator7 = claims7.begin();
+    claims7.erase(iterator7);
+
+  }
+
+  if (option == "migrate claims table populate") {
+
+    // alanappleton
+    claim_index claims1(get_self(), name("alanappleton").value);
+    claims1.emplace( get_self(), [&]( auto& claim ) {
+    claim.iteration_number = 1;
+    claim.claim_time = 1611194906;
+    });
+
+    // billbeaumont
+    claim_index claims2(get_self(), name("billbeaumont").value);
+    claims2.emplace( get_self(), [&]( auto& claim ) {
+    claim.iteration_number = 1;
+    claim.claim_time = 1611271350;
+    });
+
+    // celiacollins
+    claim_index claims3(get_self(), name("celiacollins").value);
+    claims3.emplace( get_self(), [&]( auto& claim ) {
+    claim.iteration_number = 1;
+    claim.claim_time = 1611553480;
+    });
+
+    // dennisedolan
+    claim_index claims4(get_self(), name("dennisedolan").value);
+    claims4.emplace( get_self(), [&]( auto& claim ) {
+    claim.iteration_number = 1;
+    claim.claim_time = 1611042009;
+    });
+
+    // frankyfellon
+    claim_index claims5(get_self(), name("frankyfellon").value);
+    claims5.emplace( get_self(), [&]( auto& claim ) {
+    claim.iteration_number = 1;
+    claim.claim_time = 1611041595;
+    });
+
+    // jamiejackson
+    claim_index claims6(get_self(), name("jamiejackson").value);
+    claims6.emplace( get_self(), [&]( auto& claim ) {
+    claim.iteration_number = 1;
+    claim.claim_time = 1612405056;
+    });
+
+    // powderblue
+    claim_index claims7(get_self(), name("powderblue").value);
+    claims7.emplace( get_self(), [&]( auto& claim ) {
+    claim.iteration_number = 1;
+    claim.claim_time = 1612319970;
+    });
 
   }
 
@@ -611,15 +716,22 @@ void freeos::maintain(std::string option) {
     }
   }
 
-  if (option == "counter initialise") {
+  if (option == "counters clear") {
+    counter_index counters(get_self(), get_self().value);
+    auto iteration = counters.begin();
+    counters.erase(iteration);
+  }
 
-    counter_index usercount(get_self(), get_self().value);
+  if (option == "counters populate") {
+
+    counter_index counters(get_self(), get_self().value);
 
     // emplace
-    usercount.emplace( get_self(), [&]( auto& c ) {
-      c.usercount = 8;
-      c.claimevents = 5;
+    counters.emplace( get_self(), [&]( auto& c ) {
+      c.usercount = 11;
+      c.claimevents = 7;
       c.unvestpercent = 0;
+      c.iteration = 1;
       });
   }
 
@@ -1106,7 +1218,7 @@ void freeos::unstake(const name& user) {
   check(u->stake.amount > 0, "account has not staked");
 
   // if enough time elapsed then refund amount
-  check((u->staked_time.utc_seconds + STAKE_HOLD_TIME_SECONDS) <= current_time_point().sec_since_epoch(), "stake has not yet been held for one week and cannot be refunded");
+  check((u->staked_time.utc_seconds + STAKE_HOLD_TIME_SECONDS) <= current_time_point().sec_since_epoch(), "stake has not yet been held for the staking period and cannot be refunded");
 
   // refund the stake tokens
   // transfer stake from freeos to user account using the eosio.token contract
@@ -1159,21 +1271,21 @@ void freeos::getuser(const name& user) {
   // get the user's AIRKEY balance
   asset airkey_balance = get_balance(get_self(), user, symbol("AIRKEY",0));
 
-  // has user claimed in the current week?
-  // what week is it
-  week this_week = getclaimweek();
+  // has user claimed in the current iteration?
+  // what iteration is it
+  iteration this_iteration = getclaimiteration();
 
   bool claimed_flag = false;
   claim_index claims(get_self(), user.value);
-  auto iterator = claims.find(this_week.week_number);
-  // if the claim record exists for this week then the user has claimed
+  auto iterator = claims.find(this_iteration.iteration_number);
+  // if the claim record exists for this iteration then the user has claimed
   if (iterator != claims.end()) {
     claimed_flag = true;
   }
 
   print("account: ", user, ", registered: ", u->registered_time.utc_seconds, ", type: ", u->account_type, ", stake: ", u->stake.to_string(),
         ", staked-on: ", u->staked_time.utc_seconds, ", XPR: ", xpr_balance.to_string(), ", liquid: ", liquid_freeos_balance.to_string(), ", vested: ", vested_freeos_balance.to_string(),
-         ", airkey: ", airkey_balance.to_string(), ", week: ", this_week.week_number, ", claimed: ", claimed_flag);
+         ", airkey: ", airkey_balance.to_string(), ", iteration: ", this_iteration.iteration_number, ", claimed: ", claimed_flag);
 
 }
 
@@ -1434,15 +1546,15 @@ void freeos::claim( const name& user )
    registration_status result = register_user(user, "e");
 
 
-   // what week are we in?
-   week this_week = getclaimweek();
-   check(this_week.week_number != 0, "freeos is not in a claim period");
+   // what iteration are we in?
+   iteration this_iteration = getclaimiteration();
+   check(this_iteration.iteration_number != 0, "freeos is not in a claim period");
 
    // for debugging
-   // print("this_week: ", this_week.week_number, " ", this_week.start, " ", this_week.start_date, " ", this_week.end, " ", this_week.end_date, " ", this_week.claim_amount, " ", this_week.tokens_required);
+   // print("this_iteration: ", this_iteration.iteration_number, " ", this_iteration.start, " ", this_iteration.start_date, " ", this_iteration.end, " ", this_iteration.end_date, " ", this_iteration.claim_amount, " ", this_iteration.tokens_required);
 
    // check user eligibility to claim
-   if (!eligible_to_claim(user, this_week)) return;
+   if (!eligible_to_claim(user, this_iteration)) return;
 
    // update the number of claimevents
    uint32_t claim_event_count = updateclaimeventcount();
@@ -1456,7 +1568,7 @@ void freeos::claim( const name& user )
    float vested_proportion = get_vested_proportion();
 
    // work out the vested proportion and liquid proportion of FREEOS to be claimed
-   uint16_t claim_tokens = this_week.claim_amount;
+   uint16_t claim_tokens = this_iteration.claim_amount;
    asset claim_amount = asset(claim_tokens * 10000, symbol("FREEOS",4));
 
    uint16_t vested_tokens = claim_tokens * vested_proportion;
@@ -1538,20 +1650,53 @@ void freeos::claim( const name& user )
 
    // write the claim event to the claim history table
    claim_index claims(get_self(), user.value);
-   auto iterator = claims.find(this_week.week_number);
+   auto iterator = claims.find(this_iteration.iteration_number);
 
    if (iterator == claims.end()) {
      claims.emplace( get_self(), [&]( auto& claim ) {
-     claim.week_number = this_week.week_number;
+     claim.iteration_number = this_iteration.iteration_number;
      claim.claim_time = current_time_point().sec_since_epoch();
      });
    }
 
 
-   print(user, " claimed ", liquid_amount.to_string(), " and vested ", vested_amount.to_string(), " for week ", this_week.week_number); // " at ", current_time_point().sec_since_epoch());
+   print(user, " claimed ", liquid_amount.to_string(), " and vested ", vested_amount.to_string(), " for iteration ", this_iteration.iteration_number); // " at ", current_time_point().sec_since_epoch());
 
    tick("U");   // User-driven tick
 }
+
+void freeos::unclaim( const name& user )
+{
+   require_auth (get_self());
+
+   // remove the user's history from the claims table
+   claim_index claims(get_self(), user.value);
+   auto iterator = claims.begin();
+
+   while (iterator != claims.end()) {
+     iterator = claims.erase(iterator);
+   }
+
+   // set the user's liquid FREEOS balance to zero
+   accounts user_liquid_accounts(get_self(), user.value);
+   auto user_liquid_freeos = user_liquid_accounts.find(symbol_code("FREEOS").raw());
+   if (user_liquid_freeos != user_liquid_accounts.end()) {
+     user_liquid_accounts.modify(user_liquid_freeos, same_payer, [&]( auto& a ) {
+       a.balance = asset(0, symbol("FREEOS",4));
+     });
+   }
+
+   // set the user's vested FREEOS balance to zero
+   vestaccounts user_vested_accounts(get_self(), user.value);
+   auto user_vested_freeos = user_vested_accounts.find(symbol_code("FREEOS").raw());
+   if (user_vested_freeos != user_vested_accounts.end()) {
+     user_vested_accounts.modify(user_vested_freeos, same_payer, [&]( auto& a ) {
+       a.balance = asset(0, symbol("FREEOS",4));
+     });
+   }
+
+}
+
 
 
 void freeos::unvest(const name& user)
@@ -1564,21 +1709,21 @@ void freeos::unvest(const name& user)
    // check that the user exists
    check(is_account(user), "User does not have an account");
 
-   // get the current week
-   week this_week = getclaimweek();
+   // get the current iteration
+   iteration this_iteration = getclaimiteration();
 
-   // has the user unvested this week - consult the unvests history table
+   // has the user unvested this iteration - consult the unvests history table
    unvest_index unvests(get_self(), user.value);
-   auto iterator = unvests.find(this_week.week_number);
-   // if the unvest record exists for the week then the user has unvested, so is not eligible to unvest again
+   auto iterator = unvests.find(this_iteration.iteration_number);
+   // if the unvest record exists for the iteration then the user has unvested, so is not eligible to unvest again
    if (iterator != unvests.end()) {
-     print("user ", user, " has already unvested in week ", this_week.week_number);
+     print("user ", user, " has already unvested in iteration ", this_iteration.iteration_number);
      return;
    }
 
    // do the unvesting
 
-   // calculate the amount to be unvested - get the percentage for the week
+   // calculate the amount to be unvested - get the percentage for the iteration
    uint32_t unvest_percent = 0;
    counter_index usercount(get_self(), get_self().value);
    auto iter = usercount.begin();
@@ -1593,7 +1738,7 @@ void freeos::unvest(const name& user)
 
    if (unvest_percent == 0) {
      // nothing to unvest, so inform the user
-     print("Vested FREEOS cannot be unvested this week. Please try next week.");
+     print("Vested FREEOS cannot be unvested in this claim period. Please try next claim period.");
      return;
    }
 
@@ -1672,10 +1817,10 @@ void freeos::unvest(const name& user)
    // if successful, continue to here
 
    // write the unvest event to the unvests history table
-   iterator = unvests.find(this_week.week_number);
+   iterator = unvests.find(this_iteration.iteration_number);
    if (iterator == unvests.end()) {
      unvests.emplace( get_self(), [&]( auto& unvest ) {
-       unvest.week_number = this_week.week_number;
+       unvest.iteration_number = this_iteration.iteration_number;
        unvest.unvest_time = current_time_point().sec_since_epoch();
      });
    }
@@ -1747,34 +1892,34 @@ uint64_t freeos::getthreshold(uint32_t numusers) {
 }
 
 
-// return the week record matching the current datetime
-freeos::week freeos::getclaimweek() {
+// return the iteration record matching the current datetime
+freeos::iteration freeos::getclaimiteration() {
 
-  freeos::week this_week = week {0, 0, "", 0, "", 0, 0};    // default null week value if outside of a claim period
+  freeos::iteration this_iteration = iteration {0, 0, "", 0, "", 0, 0};    // default null iteration value if outside of a claim period
 
   // current time in UTC seconds
   uint32_t now = current_time_point().sec_since_epoch();
 
-  // iterate through week records and find one that matches current time
-  week_index freeosweeks(name(freeosconfig_acct), name(freeosconfig_acct).value);
-  auto iterator = freeosweeks.begin();
+  // iterate through iteration records and find one that matches current time
+  iteration_index iterations(name(freeosconfig_acct), name(freeosconfig_acct).value);
+  auto iterator = iterations.begin();
 
-  while (iterator != freeosweeks.end()) {
+  while (iterator != iterations.end()) {
     if ((now >= iterator->start) && (now <= iterator->end)) {
-      this_week = *iterator;
+      this_iteration = *iterator;
       break;
     }
-    // print(" week ", iterator->week_number, " ", iterator->start_date, "-", iterator->end_date, " >> ");
+    // print(" iteration ", iterator->iteration_number, " ", iterator->start_date, "-", iterator->end_date, " >> ");
     iterator++;
   }
 
-  //print ("week_number = ", week_number);
-  return this_week;
+  //print ("iteration_number = ", interation_number);
+  return this_iteration;
 }
 
 
-// calculate if user is eligible to claim in a week
-bool freeos::eligible_to_claim(const name& claimant, week this_week) {
+// calculate if user is eligible to claim in this iteration
+bool freeos::eligible_to_claim(const name& claimant, iteration this_iteration) {
 
   // get the user record - if there is no record then user is not registered
   user_index users(get_self(), claimant.value);
@@ -1784,19 +1929,18 @@ bool freeos::eligible_to_claim(const name& claimant, week this_week) {
     return false;
   }
 
-  // has the user claimed this week - consult the claims history table
+  // has the user claimed this iteration - consult the claims history table
   claim_index claims(get_self(), claimant.value);
-  auto iterator = claims.find(this_week.week_number);
-  // if the claim record exists for the week then the user has claimed, so is not eligible to claim again
+  auto iterator = claims.find(this_iteration.iteration_number);
+  // if the claim record exists for the iteration then the user has claimed, so is not eligible to claim again
   if (iterator != claims.end()) {
-    print("user ", claimant, " has already claimed in week ", this_week.week_number);
+    print("user ", claimant, " has already claimed in claim period ", this_iteration.iteration_number);
     return false;
   }
 
-  // has the user met their staking requirement?
-  asset stake_requirement = get_stake_requirement(user_record->account_type);
-  if (user_record->stake != stake_requirement) {
-    print("user ", claimant, " has not staked the required ", stake_requirement.to_string());
+  // has the user staked?
+  if (user_record->staked_time.sec_since_epoch() == 0) {
+    print("user ", claimant, " has not staked");
     return false;
   }
 
@@ -1838,12 +1982,12 @@ bool freeos::eligible_to_claim(const name& claimant, week this_week) {
     // user's total FREEOS balance is liquid-FREEOS plus vested-FREEOS
     asset total_freeos_balance = liquid_freeos_balance + vested_freeos_balance;
 
-    // the 'holding' balance requirement for this week's claim
-    asset week_holding_requirement = asset(this_week.tokens_required * 10000, symbol("FREEOS",4));
-    // print("holding balance required for week ", this_week.week_number, " is ", holding_balance.to_string());
+    // the 'holding' balance requirement for this iteration's claim
+    asset iteration_holding_requirement = asset(this_iteration.tokens_required * 10000, symbol("FREEOS",4));
+    // print("holding balance required for iteration ", this_iteration.iteration_number, " is ", holding_balance.to_string());
 
-    if (total_freeos_balance < week_holding_requirement) {
-      print("user ", claimant, " has ", total_freeos_balance.to_string(), " which is less than the holding requirement of ", week_holding_requirement.to_string());
+    if (total_freeos_balance < iteration_holding_requirement) {
+      print("user ", claimant, " has ", total_freeos_balance.to_string(), " which is less than the holding requirement of ", iteration_holding_requirement.to_string());
       return false;
     }
   }
