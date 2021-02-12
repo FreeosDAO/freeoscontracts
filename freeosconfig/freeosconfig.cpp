@@ -9,6 +9,7 @@ using namespace eosio;
 // 100 - refactored the stakereqs table to have 10 columns a-e and u-y
 // 101 - weeks table renamed to iterations - with iteration_number as primary key
 // 102 - added the usersinfo verification table, with actions for upserting and erasing records
+// 103 - implemented a hardcoded floor for the target exchange rate (floor)
 
 const std::string VERSION = "0.102";
 
@@ -84,12 +85,21 @@ void freeosconfig::currentrate(double price) {
           row.currentprice = price;
         });
     }
+
+    print("Current exchange rate set to ", price);
 }
 
 [[eosio::action]]
-void freeosconfig::targetrate(double price) {
+void freeosconfig::targetrate(double exchangerate) {
 
     require_auth(_self);
+
+    double new_exchangerate = exchangerate;
+
+    // ensure it is not set below the hardcoded floor
+    if (new_exchangerate < HARD_EXCHANGE_RATE_FLOOR) {
+      new_exchangerate = HARD_EXCHANGE_RATE_FLOOR;
+    }
 
     exchange_index rate(get_self(), get_self().value);
     auto iterator = rate.begin();
@@ -98,15 +108,17 @@ void freeosconfig::targetrate(double price) {
     if (iterator == rate.end() ) {
         // the rate is not in the table, so insert
         rate.emplace(_self, [&](auto & row) {  // first argument was "freeosconfig"_n
-           row.targetprice = price;
+           row.targetprice = new_exchangerate;
         });
 
     } else {
         // the rate is in the table, so update
         rate.modify(iterator, _self, [&](auto& row) {   // second argument was "freeosconfig"_n
-          row.targetprice = price;
+          row.targetprice = new_exchangerate;
         });
     }
+
+    print("Exchange rate floor set to ", new_exchange_rate);
 }
 
 // erase rate from the table

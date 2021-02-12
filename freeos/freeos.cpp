@@ -31,10 +31,12 @@ using namespace eosio;
 //       counters table contains a field called 'iteration' which equals the current claim iteration
 // 317 - added the unclaim action which removes user's records from claim history table and sets liquid and freeos balance to zero.
 // 318 - put in a fix in eligibilty to change how we check if the user has staked
-// 319 - added querying the verification table (stored in freeosconfig) so that we can determine user's account_type
+// 319 - added deposits table of accrued transfers to the freedao account - per iteration (used by the dividend contract)
+//       action (depositclear) to clear a deposit record from the deposits table
+//       verification table used to calculate the user account_type
 
 
-const std::string VERSION = "0.318 XPR";
+const std::string VERSION = "0.319 XPR";
 
 [[eosio::action]]
 void freeos::version() {
@@ -318,8 +320,6 @@ void freeos::weekly_process(std::string trigger) {
   // calculate the iteration's unvest percentage
   update_unvest_percentage();
 
-
-
 }
 
 
@@ -401,22 +401,11 @@ void freeos::payalan() {
 
 
 [[eosio::action]]
-void freeos::reguser(const name& user, const std::string account_type) {
+void freeos::reguser(const name& user) {
   require_auth( user );
 
   // check that system is operational (global masterswitch parameter set to "1")
   check(checkmasterswitch(), msg_freeos_system_not_available);
-
-  // check that the account type is correct
-  if (account_type.length() != 1) {
-    print("account type must be 1 character");
-    return;
-  }
-
-  if (account_type[0] != 'e' && account_type[0] != 'd' && account_type[0] != 'v') {
-    print("account type specified incorrectly");
-    return;
-  }
 
   // is this a real account?
   if (!is_account(user)) {
@@ -427,7 +416,7 @@ void freeos::reguser(const name& user, const std::string account_type) {
   }
 
   // perform the registration
-  registration_status result = register_user(user, account_type);
+  registration_status result = register_user(user);
 
   // give feedback to user
   if (result == registered_already) {
@@ -452,7 +441,7 @@ void freeos::reguser(const name& user, const std::string account_type) {
 // N.B. This function is 'silent' - errors and user notifications are handled by the calling actions.
 // All prerequisities must be handled by the calling action.
 
-registration_status freeos::register_user(const name& user, const std::string account_type) {
+registration_status freeos::register_user(const name& user) {
 
   // is the user already registered?
   // find the account in the user table
@@ -463,6 +452,8 @@ registration_status freeos::register_user(const name& user, const std::string ac
     return registered_already;
   }
 
+  // determine account type
+  char account_type = get_account_type(user);
 
   // update the user count in the 'counters' record
   uint32_t numusers;
@@ -485,7 +476,7 @@ registration_status freeos::register_user(const name& user, const std::string ac
   // register the user
   usertable.emplace( get_self(), [&]( auto& u ) {
     u.stake = asset(0, symbol(CURRENCY_SYMBOL_CODE, 4));
-    u.account_type = account_type.at(0);
+    u.account_type = account_type;
     u.registered_time = time_point_sec(current_time_point().sec_since_epoch());
     u.staked_time = time_point_sec(0);
     });
@@ -500,13 +491,57 @@ registration_status freeos::register_user(const name& user, const std::string ac
    }
 
    // update the stake requirements record if we have reached a new threshold of users
-   update_stakes(numusers);
+   update_stake_requirements(numusers);
 
    return registered_success;
 }
 
-// update the stakes if we have reached a new threshold of users
-void freeos::update_stakes(uint32_t numusers) {
+// determine the user account type from the Proton verification table
+char freeos::get_account_type(name user) {
+
+  // default result
+  char user_account_type = 'e';
+
+  // first determine which contract we consult - if we have set an alternative contract then use that one
+  name verification_contract;
+
+  parameter_index parameters(name(freeosconfig_acct), name(freeosconfig_acct).value);
+  auto p_iterator = parameters.find(name("altverifyacc").value);
+
+  if (p_iterator == parameters.end()) {
+    verification_contract = name(verification_contract);  // no alternative contract configured, so use the 'production' contract (for Proton mainnet)
+  } else {
+    verification_contract = name(p_iterator->value);  // alternative contract is configured, so use that contract instead (for Proton testnet)
+  }
+
+  // access the verification table
+  usersinfo verify_table(name(verification_contract), name(verification_contract).value);
+  auto v_iterator = verify_table.find(user.value);
+
+  if (v_iterator != verify_table.end()) {
+    // record found, so default account_type is 'd', unless we find a verification
+    user_account_type = 'd';
+
+    auto kyc_prov = v_iterator->kyc;
+
+    for (int i = 0; i < kyc_prov.size(); i++) {
+      size_t fn_pos = kyc_prov[0].kyc_level.find("firstname");
+      size_t ln_pos = kyc_prov[0].kyc_level.find("lastname");
+
+      if (fn_pos != std::string::npos && ln_pos != std::string::npos) {
+        user_account_type = 'v';
+        break;
+      }
+    }
+
+  }
+
+  return user_account_type;
+}
+
+
+// update the stake requirements if we have reached a new threshold of users
+void freeos::update_stake_requirements(uint32_t numusers) {
 
   // check the potentially new threshold
   uint64_t new_threshold = getthreshold(numusers);
@@ -604,6 +639,7 @@ void freeos::update_stakes(uint32_t numusers) {
 [[eosio::action]]
 void freeos::maintain(std::string option) {
   require_auth( get_self() );
+
 
   if (option == "kyc") {
     usersinfo kyctable(name(freeosconfig_acct), name(freeosconfig_acct).value);
@@ -1069,7 +1105,7 @@ void freeos::stake(const name& user) {
   // determine required stake and then transfer to the freeos account
 
   // auto-register the user - if user is already registered then that is ok, the register_user function responds silently
-  registration_status result = register_user(user, "e");
+  registration_status result = register_user(user);
 
   // get the user record
   user_index users(get_self(), user.value);
@@ -1124,7 +1160,7 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
     //****************************************************
 
     // auto-register the user - if user is already registered then that is ok, the register_user function responds silently
-    registration_status result = register_user(user, "e");
+    registration_status result = register_user(user);
 
     //****************************************************
 
@@ -1543,7 +1579,7 @@ void freeos::claim( const name& user )
    }
 
    // auto-register the user - if user is already registered then that is ok, the register_user function responds silently
-   registration_status result = register_user(user, "e");
+   registration_status result = register_user(user);
 
 
    // what iteration are we in?
@@ -1631,6 +1667,8 @@ void freeos::claim( const name& user )
 
    freedao_transfer.send();
 
+   // record the deposit to the freedao account
+   record_deposit(this_iteration.iteration_number, freedao_amount);
 
    // update the user's vested FREEOS balance
    if (vested_tokens > 0) {
@@ -1663,6 +1701,44 @@ void freeos::claim( const name& user )
    print(user, " claimed ", liquid_amount.to_string(), " and vested ", vested_amount.to_string(), " for iteration ", this_iteration.iteration_number); // " at ", current_time_point().sec_since_epoch());
 
    tick("U");   // User-driven tick
+}
+
+// record a deposit to the freedao account
+void freeos::record_deposit(uint64_t iteration_number, asset amount) {
+  deposit_index deposits(get_self(), get_self().value);
+
+  // find the record for the iteration
+  auto iterator = deposits.find(iteration_number);
+
+  if (iterator == deposits.end()) {
+    // insert record and initialise
+    deposits.emplace(get_self(), [&]( auto& d ){
+      d.iteration = iteration_number;
+      d.accrued = amount;
+    });
+  } else {
+    // modify record
+    deposits.modify(iterator, same_payer, [&]( auto& d ) {
+      d.accrued += amount;
+    });
+  }
+}
+
+// action to clear (remove) a deposit record from the deposit table
+[[eosio::action]]
+void freeos::depositclear(uint64_t iteration_number) {
+  require_auth(name(freedao_acct));
+
+  deposit_index deposits(get_self(), get_self().value);
+
+  // find the record for the iteration
+  auto iterator = deposits.find(iteration_number);
+
+  if (iterator == deposits.end()) {
+    print("A record for iteration number ", iteration_number, " does not exist");
+  } else {
+    deposits.erase(iterator);
+  }
 }
 
 void freeos::unclaim( const name& user )

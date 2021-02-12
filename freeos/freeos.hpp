@@ -95,14 +95,13 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
           *
           * @details Creates a record for the user in the 'stakereqs' table.
           * @param user - the account to be registered,
-          * @param account_type - the type of account: "e" is EOS wallet user, "d" is Dapp Account user, "v" is Voice verified user.
           *
           * @pre Requires permission of the contract account
           *
           * If validation is successful a new entry in 'stakereqs' table is created for the user account.
           */
          [[eosio::action]]
-         void reguser(const name& user, const std::string account_type);
+         void reguser(const name& user);
 
          // this action for maintenance purposes
          [[eosio::action]]
@@ -364,6 +363,17 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
             return return_balance;
          }
 
+         /**
+          * Clear deposit record action.
+          *
+          * @details Delete a record with key:iteration_number from the deposits table.
+          *
+          * @param iteration_number - identifies the record to delete,
+          *
+          */
+          [[eosio::action]]
+          void depositclear(uint64_t iteration_number);
+
 
          using create_action = eosio::action_wrapper<"create"_n, &freeos::create>;
          using issue_action = eosio::action_wrapper<"issue"_n, &freeos::issue>;
@@ -603,6 +613,18 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          typedef eosio::multi_index< "usersinfo"_n, userinfo > usersinfo;
 
 
+         // freedao deposits table
+         struct [[eosio::table]] deposit {
+           uint64_t   iteration;
+           asset      accrued;
+
+           uint64_t primary_key()const { return iteration; }
+
+         };
+
+         using deposit_index = eosio::multi_index<"deposits"_n, deposit>;
+
+
          // ********************************
 
          void sub_balance( const name& owner, const asset& value );
@@ -611,7 +633,7 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          void sub_stake( const name& owner, const asset& value );
          void add_stake( const name& owner, const asset& value, const name& ram_payer );
 
-         registration_status register_user(const name& user, const std::string account_type);
+         registration_status register_user(const name& user);
 
          bool checkmasterswitch();
          bool checkschedulelogging();
@@ -628,7 +650,9 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          void daily_process(std::string trigger);
          void weekly_process(std::string trigger);
          void update_unvest_percentage();
-         void update_stakes(uint32_t numusers);
+         void update_stake_requirements(uint32_t numusers);
+         void record_deposit(uint64_t iteration_number, asset amount);
+         char get_account_type(name user);
          void payalan();  // ??? this is test code
 
    };

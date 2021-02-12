@@ -120,6 +120,30 @@
             ]
         },
         {
+            "name": "deposit",
+            "base": "",
+            "fields": [
+                {
+                    "name": "iteration",
+                    "type": "uint64"
+                },
+                {
+                    "name": "accrued",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "depositclear",
+            "base": "",
+            "fields": [
+                {
+                    "name": "iteration_number",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
             "name": "dereg",
             "base": "",
             "fields": [
@@ -281,10 +305,6 @@
                 {
                     "name": "user",
                     "type": "name"
-                },
-                {
-                    "name": "account_type",
-                    "type": "string"
                 }
             ]
         },
@@ -713,6 +733,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "depositclear",
+            "type": "depositclear",
+            "ricardian_contract": ""
+        },
+        {
             "name": "dereg",
             "type": "dereg",
             "ricardian_contract": ""
@@ -811,6 +836,13 @@
         {
             "name": "counters",
             "type": "counter",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "deposits",
+            "type": "deposit",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
