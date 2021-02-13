@@ -142,20 +142,6 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          [[eosio::on_notify("eosio.token::transfer")]]
          void stake(name user, name to, asset quantity, std::string memo);
 
-         /**
-          * stake action.
-          *
-          * @details Transfer stake requirement from the user to the freeos account.
-          * @details Updates the record of staked tokens in the user account record.
-          *
-          * @param user - the user account
-          *
-          * @pre The user account must be previously registered and has a sufficient balance to pay the stake
-          *
-          * If transfer is successful the record for the user account is updated to set the amount staked and stake time/date to the current time.
-          */
-         [[eosio::action]]
-         void stake(const name& user);
 
          /**
           * unstake action.
@@ -373,6 +359,17 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
           */
           [[eosio::action]]
           void depositclear(uint64_t iteration_number);
+
+          /**
+           * Cancel unstake request action.
+           *
+           * @details Delete the unstake request from the unstakes table.
+           *
+           * @param user - identifies the user's unstake record to be deleted.
+           *
+           */
+          [[eosio::action]]
+          void unstakecncl(const name& user);
 
 
          using create_action = eosio::action_wrapper<"create"_n, &freeos::create>;
@@ -625,6 +622,39 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          using deposit_index = eosio::multi_index<"deposits"_n, deposit>;
 
 
+         // unstake queue
+         struct [[eosio::table]] unstakereq {
+           name             staker;
+           time_point_sec   release_time;
+           asset            amount;
+
+           uint64_t primary_key() const { return release_time.sec_since_epoch(); }
+           uint64_t get_secondary() const {return staker.value;}
+         };
+
+         using unstakereq_index = eosio::multi_index<"unstakes"_n, unstakereq,
+         indexed_by<"staker"_n, const_mem_fun<unstakereq, uint64_t, &unstakereq::get_secondary>>
+         >;
+
+
+/*
+// parameter table
+
+struct [[eosio::table]] parameter {
+  name virtualtable;
+  name paramname;
+  std::string value;
+
+  uint64_t primary_key() const { return paramname.value;}
+  uint64_t get_secondary_1() const {return virtualtable.value;}
+};
+
+using parameter_index = eosio::multi_index<"parameters"_n, parameter,
+indexed_by<"virtualtable"_n, const_mem_fun<parameter, uint64_t, &parameter::get_secondary_1>>
+>;
+*/
+
+
          // ********************************
 
          void sub_balance( const name& owner, const asset& value );
@@ -653,6 +683,9 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          void update_stake_requirements(uint32_t numusers);
          void record_deposit(uint64_t iteration_number, asset amount);
          char get_account_type(name user);
+         void request_stake_refund(name user, asset amount, time_point_sec staked_time);
+         void refund_stakes(uint16_t number_to_release);
+         void refund_stake(name user, asset amount);
          void payalan();  // ??? this is test code
 
    };

@@ -34,9 +34,11 @@ using namespace eosio;
 // 319 - added deposits table of accrued transfers to the freedao account - per iteration (used by the dividend contract)
 //       action (depositclear) to clear a deposit record from the deposits table
 //       verification table used to calculate the user account_type
+// 320 - unstake action modified to put unstake request into an unstake queue (the 'unstakes' table)
+//       unstakecncl (unstake cancel) action added
 
 
-const std::string VERSION = "0.319 XPR";
+const std::string VERSION = "0.320 XPR";
 
 [[eosio::action]]
 void freeos::version() {
@@ -393,7 +395,7 @@ void freeos::payalan() {
     permission_level{get_self(),"active"_n},
     name(freeos_acct),
     "transfer"_n,
-    std::make_tuple(get_self(), "alanappleton"_n, one_tick, std::string("tick test transfer"))
+    std::make_tuple(get_self(), "alanappleton"_n, one_tick, std::string("tick test"))
   );
 
   transfer.send();
@@ -640,6 +642,60 @@ void freeos::update_stake_requirements(uint32_t numusers) {
 void freeos::maintain(std::string option) {
   require_auth( get_self() );
 
+
+  if (option == "unstakes populate") {
+    unstakereq_index unstakes(get_self(), get_self().value);
+
+    // add some records
+    unstakes.emplace( get_self(), [&]( auto& u ) {
+      u.staker = "alanappleton"_n;
+      u.release_time = time_point_sec(1);
+      u.amount = asset(1 * 10000, symbol("XPR", 4));
+    });
+
+    // add some records
+    unstakes.emplace( get_self(), [&]( auto& u ) {
+      u.staker = "billbeaumont"_n;
+      u.release_time = time_point_sec(2);;
+      u.amount = asset(2 * 10000, symbol("XPR", 4));
+    });
+
+    // add some records
+    unstakes.emplace( get_self(), [&]( auto& u ) {
+      u.staker = "celiacollins"_n;
+      u.release_time = time_point_sec(3);
+      u.amount = asset(3 * 10000, symbol("XPR", 4));
+    });
+
+    // add some records
+    unstakes.emplace( get_self(), [&]( auto& u ) {
+      u.staker = "dennisedolan"_n;
+      u.release_time = time_point_sec(4);
+      u.amount = asset(4 * 10000, symbol("XPR", 4));
+    });
+
+    // add some records
+    unstakes.emplace( get_self(), [&]( auto& u ) {
+      u.staker = "ethanedwards"_n;
+      u.release_time = time_point_sec(5);
+      u.amount = asset(5 * 10000, symbol("XPR", 4));
+    });
+
+    // add some records
+    unstakes.emplace( get_self(), [&]( auto& u ) {
+      u.staker = "frankyfellon"_n;
+      u.release_time = time_point_sec(6);
+      u.amount = asset(6 * 10000, symbol("XPR", 4));
+    });
+
+    // add some records
+    unstakes.emplace( get_self(), [&]( auto& u ) {
+      u.staker = "geraldgarson"_n;
+      u.release_time = time_point_sec(7);
+      u.amount = asset(7 * 10000, symbol("XPR", 4));
+    });
+
+  }
 
   if (option == "kyc") {
     usersinfo kyctable(name(freeosconfig_acct), name(freeosconfig_acct).value);
@@ -1064,6 +1120,7 @@ void freeos::maintain(std::string option) {
 }
 
 
+
 // for deregistering user
 [[eosio::action]]
 void freeos::dereg(const name& user) {
@@ -1096,7 +1153,7 @@ void freeos::dereg(const name& user) {
 
 }
 
-// stake action
+/* stake action
 [[eosio::action]]
 void freeos::stake(const name& user) {
 
@@ -1141,7 +1198,10 @@ void freeos::stake(const name& user) {
 
   transfer.send();
 
-} // end of stake action
+} // end of stake action */
+
+
+
 
 
 // stake confirmation
@@ -1253,16 +1313,66 @@ void freeos::unstake(const name& user) {
   // check if the user has an amount staked
   check(u->stake.amount > 0, "account has not staked");
 
-  // if enough time elapsed then refund amount
-  check((u->staked_time.utc_seconds + STAKE_HOLD_TIME_SECONDS) <= current_time_point().sec_since_epoch(), "stake has not yet been held for the staking period and cannot be refunded");
+  // request stake refund
+  request_stake_refund(user, u->stake, u->staked_time);
 
-  // refund the stake tokens
+  print("unstake requested");
+
+  tick("U");   // User-driven tick
+
+}
+
+
+// unstaking functions
+
+// request stake refund - add to stake refund queue
+void freeos::request_stake_refund(name user, asset amount, time_point_sec staked_time) {
+  // calculate stake release time
+  time_point_sec release_time = time_point_sec(staked_time.utc_seconds + STAKE_HOLD_TIME_SECONDS);
+
+  // add to the unstake requests queue
+  unstakereq_index unstakes(get_self(), get_self().value);
+  unstakes.emplace( get_self(), [&]( auto& u ) {
+     u.staker = user;
+     u.release_time = release_time;
+     u.amount = amount;
+  });
+}
+
+// refund stakes
+void freeos::refund_stakes(uint16_t number_to_release) {
+
+  unstakereq_index unstakes(get_self(), get_self().value);
+
+  uint32_t now = current_time_point().sec_since_epoch();
+
+  auto iterator = unstakes.begin();
+
+  for (uint16_t i = 0; i < number_to_release && iterator != unstakes.end(); i++) {
+
+    if (iterator->release_time.sec_since_epoch() <= now) {
+      // process the unstake request
+      refund_stake(iterator->staker, iterator->amount);
+      iterator = unstakes.erase(iterator);
+    } else {
+      // we've reached stakes to be released in the future
+      break;
+    }
+  }
+}
+
+// refund a stake
+void freeos::refund_stake(name user, asset amount) {
+  // find user record
+  user_index usertable( get_self(), user.value );
+  auto u = usertable.find( symbol_code(CURRENCY_SYMBOL_CODE).raw() );
+
   // transfer stake from freeos to user account using the eosio.token contract
   action transfer = action(
     permission_level{get_self(),"active"_n},
     "eosio.token"_n,
     "transfer"_n,
-    std::make_tuple(get_self(), user, u->stake, std::string("refund of freeos stake"))
+    std::make_tuple(get_self(), user, amount, std::string("refund of freeos stake"))
   );
 
   transfer.send();
@@ -1272,10 +1382,25 @@ void freeos::unstake(const name& user) {
     row.stake = asset(0, symbol(CURRENCY_SYMBOL_CODE, 4));
     row.staked_time = time_point_sec(0);
   });
+}
 
-  print("stake successfully refunded");
 
-  tick("U");   // User-driven tick
+[[eosio::action]]
+void freeos::unstakecncl(const name& user) {
+
+  require_auth(user);
+
+  unstakereq_index unstakes(get_self(), get_self().value);
+  auto idx = unstakes.get_index<"staker"_n>();
+
+  auto iterator = idx.find(user.value);
+
+  if (iterator != idx.end()) {
+    idx.erase(iterator);
+    print("Your unstake request has been cancelled");
+  } else {
+    print("You do not have an unstake request");
+  }
 
 }
 

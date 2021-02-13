@@ -355,16 +355,6 @@
             ]
         },
         {
-            "name": "stake",
-            "base": "",
-            "fields": [
-                {
-                    "name": "user",
-                    "type": "name"
-                }
-            ]
-        },
-        {
             "name": "stakereq",
             "base": "",
             "fields": [
@@ -563,6 +553,34 @@
                 {
                     "name": "user",
                     "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "unstakecncl",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "unstakereq",
+            "base": "",
+            "fields": [
+                {
+                    "name": "staker",
+                    "type": "name"
+                },
+                {
+                    "name": "release_time",
+                    "type": "time_point_sec"
+                },
+                {
+                    "name": "amount",
+                    "type": "asset"
                 }
             ]
         },
@@ -783,11 +801,6 @@
             "ricardian_contract": ""
         },
         {
-            "name": "stake",
-            "type": "stake",
-            "ricardian_contract": ""
-        },
-        {
             "name": "tick",
             "type": "tick",
             "ricardian_contract": ""
@@ -805,6 +818,11 @@
         {
             "name": "unstake",
             "type": "unstake",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "unstakecncl",
+            "type": "unstakecncl",
             "ricardian_contract": ""
         },
         {
@@ -899,6 +917,13 @@
         {
             "name": "tickers",
             "type": "ticker",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "unstakes",
+            "type": "unstakereq",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
