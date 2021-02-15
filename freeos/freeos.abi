@@ -73,7 +73,15 @@
                     "type": "uint32"
                 },
                 {
+                    "name": "unvestpercentiteration",
+                    "type": "uint32"
+                },
+                {
                     "name": "iteration",
+                    "type": "uint32"
+                },
+                {
+                    "name": "failsafecounter",
                     "type": "uint32"
                 }
             ]
@@ -239,16 +247,6 @@
             ]
         },
         {
-            "name": "maintain",
-            "base": "",
-            "fields": [
-                {
-                    "name": "option",
-                    "type": "string"
-                }
-            ]
-        },
-        {
             "name": "open",
             "base": "",
             "fields": [
@@ -319,6 +317,16 @@
                 {
                     "name": "memo",
                     "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "reverify",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
                 }
             ]
         },
@@ -776,11 +784,6 @@
             "ricardian_contract": ""
         },
         {
-            "name": "maintain",
-            "type": "maintain",
-            "ricardian_contract": ""
-        },
-        {
             "name": "open",
             "type": "open",
             "ricardian_contract": ""
@@ -793,6 +796,11 @@
         {
             "name": "retire",
             "type": "retire",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "reverify",
+            "type": "reverify",
             "ricardian_contract": ""
         },
         {

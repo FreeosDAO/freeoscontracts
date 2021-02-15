@@ -36,9 +36,15 @@ using namespace eosio;
 //       verification table used to calculate the user account_type
 // 320 - unstake action modified to put unstake request into an unstake queue (the 'unstakes' table)
 //       unstakecncl (unstake cancel) action added
+// 321 - added new field 'failsafecounter' to the counters table
+//       added failsafe unvesting feature
+// 322 - Added reverify action - re-checks whether user is verified and changes their account_type accordingly.
+//       update unvest percentage driven by user 'unvest' action rather than CRON
+//       hourly process refunds stakes
+//       failsafe_frequency determined by 'failsafefreq' parameter in freeosconfig
 
 
-const std::string VERSION = "0.320 XPR";
+const std::string VERSION = "0.322 XPR";
 
 [[eosio::action]]
 void freeos::version() {
@@ -286,6 +292,8 @@ void freeos::hourly_process(std::string trigger) {
   }
 
   // do whatever...
+  set_iteration_number(); // advance the iteration number if required (used by the dividend contract)
+  refund_stakes();
 
 }
 
@@ -319,8 +327,21 @@ void freeos::weekly_process(std::string trigger) {
 
   // do whatever...
 
-  // calculate the iteration's unvest percentage
-  update_unvest_percentage();
+}
+
+
+void freeos::set_iteration_number() {
+  uint32_t  iteration_number = getclaimiteration().iteration_number;
+
+  // set it in the counters table
+  counter_index counters(get_self(), get_self().value);
+  auto iterator = counters.begin();
+
+  if (iterator != counters.end()) {
+    counters.modify(iterator, _self, [&](auto& c) {
+        c.iteration = iteration_number;
+    });
+  }
 
 }
 
@@ -333,29 +354,18 @@ void freeos::update_unvest_percentage() {
   // find the current vested proprotion. If 0.0f it means that the exchange rate is favourable
   float vested_proportion = get_vested_proportion();
 
-  // get current unvest percentage
+  // get the counters record
   counter_index counters(get_self(), get_self().value);
   auto iterator = counters.begin();
 
-  // check the current percentage
-  if (iterator == counters.end())  {
-    new_unvest_percentage = vested_proportion == 0.0f ? 1 : 0;
 
-    // emplace
-    counters.emplace( get_self(), [&]( auto& c ) {
-      c.usercount = 0;
-      c.claimevents = 0;
-      c.unvestpercent = new_unvest_percentage;
-      });
-
-  } else {
-    // counters record found - work out whether we need to advance iteration's percentage
+  // Decide whether we are above target or below target price
+  if (vested_proportion == 0.0f) {
+    // favourable exchange rate, so implement the 'good times' strategy - calculate the new unvest_percentage
     current_unvest_percentage = iterator->unvestpercent;
 
-    // if the exchange rate is favourable then move it on to next level
-    if (vested_proportion == 0.0f) {
-
-      switch (current_unvest_percentage) {
+    // move the unvest_percentage on to next level
+    switch (current_unvest_percentage) {
         case 0 :  new_unvest_percentage = 1;
                   break;
         case 1  : new_unvest_percentage = 2;
@@ -373,32 +383,40 @@ void freeos::update_unvest_percentage() {
         case 21:  new_unvest_percentage = 21;
                   break;
       }
-    } else {
-      new_unvest_percentage = 0;
+
+      // modify the counters table with the new percentage. Also ensure the failsafe counter is set to 0.
+      counters.modify(iterator, _self, [&](auto& c) {
+          c.unvestpercent = new_unvest_percentage;
+          c.unvestpercentiteration = getclaimiteration().iteration_number;
+          c.failsafecounter = 0;
+      });
+
+  } else {
+    // unfavourable exchange rate, so implement the 'bad times' strategy
+    // calculate failsafe unvest percentage - every Xth week of unfavourable rate, set unvest percentage to 15%
+
+    // get the unvest failsafe frequency - default is 24
+    uint8_t failsafe_frequency = 24;
+
+    // read the frequency from the freeosconfig 'parameters' table
+    parameter_index parameters(name(freeosconfig_acct), name(freeosconfig_acct).value);
+    auto p_iterator = parameters.find(name("failsafefreq").value);
+
+    if (p_iterator != parameters.end()) {
+      failsafe_frequency = stoi(p_iterator->value);
     }
 
-    // modify the counters table with the new percentage
-    iterator = counters.begin();
+    // increment the failsafecounter and determine if we are at 24 weeks
+    uint32_t failsafecounter = iterator->failsafecounter;
+    failsafecounter++;
+
+    // Store the new failsafecounter and unvestpercent
     counters.modify(iterator, _self, [&](auto& c) {
-        c.unvestpercent = new_unvest_percentage;
+        c.failsafecounter = failsafecounter % failsafe_frequency;
+        c.unvestpercent = failsafecounter == failsafe_frequency ? 15 : 0;
     });
   }
-}
 
-
-void freeos::payalan() {
-  // ??? THIS IS TEST CODE - TO BE REMOVED BEFORE DEPLOYMENT
-
-  asset one_tick = asset(1, symbol("FREEOS",4));
-
-  action transfer = action(
-    permission_level{get_self(),"active"_n},
-    name(freeos_acct),
-    "transfer"_n,
-    std::make_tuple(get_self(), "alanappleton"_n, one_tick, std::string("tick test"))
-  );
-
-  transfer.send();
 }
 
 
@@ -498,6 +516,31 @@ registration_status freeos::register_user(const name& user) {
    return registered_success;
 }
 
+// action to allow user to reverify their account_type
+[[eosio::action]]
+void freeos::reverify(name user) {
+  require_auth(user);
+
+  // set the account type
+  user_index users(get_self(), user.value);
+  auto iterator = users.begin();
+
+  // if the user does not have a user record
+  if (iterator == users.end()) {
+    print("user ", user, " is not registered with freeos");
+    return;
+  }
+
+  // get the account type
+  char account_type = get_account_type(user);
+
+  // set the user account type
+  users.modify(iterator, same_payer, [&]( auto& u) {
+    u.account_type = account_type;
+  });
+
+}
+
 // determine the user account type from the Proton verification table
 char freeos::get_account_type(name user) {
 
@@ -530,7 +573,7 @@ char freeos::get_account_type(name user) {
       size_t fn_pos = kyc_prov[0].kyc_level.find("firstname");
       size_t ln_pos = kyc_prov[0].kyc_level.find("lastname");
 
-      if (fn_pos != std::string::npos && ln_pos != std::string::npos) {
+      if (v_iterator->verified == true && fn_pos != std::string::npos && ln_pos != std::string::npos) {
         user_account_type = 'v';
         break;
       }
@@ -634,491 +677,6 @@ void freeos::update_stake_requirements(uint32_t numusers) {
   }
 
 }
-
-
-
-// This action for maintenance purposes
-[[eosio::action]]
-void freeos::maintain(std::string option) {
-  require_auth( get_self() );
-
-
-  if (option == "unstakes populate") {
-    unstakereq_index unstakes(get_self(), get_self().value);
-
-    // add some records
-    unstakes.emplace( get_self(), [&]( auto& u ) {
-      u.staker = "alanappleton"_n;
-      u.release_time = time_point_sec(1);
-      u.amount = asset(1 * 10000, symbol("XPR", 4));
-    });
-
-    // add some records
-    unstakes.emplace( get_self(), [&]( auto& u ) {
-      u.staker = "billbeaumont"_n;
-      u.release_time = time_point_sec(2);;
-      u.amount = asset(2 * 10000, symbol("XPR", 4));
-    });
-
-    // add some records
-    unstakes.emplace( get_self(), [&]( auto& u ) {
-      u.staker = "celiacollins"_n;
-      u.release_time = time_point_sec(3);
-      u.amount = asset(3 * 10000, symbol("XPR", 4));
-    });
-
-    // add some records
-    unstakes.emplace( get_self(), [&]( auto& u ) {
-      u.staker = "dennisedolan"_n;
-      u.release_time = time_point_sec(4);
-      u.amount = asset(4 * 10000, symbol("XPR", 4));
-    });
-
-    // add some records
-    unstakes.emplace( get_self(), [&]( auto& u ) {
-      u.staker = "ethanedwards"_n;
-      u.release_time = time_point_sec(5);
-      u.amount = asset(5 * 10000, symbol("XPR", 4));
-    });
-
-    // add some records
-    unstakes.emplace( get_self(), [&]( auto& u ) {
-      u.staker = "frankyfellon"_n;
-      u.release_time = time_point_sec(6);
-      u.amount = asset(6 * 10000, symbol("XPR", 4));
-    });
-
-    // add some records
-    unstakes.emplace( get_self(), [&]( auto& u ) {
-      u.staker = "geraldgarson"_n;
-      u.release_time = time_point_sec(7);
-      u.amount = asset(7 * 10000, symbol("XPR", 4));
-    });
-
-  }
-
-  if (option == "kyc") {
-    usersinfo kyctable(name(freeosconfig_acct), name(freeosconfig_acct).value);
-    auto kycrecord = kyctable.begin();
-
-    auto kyc_prov = kycrecord->kyc;
-
-    //print("kyc_provider = ", kyc_prov[0].kyc_provider, " kyc_level = ", kyc_prov[0].kyc_level, " kyc_date = ", kyc_prov[0].kyc_date);
-    size_t fn_pos = kyc_prov[0].kyc_level.find("trulioo:firstname");
-    size_t ln_pos = kyc_prov[0].kyc_level.find("trulioo:lastname");
-
-    if (fn_pos != std::string::npos && ln_pos != std::string::npos) {
-      print("firstname and lastname were detected, size of array = ", kyc_prov.size());
-    } else {
-      print("firstname and lastname were not detected");
-    }
-  }
-
-  if (option == "migrate claims table clear")  {
-
-    claim_index claims1(get_self(), name("alanappleton").value);
-    auto iterator1 = claims1.begin();
-    claims1.erase(iterator1);
-
-    claim_index claims2(get_self(), name("billbeaumont").value);
-    auto iterator2 = claims2.begin();
-    claims2.erase(iterator2);
-
-    claim_index claims3(get_self(), name("celiacollins").value);
-    auto iterator3 = claims3.begin();
-    claims3.erase(iterator3);
-
-    claim_index claims4(get_self(), name("dennisedolan").value);
-    auto iterator4 = claims4.begin();
-    claims4.erase(iterator4);
-
-    claim_index claims5(get_self(), name("frankyfellon").value);
-    auto iterator5 = claims5.begin();
-    claims5.erase(iterator5);
-
-    claim_index claims6(get_self(), name("jamiejackson").value);
-    auto iterator6 = claims6.begin();
-    claims6.erase(iterator6);
-
-    claim_index claims7(get_self(), name("powderblue").value);
-    auto iterator7 = claims7.begin();
-    claims7.erase(iterator7);
-
-  }
-
-  if (option == "migrate claims table populate") {
-
-    // alanappleton
-    claim_index claims1(get_self(), name("alanappleton").value);
-    claims1.emplace( get_self(), [&]( auto& claim ) {
-    claim.iteration_number = 1;
-    claim.claim_time = 1611194906;
-    });
-
-    // billbeaumont
-    claim_index claims2(get_self(), name("billbeaumont").value);
-    claims2.emplace( get_self(), [&]( auto& claim ) {
-    claim.iteration_number = 1;
-    claim.claim_time = 1611271350;
-    });
-
-    // celiacollins
-    claim_index claims3(get_self(), name("celiacollins").value);
-    claims3.emplace( get_self(), [&]( auto& claim ) {
-    claim.iteration_number = 1;
-    claim.claim_time = 1611553480;
-    });
-
-    // dennisedolan
-    claim_index claims4(get_self(), name("dennisedolan").value);
-    claims4.emplace( get_self(), [&]( auto& claim ) {
-    claim.iteration_number = 1;
-    claim.claim_time = 1611042009;
-    });
-
-    // frankyfellon
-    claim_index claims5(get_self(), name("frankyfellon").value);
-    claims5.emplace( get_self(), [&]( auto& claim ) {
-    claim.iteration_number = 1;
-    claim.claim_time = 1611041595;
-    });
-
-    // jamiejackson
-    claim_index claims6(get_self(), name("jamiejackson").value);
-    claims6.emplace( get_self(), [&]( auto& claim ) {
-    claim.iteration_number = 1;
-    claim.claim_time = 1612405056;
-    });
-
-    // powderblue
-    claim_index claims7(get_self(), name("powderblue").value);
-    claims7.emplace( get_self(), [&]( auto& claim ) {
-    claim.iteration_number = 1;
-    claim.claim_time = 1612319970;
-    });
-
-  }
-
-  if (option == "migrate stake_index table") {
-    stakes_index stake(get_self(), get_self().value);
-    auto iterator = stake.begin();
-
-    if (iterator != stake.end()) {
-        stake.erase(iterator);
-    }
-  }
-
-  if (option == "counters clear") {
-    counter_index counters(get_self(), get_self().value);
-    auto iteration = counters.begin();
-    counters.erase(iteration);
-  }
-
-  if (option == "counters populate") {
-
-    counter_index counters(get_self(), get_self().value);
-
-    // emplace
-    counters.emplace( get_self(), [&]( auto& c ) {
-      c.usercount = 11;
-      c.claimevents = 7;
-      c.unvestpercent = 0;
-      c.iteration = 1;
-      });
-  }
-
-
-
-  if (option == "migrate vested") {
-    symbol freeos = symbol("FREEOS",4);
-
-    name thisuser = ""_n;
-
-    // array of users
-    name candidates[5] = {"alanappleton"_n, "billbeaumont"_n, "celiacollins"_n, "dennisedolan"_n, "frankyfellon"_n};
-
-    for(int i = 0; i < 5; i++) {
-      thisuser = candidates[i];
-
-      vestaccounts to_acnts( get_self(), thisuser.value );
-      auto to = to_acnts.find( freeos.code().raw() );
-
-       to_acnts.emplace(get_self(), [&]( auto& a ){
-         a.balance = asset(40 * 10000, symbol("FREEOS",4));
-       });
-    }
-  }
-
-  // script 1 to migrate stake_requirement out of the users table
-  if (option == "migrate user stakes part 1") {
-
-    // erase existing user table
-    // array of users
-    name candidates[10] = {"alanappleton"_n, "billbeaumont"_n, "celiacollins"_n, "dennisedolan"_n, "ethanedwards"_n, "frankyfellon"_n, "geraldgarson"_n, "jamiejackson"_n, "powderblue"_n, "wlcm.proton"_n};
-
-    for(int i = 0; i < 10; i++) {
-      // clear the users table
-      user_index users(get_self(), candidates[i].value);
-      auto iterator = users.begin();
-      if (iterator != users.end()) {
-        // erase the record
-        users.erase(iterator);
-      }
-    }
-
-    print("check that the users table is cleared, then implement new user table design and run 'migrate user stakes part 2'");
-
-  }
-
-  // script 2 to migrate stake_requirement out of the users table
-  if (option == "migrate user stakes part 2") {
-
-    // repopulate user table
-
-    // alanappleton
-    user_index users1(get_self(), "alanappleton"_n.value);
-    users1.emplace( get_self(), [&]( auto& u ){
-      u.stake = asset(10 * 10000, symbol("XPR",4));
-      u.account_type = 101;
-      u.registered_time = time_point_sec(1610959240);
-      u.staked_time = time_point_sec(1611300166);
-    });
-
-    // billbeaumont
-    user_index users2(get_self(), "billbeaumont"_n.value);
-    users2.emplace( get_self(), [&]( auto& u ){
-      u.stake = asset(10 * 10000, symbol("XPR",4));
-      u.account_type = 101;
-      u.registered_time = time_point_sec(1611199914);
-      u.staked_time = time_point_sec(1611299265);
-    });
-
-    // celiacollins
-    user_index users3(get_self(), "celiacollins"_n.value);
-    users3.emplace( get_self(), [&]( auto& u ){
-      u.stake = asset(10 * 10000, symbol("XPR",4));
-      u.account_type = 101;
-      u.registered_time = time_point_sec(1611523114);
-      u.staked_time = time_point_sec(1611553422);
-    });
-
-    // dennisedolan
-    user_index users4(get_self(), "dennisedolan"_n.value);
-    users4.emplace( get_self(), [&]( auto& u ){
-      u.stake = asset(10 * 10000, symbol("XPR",4));
-      u.account_type = 101;
-      u.registered_time = time_point_sec(1610937129);
-      u.staked_time = time_point_sec(1611268907);
-    });
-
-    // ethanedwards
-    user_index users5(get_self(), "ethanedwards"_n.value);
-    users5.emplace( get_self(), [&]( auto& u ){
-      u.stake = asset(10 * 10000, symbol("XPR",4));
-      u.account_type = 101;
-      u.registered_time = time_point_sec(1611038356);
-      u.staked_time = time_point_sec(1611038356);
-    });
-
-    // frankyfellon
-    user_index users6(get_self(), "frankyfellon"_n.value);
-    users6.emplace( get_self(), [&]( auto& u ){
-      u.stake = asset(0 * 10000, symbol("XPR",4));
-      u.account_type = 101;
-      u.registered_time = time_point_sec(1611039546);
-      u.staked_time = time_point_sec(0);
-    });
-
-    // geraldgarson
-    user_index users7(get_self(), "geraldgarson"_n.value);
-    users7.emplace( get_self(), [&]( auto& u ){
-      u.stake = asset(0 * 10000, symbol("XPR",4));
-      u.account_type = 101;
-      u.registered_time = time_point_sec(1612228005);
-      u.staked_time = time_point_sec(0);
-    });
-
-    // jamiejackson
-    user_index users8(get_self(), "jamiejackson"_n.value);
-    users8.emplace( get_self(), [&]( auto& u ){
-      u.stake = asset(1 * 10000, symbol("XPR",4));
-      u.account_type = 101;
-      u.registered_time = time_point_sec(1612403824);
-      u.staked_time = time_point_sec(1612404247);
-    });
-
-    // powderblue
-    user_index users9(get_self(), "powderblue"_n.value);
-    users9.emplace( get_self(), [&]( auto& u ){
-      u.stake = asset(1 * 10000, symbol("XPR",4));
-      u.account_type = 101;
-      u.registered_time = time_point_sec(1612316322);
-      u.staked_time = time_point_sec(1612319413);
-    });
-
-    // wlcm.proton
-    user_index users10(get_self(), "wlcm.proton"_n.value);
-    users10.emplace( get_self(), [&]( auto& u ){
-      u.stake = asset(10 * 10000, symbol("XPR",4));
-      u.account_type = 101;
-      u.registered_time = time_point_sec(1610955975);
-      u.staked_time = time_point_sec(1610955975);
-    });
-
-
-  } // end of block
-
-  /*
-  if (option == "clear userext") {
-    userext_index userext_table(get_self(), get_self().value);
-    name thisuser = ""_n;
-
-    // array of users
-    name candidates[6] = {"alanappleton"_n, "billbeaumont"_n, "celiacollins"_n, "dennisedolan"_n, "ethanedwards"_n, "frankyfellon"_n};
-
-    for(int i = 0; i < 6; i++) {
-      thisuser = candidates[i];
-      auto u = userext_table.find(thisuser.value);
-      if (u != userext_table.end()) {
-        userext_table.erase(u);
-        }
-      }
-
-  }
-
-
-  if (option == "set vested values") {
-    userext_index userext_table(get_self(), get_self().value);
-
-    // ethanedwards
-    name thisuser = "ethanedwards"_n;
-
-    auto u = userext_table.find(thisuser.value);
-    if (u != userext_table.end()) {
-      userext_table.modify(u, same_payer, [&]( auto& a ) {
-        a.vested = asset(210 * 10000, symbol("FREEOS",4));
-      });
-    }
-
-    // frankyfellon
-    thisuser = "frankyfellon"_n;
-
-    auto v = userext_table.find(thisuser.value);
-    if (v != userext_table.end()) {
-      userext_table.modify(v, same_payer, [&]( auto& a ) {
-        a.vested = asset(40 * 10000, symbol("FREEOS",4));
-      });
-    }
-  }
-  */
-
-
-
-  /*
-  if (option == "increment") {
-      entry.usercount += 1;
-  } else if (option == "reset") {
-      entry.usercount = 1;
-  } else if (option == "remove") {
-      user_counter.remove();
-      return;
-  } */
-
-  if (option == "initialise") {
-      // initialise the default stake value
-
-      // get the value from the config 'stakereqs' table
-      stakereq_index stakereqs(name(freeosconfig_acct), name(freeosconfig_acct).value);
-      // get the stake-requirements record for threshold 0
-      auto config_sr = stakereqs.find(0);
-      if (config_sr == stakereqs.end()) {
-        print("the config stake requirements table does not have a record for threshold 0");
-        return;
-      }
-
-      // the default stake is calculated below
-
-      uint64_t threshold = config_sr->threshold;
-
-      uint32_t req_a = config_sr->requirement_a;
-      asset stake_requirement_a = asset(req_a * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      uint32_t req_b = config_sr->requirement_b;
-      asset stake_requirement_b = asset(req_b * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      uint32_t req_c = config_sr->requirement_c;
-      asset stake_requirement_c = asset(req_c * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      uint32_t req_d = config_sr->requirement_d;
-      asset stake_requirement_d = asset(req_d * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      uint32_t req_e = config_sr->requirement_e;
-      asset stake_requirement_e = asset(req_e * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      uint32_t req_u = config_sr->requirement_u;
-      asset stake_requirement_u = asset(req_u * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      uint32_t req_v = config_sr->requirement_v;
-      asset stake_requirement_v = asset(req_v * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      uint32_t req_w = config_sr->requirement_w;
-      asset stake_requirement_w = asset(req_w * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      uint32_t req_x = config_sr->requirement_x;
-      asset stake_requirement_x = asset(req_x * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      uint32_t req_y = config_sr->requirement_y;
-      asset stake_requirement_y = asset(req_y * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      // Place the values in the table
-      stakes_index stakes_table(get_self(), get_self().value);
-      auto stake = stakes_table.find( 0 ); // using 0 because this is a single row table
-
-      if( stake == stakes_table.end() ) {
-         stakes_table.emplace(get_self(), [&]( auto& s ){
-           s.threshold = threshold;
-           s.requirement_a = stake_requirement_a;
-           s.requirement_b = stake_requirement_b;
-           s.requirement_c = stake_requirement_c;
-           s.requirement_d = stake_requirement_d;
-           s.requirement_e = stake_requirement_e;
-           s.requirement_u = stake_requirement_u;
-           s.requirement_v = stake_requirement_v;
-           s.requirement_w = stake_requirement_w;
-           s.requirement_x = stake_requirement_x;
-           s.requirement_y = stake_requirement_y;
-         });
-      } else {
-         stakes_table.modify( stake, same_payer, [&]( auto& s ) {
-           s.threshold = threshold;
-           s.requirement_a = stake_requirement_a;
-           s.requirement_b = stake_requirement_b;
-           s.requirement_c = stake_requirement_c;
-           s.requirement_d = stake_requirement_d;
-           s.requirement_e = stake_requirement_e;
-           s.requirement_u = stake_requirement_u;
-           s.requirement_v = stake_requirement_v;
-           s.requirement_w = stake_requirement_w;
-           s.requirement_x = stake_requirement_x;
-           s.requirement_y = stake_requirement_y;
-         });
-
-      print("current stakes set");
-    }
-  }
-
-  if (option == "vested") {
-      float vested_proportion = get_vested_proportion();
-
-      uint16_t claim_amount = 100;
-      uint16_t vested_amount = claim_amount * 0.009f;
-
-      print("vested amount is ", vested_amount);
-      return;
-  }
-
-}
-
 
 
 // for deregistering user
@@ -1340,7 +898,16 @@ void freeos::request_stake_refund(name user, asset amount, time_point_sec staked
 }
 
 // refund stakes
-void freeos::refund_stakes(uint16_t number_to_release) {
+void freeos::refund_stakes() {
+
+  // read the number of unstakes to release - from the freeosconfig 'parameters' table
+  uint16_t number_to_release = 3; // default (safe) value if parameter not set
+  parameter_index parameters(name(freeosconfig_acct), name(freeosconfig_acct).value);
+  auto p_iterator = parameters.find(name("unstakesnum").value);
+
+  if (p_iterator != parameters.end()) {
+    number_to_release = stoi(p_iterator->value);
+  }
 
   unstakereq_index unstakes(get_self(), get_self().value);
 
@@ -1595,8 +1162,6 @@ void freeos::transfer( const name&    from,
 
     sub_balance( from, quantity );
     add_balance( to, quantity, payer );
-
-    tick("U");   // User-driven tick
 }
 
 
@@ -1913,6 +1478,17 @@ void freeos::unvest(const name& user)
    // get the current iteration
    iteration this_iteration = getclaimiteration();
 
+   // get the unvestpercentiteration - if different from current iteration then update it and update the unvestpercentage
+   counter_index counters(get_self(), get_self().value);
+   auto count = counters.begin();
+
+   if (count != counters.end()) {
+     if (count->unvestpercentiteration != this_iteration.iteration_number) {
+       update_unvest_percentage();
+     }
+   }
+
+
    // has the user unvested this iteration - consult the unvests history table
    unvest_index unvests(get_self(), user.value);
    auto iterator = unvests.find(this_iteration.iteration_number);
@@ -1960,17 +1536,6 @@ void freeos::unvest(const name& user)
 
    // calculate the amount of vested FREEOS to convert to liquid FREEOS
    // Warning: these calculations use mixed-type arithmetic. Any changes need to be thoroughly tested.
-
-   /* test code
-   uint64_t vestedunits = balance * 10000;
-   asset unvested = asset(vestedunits, symbol("FREEOS",4));
-   double percentage = unvestpercent / 100.0;
-
-   uint64_t convertedunits = vestedunits * percentage;
-   uint32_t roundedfreeos = (uint32_t) ceil(convertedunits / 10000.0);
-
-   print("unvested = ", unvested.to_string(), " percentage = ", percentage, ", convertedunits = ", convertedunits, ", roundedfreeos = ", roundedfreeos);
-   */
 
    // check that the unvest percentage is within limits
    check(unvest_percent > 0 && unvest_percent <= 100, "The unvest percentage is incorrect. Please notify FreeDAO.");

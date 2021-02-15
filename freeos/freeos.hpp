@@ -103,10 +103,6 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          [[eosio::action]]
          void reguser(const name& user);
 
-         // this action for maintenance purposes
-         [[eosio::action]]
-         void maintain(std::string option);
-
          /**
           * dereg action.
           *
@@ -372,6 +368,19 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
           void unstakecncl(const name& user);
 
 
+          /**
+           * Reverify account_type for user action.
+           *
+           * @details Checks the verification table to see if user has been verified,
+           * @details Changes account_type in the user record accordingly.
+           *
+           * @param user - identifies the user to be verified.
+           *
+           */
+          [[eosio::action]]
+          void reverify(name user);
+
+
          using create_action = eosio::action_wrapper<"create"_n, &freeos::create>;
          using issue_action = eosio::action_wrapper<"issue"_n, &freeos::issue>;
          using retire_action = eosio::action_wrapper<"retire"_n, &freeos::retire>;
@@ -426,7 +435,9 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
            uint32_t  usercount;
            uint32_t  claimevents;
            uint32_t  unvestpercent;
+           uint32_t  unvestpercentiteration;
            uint32_t  iteration;
+           uint32_t  failsafecounter;
 
            uint64_t primary_key() const { return 0; } // return a constant (0 in this case) to ensure a single-row table
          };
@@ -684,9 +695,9 @@ indexed_by<"virtualtable"_n, const_mem_fun<parameter, uint64_t, &parameter::get_
          void record_deposit(uint64_t iteration_number, asset amount);
          char get_account_type(name user);
          void request_stake_refund(name user, asset amount, time_point_sec staked_time);
-         void refund_stakes(uint16_t number_to_release);
+         void refund_stakes();
          void refund_stake(name user, asset amount);
-         void payalan();  // ??? this is test code
+         void set_iteration_number();
 
    };
    /** @}*/ // end of @defgroup freeos freeos contract
