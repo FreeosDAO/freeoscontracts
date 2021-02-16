@@ -1585,7 +1585,7 @@ void freeos::unvest(const name& user)
    user_transfer.send();
 
    // subtract the amount transferred from the unvested record
-   v_accounts.modify( it, same_payer, [&]( auto& v ) {
+   v_accounts.modify( v_it, same_payer, [&]( auto& v ) {
      v.balance -= convertedfreeos;
    });
 
