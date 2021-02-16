@@ -42,9 +42,10 @@ using namespace eosio;
 //       update unvest percentage driven by user 'unvest' action rather than CRON
 //       hourly process refunds stakes
 //       failsafe_frequency determined by 'failsafefreq' parameter in freeosconfig
+// 323 - fixed bug in the unvest function. Tested and working ok.
 
 
-const std::string VERSION = "0.322 XPR";
+const std::string VERSION = "0.323 XPR";
 
 [[eosio::action]]
 void freeos::version() {
@@ -1534,6 +1535,7 @@ void freeos::unvest(const name& user)
      return;
    }
 
+
    // calculate the amount of vested FREEOS to convert to liquid FREEOS
    // Warning: these calculations use mixed-type arithmetic. Any changes need to be thoroughly tested.
 
@@ -1558,24 +1560,25 @@ void freeos::unvest(const name& user)
       s.conditional_supply += convertedfreeos;
    });
 
+   std::string memo = std::string("unvesting FREEOS by ");
+   memo.append(user.to_string());
 
    // Issue the required amount to the freeos account
    action issue_action = action(
      permission_level{get_self(),"active"_n},
      name(freeos_acct),
      "issue"_n,
-     std::make_tuple(get_self(), convertedfreeos, "unvested FREEOS")
+     std::make_tuple(get_self(), convertedfreeos, memo)
    );
 
    issue_action.send();
-
 
    // transfer liquid FREEOS to user
    action user_transfer = action(
      permission_level{get_self(),"active"_n},
      name(freeos_acct),
      "transfer"_n,
-     std::make_tuple(get_self(), user, convertedfreeos, "unvested FREEOS")
+     std::make_tuple(get_self(), user, convertedfreeos, memo)
    );
 
    user_transfer.send();
@@ -1590,6 +1593,9 @@ void freeos::unvest(const name& user)
        unvest.unvest_time = current_time_point().sec_since_epoch();
      });
    }
+
+   print("5");
+   return;
 
 
    // print the result
