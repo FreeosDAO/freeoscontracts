@@ -43,9 +43,10 @@ using namespace eosio;
 //       hourly process refunds stakes
 //       failsafe_frequency determined by 'failsafefreq' parameter in freeosconfig
 // 323 - fixed bug in the unvest function. Tested and working ok.
+// 324 - fixed bug whereby vested freeos was not being decremented after transfer of FREEOS to user.
 
 
-const std::string VERSION = "0.323 XPR";
+const std::string VERSION = "0.324 XPR";
 
 [[eosio::action]]
 void freeos::version() {
@@ -1523,10 +1524,10 @@ void freeos::unvest(const name& user)
    // get the user's unvested FREEOS balance
    asset user_vbalance = asset(0, symbol("FREEOS",4));
    vestaccounts v_accounts(get_self(), user.value);
-   auto it = v_accounts.begin();
+   auto v_it = v_accounts.begin();
 
-   if (it != v_accounts.end()) {
-     user_vbalance = it->balance;
+   if (v_it != v_accounts.end()) {
+     user_vbalance = v_it->balance;
    }
 
    // if user's vested balance is 0 then nothing to do, so return
@@ -1583,7 +1584,11 @@ void freeos::unvest(const name& user)
 
    user_transfer.send();
 
-   // if successful, continue to here
+   // subtract the amount transferred from the unvested record
+   v_accounts.modify( it, same_payer, [&]( auto& v ) {
+     v.balance -= convertedfreeos;
+   });
+
 
    // write the unvest event to the unvests history table
    iterator = unvests.find(this_iteration.iteration_number);
@@ -1593,10 +1598,6 @@ void freeos::unvest(const name& user)
        unvest.unvest_time = current_time_point().sec_since_epoch();
      });
    }
-
-   print("5");
-   return;
-
 
    // print the result
    print("Unvesting successful. You have gained another ", convertedfreeos.to_string());
