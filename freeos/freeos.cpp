@@ -44,9 +44,10 @@ using namespace eosio;
 //       failsafe_frequency determined by 'failsafefreq' parameter in freeosconfig
 // 323 - fixed bug in the unvest function. Tested and working ok.
 // 324 - fixed bug whereby vested freeos was not being decremented after transfer of FREEOS to user.
+// 325 - removed reference to the 'weeks' table in the abi
 
 
-const std::string VERSION = "0.324 XPR";
+const std::string VERSION = "0.325 XPR";
 
 [[eosio::action]]
 void freeos::version() {
@@ -537,7 +538,7 @@ void freeos::reverify(name user) {
   char account_type = get_account_type(user);
 
   // set the user account type
-  users.modify(iterator, same_payer, [&]( auto& u) {
+  users.modify(iterator, _self, [&]( auto& u) {
     u.account_type = account_type;
   });
 
@@ -662,7 +663,7 @@ void freeos::update_stake_requirements(uint32_t numusers) {
          s.requirement_y = stake_requirement_y;
        });
     } else {
-       stakes_table.modify( stake, same_payer, [&]( auto& s ) {
+       stakes_table.modify( stake, _self, [&]( auto& s ) {
          s.threshold = threshold;
          s.requirement_a = stake_requirement_a;
          s.requirement_b = stake_requirement_b;
@@ -803,8 +804,8 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
     check(stake_requirement == quantity, "the stake amount is not what is required");
 
     // update the user record
-    usertable.modify(u, to, [&](auto& row) {   // second argument is scope
-      row.stake += quantity;
+    usertable.modify(u, _self, [&](auto& row) {
+      row.stake = quantity;
       row.staked_time = time_point_sec(current_time_point().sec_since_epoch());
     });
 
@@ -947,7 +948,7 @@ void freeos::refund_stake(name user, asset amount) {
   transfer.send();
 
   // update the user record
-  usertable.modify(u, user, [&](auto& row) {   // second argument is scope
+  usertable.modify(u, _self, [&](auto& row) {
     row.stake = asset(0, symbol(CURRENCY_SYMBOL_CODE, 4));
     row.staked_time = time_point_sec(0);
   });
@@ -1194,7 +1195,7 @@ void freeos::add_balance( const name& owner, const asset& value, const name& ram
    }
 }
 
-
+/*
 void freeos::add_stake( const name& owner, const asset& value, const name& ram_payer )
 {
    user_index to_acnts( get_self(), owner.value );
@@ -1211,6 +1212,7 @@ void freeos::add_stake( const name& owner, const asset& value, const name& ram_p
 }
 
 
+
 void freeos::sub_stake( const name& owner, const asset& value ) {
    user_index from_acnts( get_self(), owner.value );
 
@@ -1221,7 +1223,7 @@ void freeos::sub_stake( const name& owner, const asset& value ) {
          a.stake -= value;
       });
 }
-
+*/
 
 void freeos::open( const name& owner, const symbol& symbol, const name& ram_payer )
 {
@@ -1371,7 +1373,7 @@ void freeos::claim( const name& user )
           a.balance = vested_amount;
         });
      } else {
-        to_acnts.modify(to, same_payer, [&]( auto& a ) {
+        to_acnts.modify(to, _self, [&]( auto& a ) {
           a.balance += vested_amount;
         });
      }
@@ -1410,7 +1412,7 @@ void freeos::record_deposit(uint64_t iteration_number, asset amount) {
     });
   } else {
     // modify record
-    deposits.modify(iterator, same_payer, [&]( auto& d ) {
+    deposits.modify(iterator, _self, [&]( auto& d ) {
       d.accrued += amount;
     });
   }
@@ -1585,7 +1587,7 @@ void freeos::unvest(const name& user)
    user_transfer.send();
 
    // subtract the amount transferred from the unvested record
-   v_accounts.modify( v_it, same_payer, [&]( auto& v ) {
+   v_accounts.modify( v_it, _self, [&]( auto& v ) {
      v.balance -= convertedfreeos;
    });
 

@@ -696,40 +696,6 @@
             "name": "version",
             "base": "",
             "fields": []
-        },
-        {
-            "name": "week",
-            "base": "",
-            "fields": [
-                {
-                    "name": "week_number",
-                    "type": "uint64"
-                },
-                {
-                    "name": "start",
-                    "type": "uint32"
-                },
-                {
-                    "name": "start_date",
-                    "type": "string"
-                },
-                {
-                    "name": "end",
-                    "type": "uint32"
-                },
-                {
-                    "name": "end_date",
-                    "type": "string"
-                },
-                {
-                    "name": "claim_amount",
-                    "type": "uint16"
-                },
-                {
-                    "name": "tokens_required",
-                    "type": "uint16"
-                }
-            ]
         }
     ],
     "actions": [
@@ -960,13 +926,6 @@
         {
             "name": "vestaccounts",
             "type": "account",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
-            "name": "weeks",
-            "type": "week",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

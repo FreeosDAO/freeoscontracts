@@ -514,24 +514,7 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          using stakereq_index = eosio::multi_index<"stakereqs"_n, stakerequire>;
 
 
-         // freeos airclaim week calendar
-
-         struct [[eosio::table]] week {
-           uint64_t    week_number;
-           uint32_t    start;
-           std::string start_date;
-           uint32_t    end;
-           std::string end_date;
-           uint16_t    claim_amount;
-           uint16_t    tokens_required;
-
-           uint64_t primary_key() const { return week_number; }
-         };
-
-         using week_index = eosio::multi_index<"weeks"_n, week>;
-
-
-         // freeos airclaim week calendar
+         // freeos airclaim iteration calendar
 
          struct [[eosio::table]] iteration {
            uint64_t    iteration_number;
@@ -671,8 +654,8 @@ indexed_by<"virtualtable"_n, const_mem_fun<parameter, uint64_t, &parameter::get_
          void sub_balance( const name& owner, const asset& value );
          void add_balance( const name& owner, const asset& value, const name& ram_payer );
 
-         void sub_stake( const name& owner, const asset& value );
-         void add_stake( const name& owner, const asset& value, const name& ram_payer );
+         //void sub_stake( const name& owner, const asset& value );
+         //void add_stake( const name& owner, const asset& value, const name& ram_payer );
 
          registration_status register_user(const name& user);
 
