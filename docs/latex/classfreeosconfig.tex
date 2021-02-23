@@ -9,23 +9,37 @@ Inherits contract.
 \item 
 \mbox{\hyperlink{classfreeosconfig_a1a01dd1870ce4760d6982b6e37e01bb5}{freeosconfig}} (name receiver, name code, datastream$<$ const char $\ast$ $>$ ds)
 \item 
+void \mbox{\hyperlink{classfreeosconfig_a652beec7b157dd8169207ff21dce3b3f}{version}} ()
+\item 
 void \mbox{\hyperlink{classfreeosconfig_ac628cf94f2c2c99848698038f5802497}{paramupsert}} (name virtualtable, name paramname, std\+::string value)
 \item 
 void \mbox{\hyperlink{classfreeosconfig_a200d1d93e8215b9050bced3bbb58e4d2}{paramerase}} (name paramname)
 \item 
-void \mbox{\hyperlink{classfreeosconfig_a42809d253bc46eec7680b0cda96ebcd8}{stakeupsert}} (uint64\+\_\+t threshold, uint32\+\_\+t value\+\_\+e, uint32\+\_\+t value\+\_\+d, uint32\+\_\+t value\+\_\+v, uint32\+\_\+t value\+\_\+x)
+void \mbox{\hyperlink{classfreeosconfig_ad3ef00cfea91546388e4e68263c16fa1}{stakeupsert}} (uint64\+\_\+t threshold, uint32\+\_\+t value\+\_\+a, uint32\+\_\+t value\+\_\+b, uint32\+\_\+t value\+\_\+c, uint32\+\_\+t value\+\_\+d, uint32\+\_\+t value\+\_\+e, uint32\+\_\+t value\+\_\+u, uint32\+\_\+t value\+\_\+v, uint32\+\_\+t value\+\_\+w, uint32\+\_\+t value\+\_\+x, uint32\+\_\+t value\+\_\+y)
 \item 
 void \mbox{\hyperlink{classfreeosconfig_a98fafb0d78f7b9e654a06ab226c8a816}{stakeerase}} (uint64\+\_\+t threshold)
 \item 
-void \mbox{\hyperlink{classfreeosconfig_a7ac12e14912e35f29b92405734ea899c}{weekupsert}} (uint64\+\_\+t week\+\_\+number, std\+::string start, std\+::string end, uint16\+\_\+t claim\+\_\+amount, uint16\+\_\+t tokens\+\_\+required)
+void \mbox{\hyperlink{classfreeosconfig_aadd93324a4bced34db072d93b18ef567}{iterupsert}} (uint64\+\_\+t iteration\+\_\+number, std\+::string start, std\+::string end, uint16\+\_\+t claim\+\_\+amount, uint16\+\_\+t tokens\+\_\+required)
 \item 
-void \mbox{\hyperlink{classfreeosconfig_a9f09757df4b692b8cba59cec34898af8}{getweek}} (uint64\+\_\+t week\+\_\+number)
+void \mbox{\hyperlink{classfreeosconfig_a2c076b1e6a204c04853402962793508d}{getiter}} (uint64\+\_\+t iteration\+\_\+number)
 \item 
-void \mbox{\hyperlink{classfreeosconfig_a0eec8efafc53c1885aeed209839b5eb4}{weekerase}} (uint64\+\_\+t week\+\_\+number)
+void \mbox{\hyperlink{classfreeosconfig_a77c62538b7c6bfacd90e1952c8ce72a4}{itererase}} (uint64\+\_\+t iteration\+\_\+number)
 \item 
-void \mbox{\hyperlink{classfreeosconfig_a176e43b008de5f10bb337f86a184e417}{getconfig}} (uint64\+\_\+t threshold, name paramname)
+void \mbox{\hyperlink{classfreeosconfig_aef539ffc5d10f4a0f8983375dcbdff82}{currentrate}} (double price)
+\item 
+void \mbox{\hyperlink{classfreeosconfig_a2758911d51710df0339381be5a24660f}{targetrate}} (double price)
+\item 
+void \mbox{\hyperlink{classfreeosconfig_af8442595de913f9a5e9e9b7cce021b0f}{rateerase}} ()
+\item 
+void \mbox{\hyperlink{classfreeosconfig_a8e5428569063bb06c6a67708b521f02e}{getstakes}} (uint64\+\_\+t threshold)
 \item 
 void \mbox{\hyperlink{classfreeosconfig_a30ff35c331c28f7873b992b6bf2a620f}{getthreshold}} (uint64\+\_\+t numusers, std\+::string account\+\_\+type)
+\item 
+\mbox{\Hypertarget{classfreeosconfig_a257f523d976cfa9bbd2c6fcae81120f7}\label{classfreeosconfig_a257f523d976cfa9bbd2c6fcae81120f7}} 
+void {\bfseries userverify} (name acc, name verifier, bool verified)
+\item 
+\mbox{\Hypertarget{classfreeosconfig_a934e01f71ac2652dbfcd6a2cbec72f3c}\label{classfreeosconfig_a934e01f71ac2652dbfcd6a2cbec72f3c}} 
+void {\bfseries addkyc} (name acc, name kyc\+\_\+provider, std\+::string kyc\+\_\+level, uint64\+\_\+t kyc\+\_\+date)
 \end{DoxyCompactItemize}
 
 
@@ -39,21 +53,55 @@ void \mbox{\hyperlink{classfreeosconfig_a30ff35c331c28f7873b992b6bf2a620f}{getth
 contract constructor 
 
 \doxysubsection{Member Function Documentation}
-\mbox{\Hypertarget{classfreeosconfig_a176e43b008de5f10bb337f86a184e417}\label{classfreeosconfig_a176e43b008de5f10bb337f86a184e417}} 
-\index{freeosconfig@{freeosconfig}!getconfig@{getconfig}}
-\index{getconfig@{getconfig}!freeosconfig@{freeosconfig}}
-\doxysubsubsection{\texorpdfstring{getconfig()}{getconfig()}}
-{\footnotesize\ttfamily void freeosconfig\+::getconfig (\begin{DoxyParamCaption}\item[{uint64\+\_\+t}]{threshold,  }\item[{name}]{paramname }\end{DoxyParamCaption})}
+\mbox{\Hypertarget{classfreeosconfig_aef539ffc5d10f4a0f8983375dcbdff82}\label{classfreeosconfig_aef539ffc5d10f4a0f8983375dcbdff82}} 
+\index{freeosconfig@{freeosconfig}!currentrate@{currentrate}}
+\index{currentrate@{currentrate}!freeosconfig@{freeosconfig}}
+\doxysubsubsection{\texorpdfstring{currentrate()}{currentrate()}}
+{\footnotesize\ttfamily void freeosconfig\+::currentrate (\begin{DoxyParamCaption}\item[{double}]{price }\end{DoxyParamCaption})}
 
-getconfig action.
+currentrate action.
 
-This action is intended for testers. It displays the values associated with the threshold in the \textquotesingle{}stakereqs\textquotesingle{} table and the parameter in the \textquotesingle{}parameters\textquotesingle{} table.
+This action creates a new record, or modifies the existing (single) record, in the \textquotesingle{}exchangerate\textquotesingle{} table. Sets the usdprice field.
+
+
+\begin{DoxyParams}{Parameters}
+{\em price} & -\/ the current US Dollar price for 1 F\+R\+E\+E\+OS\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+requires permission of the contract account 
+\end{DoxyPrecond}
+\mbox{\Hypertarget{classfreeosconfig_a2c076b1e6a204c04853402962793508d}\label{classfreeosconfig_a2c076b1e6a204c04853402962793508d}} 
+\index{freeosconfig@{freeosconfig}!getiter@{getiter}}
+\index{getiter@{getiter}!freeosconfig@{freeosconfig}}
+\doxysubsubsection{\texorpdfstring{getiter()}{getiter()}}
+{\footnotesize\ttfamily void freeosconfig\+::getiter (\begin{DoxyParamCaption}\item[{uint64\+\_\+t}]{iteration\+\_\+number }\end{DoxyParamCaption})}
+
+getiter action.
+
+For testing purposes. This action prints a record from the \textquotesingle{}iterations\textquotesingle{} table.
+
+
+\begin{DoxyParams}{Parameters}
+{\em iteration\+\_\+number} & -\/ the iteration number\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+requires permission of the contract account 
+\end{DoxyPrecond}
+\mbox{\Hypertarget{classfreeosconfig_a8e5428569063bb06c6a67708b521f02e}\label{classfreeosconfig_a8e5428569063bb06c6a67708b521f02e}} 
+\index{freeosconfig@{freeosconfig}!getstakes@{getstakes}}
+\index{getstakes@{getstakes}!freeosconfig@{freeosconfig}}
+\doxysubsubsection{\texorpdfstring{getstakes()}{getstakes()}}
+{\footnotesize\ttfamily void freeosconfig\+::getstakes (\begin{DoxyParamCaption}\item[{uint64\+\_\+t}]{threshold }\end{DoxyParamCaption})}
+
+getstakes action.
+
+This action is intended for testers. It displays the values associated with the threshold in the \textquotesingle{}stakereqs\textquotesingle{} table.
 
 
 \begin{DoxyParams}{Parameters}
 {\em threshold} & -\/ the lower bound of the range of user population (e.\+g. if the band is for 5,000-\/10,000 users, then enter 5000) \\
-\hline
-{\em paramname} & -\/ the name of the parameter \\
 \hline
 \end{DoxyParams}
 \mbox{\Hypertarget{classfreeosconfig_a30ff35c331c28f7873b992b6bf2a620f}\label{classfreeosconfig_a30ff35c331c28f7873b992b6bf2a620f}} 
@@ -73,19 +121,45 @@ This action is intended for testing the \textquotesingle{}stakereqs\textquotesin
 {\em account\+\_\+type} & -\/ \char`\"{}e\char`\"{} for E\+OS wallet user, \char`\"{}d\char`\"{} for Dapp Account user, \char`\"{}v\char`\"{} for Voice verified user. \\
 \hline
 \end{DoxyParams}
-\mbox{\Hypertarget{classfreeosconfig_a9f09757df4b692b8cba59cec34898af8}\label{classfreeosconfig_a9f09757df4b692b8cba59cec34898af8}} 
-\index{freeosconfig@{freeosconfig}!getweek@{getweek}}
-\index{getweek@{getweek}!freeosconfig@{freeosconfig}}
-\doxysubsubsection{\texorpdfstring{getweek()}{getweek()}}
-{\footnotesize\ttfamily void freeosconfig\+::getweek (\begin{DoxyParamCaption}\item[{uint64\+\_\+t}]{week\+\_\+number }\end{DoxyParamCaption})}
+\mbox{\Hypertarget{classfreeosconfig_a77c62538b7c6bfacd90e1952c8ce72a4}\label{classfreeosconfig_a77c62538b7c6bfacd90e1952c8ce72a4}} 
+\index{freeosconfig@{freeosconfig}!itererase@{itererase}}
+\index{itererase@{itererase}!freeosconfig@{freeosconfig}}
+\doxysubsubsection{\texorpdfstring{itererase()}{itererase()}}
+{\footnotesize\ttfamily void freeosconfig\+::itererase (\begin{DoxyParamCaption}\item[{uint64\+\_\+t}]{iteration\+\_\+number }\end{DoxyParamCaption})}
 
-getweek action.
+itererase action.
 
-For testing purposes. This action prints a record from the \textquotesingle{}weeks\textquotesingle{} table.
+This action deletes a record from the \textquotesingle{}iterations\textquotesingle{} table.
 
 
 \begin{DoxyParams}{Parameters}
-{\em week\+\_\+number} & -\/ the week number\\
+{\em iteration\+\_\+number} & -\/ the iteration number\\
+\hline
+\end{DoxyParams}
+\begin{DoxyPrecond}{Precondition}
+requires permission of the contract account 
+\end{DoxyPrecond}
+\mbox{\Hypertarget{classfreeosconfig_aadd93324a4bced34db072d93b18ef567}\label{classfreeosconfig_aadd93324a4bced34db072d93b18ef567}} 
+\index{freeosconfig@{freeosconfig}!iterupsert@{iterupsert}}
+\index{iterupsert@{iterupsert}!freeosconfig@{freeosconfig}}
+\doxysubsubsection{\texorpdfstring{iterupsert()}{iterupsert()}}
+{\footnotesize\ttfamily void freeosconfig\+::iterupsert (\begin{DoxyParamCaption}\item[{uint64\+\_\+t}]{iteration\+\_\+number,  }\item[{std\+::string}]{start,  }\item[{std\+::string}]{end,  }\item[{uint16\+\_\+t}]{claim\+\_\+amount,  }\item[{uint16\+\_\+t}]{tokens\+\_\+required }\end{DoxyParamCaption})}
+
+iterupsert action.
+
+This action creates a new entry, or modifies an existing entry, in the \textquotesingle{}iterations\textquotesingle{} table.
+
+
+\begin{DoxyParams}{Parameters}
+{\em iteration\+\_\+number} & -\/ the airclaim iteration number \\
+\hline
+{\em start} & -\/ string representing the start of iteration in Y\+Y\+Y\+Y-\/\+M\+M-\/\+DD H\+H\+:\+MM\+:SS format, \\
+\hline
+{\em end} & -\/ string representing the end of iteration in Y\+Y\+Y\+Y-\/\+M\+M-\/\+DD H\+H\+:\+MM\+:SS format \\
+\hline
+{\em claim\+\_\+amount} & -\/ the amount of F\+R\+E\+E\+OS a user can claim in the iteration \\
+\hline
+{\em claim\+\_\+amount} & -\/ the amount of F\+R\+E\+E\+OS a user must hold before claiming\\
 \hline
 \end{DoxyParams}
 \begin{DoxyPrecond}{Precondition}
@@ -131,6 +205,19 @@ This action creates a new parameter or modifies an existing parameter in the \te
 \begin{DoxyPrecond}{Precondition}
 requires permission of the contract account 
 \end{DoxyPrecond}
+\mbox{\Hypertarget{classfreeosconfig_af8442595de913f9a5e9e9b7cce021b0f}\label{classfreeosconfig_af8442595de913f9a5e9e9b7cce021b0f}} 
+\index{freeosconfig@{freeosconfig}!rateerase@{rateerase}}
+\index{rateerase@{rateerase}!freeosconfig@{freeosconfig}}
+\doxysubsubsection{\texorpdfstring{rateerase()}{rateerase()}}
+{\footnotesize\ttfamily void freeosconfig\+::rateerase (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+rateerase action.
+
+This action deletes the (single) record from the \textquotesingle{}exchangerate\textquotesingle{} table.
+
+\begin{DoxyPrecond}{Precondition}
+requires permission of the contract account 
+\end{DoxyPrecond}
 \mbox{\Hypertarget{classfreeosconfig_a98fafb0d78f7b9e654a06ab226c8a816}\label{classfreeosconfig_a98fafb0d78f7b9e654a06ab226c8a816}} 
 \index{freeosconfig@{freeosconfig}!stakeerase@{stakeerase}}
 \index{stakeerase@{stakeerase}!freeosconfig@{freeosconfig}}
@@ -149,11 +236,11 @@ This action deletes an entry from the \textquotesingle{}stakereqs\textquotesingl
 \begin{DoxyPrecond}{Precondition}
 requires permission of the contract account 
 \end{DoxyPrecond}
-\mbox{\Hypertarget{classfreeosconfig_a42809d253bc46eec7680b0cda96ebcd8}\label{classfreeosconfig_a42809d253bc46eec7680b0cda96ebcd8}} 
+\mbox{\Hypertarget{classfreeosconfig_ad3ef00cfea91546388e4e68263c16fa1}\label{classfreeosconfig_ad3ef00cfea91546388e4e68263c16fa1}} 
 \index{freeosconfig@{freeosconfig}!stakeupsert@{stakeupsert}}
 \index{stakeupsert@{stakeupsert}!freeosconfig@{freeosconfig}}
 \doxysubsubsection{\texorpdfstring{stakeupsert()}{stakeupsert()}}
-{\footnotesize\ttfamily void freeosconfig\+::stakeupsert (\begin{DoxyParamCaption}\item[{uint64\+\_\+t}]{threshold,  }\item[{uint32\+\_\+t}]{value\+\_\+e,  }\item[{uint32\+\_\+t}]{value\+\_\+d,  }\item[{uint32\+\_\+t}]{value\+\_\+v,  }\item[{uint32\+\_\+t}]{value\+\_\+x }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily void freeosconfig\+::stakeupsert (\begin{DoxyParamCaption}\item[{uint64\+\_\+t}]{threshold,  }\item[{uint32\+\_\+t}]{value\+\_\+a,  }\item[{uint32\+\_\+t}]{value\+\_\+b,  }\item[{uint32\+\_\+t}]{value\+\_\+c,  }\item[{uint32\+\_\+t}]{value\+\_\+d,  }\item[{uint32\+\_\+t}]{value\+\_\+e,  }\item[{uint32\+\_\+t}]{value\+\_\+u,  }\item[{uint32\+\_\+t}]{value\+\_\+v,  }\item[{uint32\+\_\+t}]{value\+\_\+w,  }\item[{uint32\+\_\+t}]{value\+\_\+x,  }\item[{uint32\+\_\+t}]{value\+\_\+y }\end{DoxyParamCaption})}
 
 stakeupsert action.
 
@@ -163,63 +250,57 @@ This action creates a new entry, or modifies an existing entry, in the \textquot
 \begin{DoxyParams}{Parameters}
 {\em threshold} & -\/ the lower bound of the range of user population (e.\+g. if 5,000-\/10,000 users require a stake of 10 E\+OS, then enter 5000). This is the promary key of the table, \\
 \hline
-{\em value\+\_\+e} & -\/ the amount of E\+OS stake required for an E\+OS wallet user, \\
+{\em value\+\_\+a} & -\/ the amount of E\+OS stake required for a \textquotesingle{}type a\textquotesingle{} user, \\
 \hline
-{\em value\+\_\+d} & -\/ the amount of E\+OS stake required for a Dapp Account user, \\
+{\em value\+\_\+b} & -\/ the amount of E\+OS stake required for a \textquotesingle{}type b\textquotesingle{} user, \\
 \hline
-{\em value\+\_\+e} & -\/ the amount of E\+OS stake required for a Voice verified user, \\
+{\em value\+\_\+c} & -\/ the amount of E\+OS stake required for a \textquotesingle{}type c\textquotesingle{} user, \\
 \hline
-{\em value\+\_\+e} & -\/ (reserved for future use, enter 0)\\
+{\em value\+\_\+d} & -\/ the amount of E\+OS stake required for a \textquotesingle{}type d\textquotesingle{} user, \\
+\hline
+{\em value\+\_\+e} & -\/ the amount of E\+OS stake required for an \textquotesingle{}type e\textquotesingle{} user -\/ E\+OS wallet, \\
+\hline
+{\em value\+\_\+u} & -\/ the amount of E\+OS stake required for a \textquotesingle{}type u\textquotesingle{} user, \\
+\hline
+{\em value\+\_\+v} & -\/ the amount of E\+OS stake required for a \textquotesingle{}type v\textquotesingle{} user, \\
+\hline
+{\em value\+\_\+w} & -\/ the amount of E\+OS stake required for a \textquotesingle{}type w\textquotesingle{} user, \\
+\hline
+{\em value\+\_\+x} & -\/ the amount of E\+OS stake required for a \textquotesingle{}type x\textquotesingle{} user, \\
+\hline
+{\em value\+\_\+y} & -\/ the amount of E\+OS stake required for a \textquotesingle{}type y\textquotesingle{} user,\\
 \hline
 \end{DoxyParams}
 \begin{DoxyPrecond}{Precondition}
 requires permission of the contract account 
 \end{DoxyPrecond}
-\mbox{\Hypertarget{classfreeosconfig_a0eec8efafc53c1885aeed209839b5eb4}\label{classfreeosconfig_a0eec8efafc53c1885aeed209839b5eb4}} 
-\index{freeosconfig@{freeosconfig}!weekerase@{weekerase}}
-\index{weekerase@{weekerase}!freeosconfig@{freeosconfig}}
-\doxysubsubsection{\texorpdfstring{weekerase()}{weekerase()}}
-{\footnotesize\ttfamily void freeosconfig\+::weekerase (\begin{DoxyParamCaption}\item[{uint64\+\_\+t}]{week\+\_\+number }\end{DoxyParamCaption})}
+\mbox{\Hypertarget{classfreeosconfig_a2758911d51710df0339381be5a24660f}\label{classfreeosconfig_a2758911d51710df0339381be5a24660f}} 
+\index{freeosconfig@{freeosconfig}!targetrate@{targetrate}}
+\index{targetrate@{targetrate}!freeosconfig@{freeosconfig}}
+\doxysubsubsection{\texorpdfstring{targetrate()}{targetrate()}}
+{\footnotesize\ttfamily void freeosconfig\+::targetrate (\begin{DoxyParamCaption}\item[{double}]{price }\end{DoxyParamCaption})}
 
-weekerase action.
+targetrate action.
 
-This action deletes a record from the \textquotesingle{}weeks\textquotesingle{} table.
+This action creates a new record, or modifies the existing (single) record, in the \textquotesingle{}exchangerate\textquotesingle{} table. Sets the targetrate field.
 
 
 \begin{DoxyParams}{Parameters}
-{\em week\+\_\+number} & -\/ the week number\\
+{\em price} & -\/ the target US Dollar price for 1 F\+R\+E\+E\+OS\\
 \hline
 \end{DoxyParams}
 \begin{DoxyPrecond}{Precondition}
 requires permission of the contract account 
 \end{DoxyPrecond}
-\mbox{\Hypertarget{classfreeosconfig_a7ac12e14912e35f29b92405734ea899c}\label{classfreeosconfig_a7ac12e14912e35f29b92405734ea899c}} 
-\index{freeosconfig@{freeosconfig}!weekupsert@{weekupsert}}
-\index{weekupsert@{weekupsert}!freeosconfig@{freeosconfig}}
-\doxysubsubsection{\texorpdfstring{weekupsert()}{weekupsert()}}
-{\footnotesize\ttfamily void freeosconfig\+::weekupsert (\begin{DoxyParamCaption}\item[{uint64\+\_\+t}]{week\+\_\+number,  }\item[{std\+::string}]{start,  }\item[{std\+::string}]{end,  }\item[{uint16\+\_\+t}]{claim\+\_\+amount,  }\item[{uint16\+\_\+t}]{tokens\+\_\+required }\end{DoxyParamCaption})}
+\mbox{\Hypertarget{classfreeosconfig_a652beec7b157dd8169207ff21dce3b3f}\label{classfreeosconfig_a652beec7b157dd8169207ff21dce3b3f}} 
+\index{freeosconfig@{freeosconfig}!version@{version}}
+\index{version@{version}!freeosconfig@{freeosconfig}}
+\doxysubsubsection{\texorpdfstring{version()}{version()}}
+{\footnotesize\ttfamily void freeosconfig\+::version (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
 
-weekupsert action.
+version action.
 
-This action creates a new entry, or modifies an existing entry, in the \textquotesingle{}weeks\textquotesingle{} table.
-
-
-\begin{DoxyParams}{Parameters}
-{\em week\+\_\+number} & -\/ the airclaim week number \\
-\hline
-{\em start} & -\/ string representing the start of week in Y\+Y\+Y\+Y-\/\+M\+M-\/\+DD H\+H\+:\+MM\+:SS format, \\
-\hline
-{\em end} & -\/ string representing the end of week in Y\+Y\+Y\+Y-\/\+M\+M-\/\+DD H\+H\+:\+MM\+:SS format \\
-\hline
-{\em claim\+\_\+amount} & -\/ the amount of F\+R\+E\+E\+OS a user can claim in the week \\
-\hline
-{\em claim\+\_\+amount} & -\/ the amount of F\+R\+E\+E\+OS a user must hold before claiming\\
-\hline
-\end{DoxyParams}
-\begin{DoxyPrecond}{Precondition}
-requires permission of the contract account 
-\end{DoxyPrecond}
-
+Prints the version of this contract. 
 
 The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
 \item 

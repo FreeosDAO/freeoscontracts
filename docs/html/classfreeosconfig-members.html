@@ -5,10 +5,14 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.0"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Freeos: Member List</title>
+<title>My Project: Member List</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
@@ -21,8 +25,9 @@
  <tbody>
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
-   <div id="projectname">Freeos
+   <div id="projectname">My Project
    </div>
+   <div id="projectbrief">freeos AirClaim</div>
   </td>
  </tr>
  </tbody>
@@ -45,6 +50,23 @@ $(function() {
 });
 /* @license-end */</script>
 <div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classfreeosconfig.html',''); initResizable(); });
+/* @license-end */
+</script>
+<div id="doc-content">
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -59,7 +81,6 @@ $(function() {
 </iframe>
 </div>
 
-</div><!-- top -->
 <div class="header">
   <div class="headertitle">
 <div class="title">freeosconfig Member List</div>  </div>
@@ -68,20 +89,29 @@ $(function() {
 
 <p>This is the complete list of members for <a class="el" href="classfreeosconfig.html">freeosconfig</a>, including all inherited members.</p>
 <table class="directory">
+  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>addkyc</b>(name acc, name kyc_provider, std::string kyc_level, uint64_t kyc_date) (defined in <a class="el" href="classfreeosconfig.html">freeosconfig</a>)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classfreeosconfig.html#aef539ffc5d10f4a0f8983375dcbdff82">currentrate</a>(double price)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classfreeosconfig.html#a1a01dd1870ce4760d6982b6e37e01bb5">freeosconfig</a>(name receiver, name code, datastream&lt; const char * &gt; ds)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr><td class="entry"><a class="el" href="classfreeosconfig.html#a176e43b008de5f10bb337f86a184e417">getconfig</a>(uint64_t threshold, name paramname)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classfreeosconfig.html#a30ff35c331c28f7873b992b6bf2a620f">getthreshold</a>(uint64_t numusers, std::string account_type)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
-  <tr><td class="entry"><a class="el" href="classfreeosconfig.html#a9f09757df4b692b8cba59cec34898af8">getweek</a>(uint64_t week_number)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classfreeosconfig.html#a2c076b1e6a204c04853402962793508d">getiter</a>(uint64_t iteration_number)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classfreeosconfig.html#a8e5428569063bb06c6a67708b521f02e">getstakes</a>(uint64_t threshold)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classfreeosconfig.html#a30ff35c331c28f7873b992b6bf2a620f">getthreshold</a>(uint64_t numusers, std::string account_type)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classfreeosconfig.html#a77c62538b7c6bfacd90e1952c8ce72a4">itererase</a>(uint64_t iteration_number)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classfreeosconfig.html#aadd93324a4bced34db072d93b18ef567">iterupsert</a>(uint64_t iteration_number, std::string start, std::string end, uint16_t claim_amount, uint16_t tokens_required)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classfreeosconfig.html#a200d1d93e8215b9050bced3bbb58e4d2">paramerase</a>(name paramname)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
   <tr><td class="entry"><a class="el" href="classfreeosconfig.html#ac628cf94f2c2c99848698038f5802497">paramupsert</a>(name virtualtable, name paramname, std::string value)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classfreeosconfig.html#a98fafb0d78f7b9e654a06ab226c8a816">stakeerase</a>(uint64_t threshold)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
-  <tr><td class="entry"><a class="el" href="classfreeosconfig.html#a42809d253bc46eec7680b0cda96ebcd8">stakeupsert</a>(uint64_t threshold, uint32_t value_e, uint32_t value_d, uint32_t value_v, uint32_t value_x)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classfreeosconfig.html#a0eec8efafc53c1885aeed209839b5eb4">weekerase</a>(uint64_t week_number)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
-  <tr><td class="entry"><a class="el" href="classfreeosconfig.html#a7ac12e14912e35f29b92405734ea899c">weekupsert</a>(uint64_t week_number, std::string start, std::string end, uint16_t claim_amount, uint16_t tokens_required)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classfreeosconfig.html#af8442595de913f9a5e9e9b7cce021b0f">rateerase</a>()</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classfreeosconfig.html#a98fafb0d78f7b9e654a06ab226c8a816">stakeerase</a>(uint64_t threshold)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classfreeosconfig.html#ad3ef00cfea91546388e4e68263c16fa1">stakeupsert</a>(uint64_t threshold, uint32_t value_a, uint32_t value_b, uint32_t value_c, uint32_t value_d, uint32_t value_e, uint32_t value_u, uint32_t value_v, uint32_t value_w, uint32_t value_x, uint32_t value_y)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classfreeosconfig.html#a2758911d51710df0339381be5a24660f">targetrate</a>(double price)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
+  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>userverify</b>(name acc, name verifier, bool verified) (defined in <a class="el" href="classfreeosconfig.html">freeosconfig</a>)</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classfreeosconfig.html#a652beec7b157dd8169207ff21dce3b3f">version</a>()</td><td class="entry"><a class="el" href="classfreeosconfig.html">freeosconfig</a></td><td class="entry"></td></tr>
 </table></div><!-- contents -->
+</div><!-- doc-content -->
 <!-- start footer part -->
-<hr class="footer"/><address class="footer"><small>
-Generated by&#160;<a href="http://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.0
-</small></address>
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">Generated by <a href="http://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.0 </li>
+  </ul>
+</div>
 </body>
 </html>

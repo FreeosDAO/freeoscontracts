@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['configclient_26',['configclient',['../classconfigclient.html',1,'']]]
+  ['configclient_62',['configclient',['../classconfigclient.html',1,'']]]
 ];

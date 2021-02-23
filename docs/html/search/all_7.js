@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['reguser_17',['reguser',['../classfreeos.html#a2ca1c1730a7e24b590b3a5b17ac82015',1,'freeos']]],
-  ['retire_18',['retire',['../classfreeos.html#a23309a37c56ffad07669de4841b0d8bd',1,'freeos']]]
+  ['issue_24',['issue',['../classfreeos.html#a5410f45c1c2322d5bad1aae9e2b52bf6',1,'freeos']]],
+  ['itererase_25',['itererase',['../classfreeosconfig.html#a77c62538b7c6bfacd90e1952c8ce72a4',1,'freeosconfig']]],
+  ['iterupsert_26',['iterupsert',['../classfreeosconfig.html#aadd93324a4bced34db072d93b18ef567',1,'freeosconfig']]]
 ];

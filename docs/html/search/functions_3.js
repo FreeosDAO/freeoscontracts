@@ -1,9 +1,6 @@
 var searchData=
 [
-  ['get_5fbalance_34',['get_balance',['../classfreeos.html#a1c38e41cbd3400ca3ee54d7dd23fcbbb',1,'freeos']]],
-  ['get_5fsupply_35',['get_supply',['../classfreeos.html#ab44b74a7025fa583dfda486c22fdac22',1,'freeos']]],
-  ['getconfig_36',['getconfig',['../classfreeosconfig.html#a176e43b008de5f10bb337f86a184e417',1,'freeosconfig']]],
-  ['getthreshold_37',['getthreshold',['../classfreeosconfig.html#a30ff35c331c28f7873b992b6bf2a620f',1,'freeosconfig']]],
-  ['getuser_38',['getuser',['../classfreeos.html#a7feac6d7246491df1133b7674ac6c1c1',1,'freeos']]],
-  ['getweek_39',['getweek',['../classfreeosconfig.html#a9f09757df4b692b8cba59cec34898af8',1,'freeosconfig']]]
+  ['dappreg_76',['dappreg',['../classeosio_1_1eosioproton.html#a6d74744b224fbe5ec7b16fcd389e8ead',1,'eosio::eosioproton']]],
+  ['depositclear_77',['depositclear',['../classfreeos.html#a03788d0ca04e0a8921fc6d5bce895172',1,'freeos']]],
+  ['dereg_78',['dereg',['../classfreeos.html#adbdb65299c6cd507787403901fb223f5',1,'freeos']]]
 ];

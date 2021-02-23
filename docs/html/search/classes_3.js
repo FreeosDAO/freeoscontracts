@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['stakerequire_31',['stakerequire',['../structstakerequire.html',1,'']]]
+  ['kyc_5fprov_66',['kyc_prov',['../structkyc__prov.html',1,'']]]
 ];

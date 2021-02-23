@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['claim_29',['claim',['../classfreeos.html#a1ae1af0bb5ea4303b18639e464641405',1,'freeos']]],
-  ['close_30',['close',['../classfreeos.html#a623a8a09d700c2c511453853995ea7ac',1,'freeos']]],
-  ['create_31',['create',['../classfreeos.html#a60d46bb1d254c865b81ac0deeb642b58',1,'freeos']]]
+  ['addkyc_67',['addkyc',['../classeosio_1_1eosioproton.html#ac9a161e45aed5e28325e635d405eb22a',1,'eosio::eosioproton']]],
+  ['addkycprov_68',['addkycprov',['../classeosio_1_1eosioproton.html#aa1c07a86f226cf36d2501307070c5817',1,'eosio::eosioproton']]]
 ];

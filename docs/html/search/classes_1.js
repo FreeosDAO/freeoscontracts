@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['freeos_27',['freeos',['../classfreeos.html',1,'']]],
-  ['freeosconfig_28',['freeosconfig',['../classfreeosconfig.html',1,'']]]
+  ['eosioproton_63',['eosioproton',['../classeosio_1_1eosioproton.html',1,'eosio']]]
 ];

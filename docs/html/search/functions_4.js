@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['issue_40',['issue',['../classfreeos.html#a5410f45c1c2322d5bad1aae9e2b52bf6',1,'freeos']]]
+  ['freeosconfig_79',['freeosconfig',['../classfreeosconfig.html#a1a01dd1870ce4760d6982b6e37e01bb5',1,'freeosconfig']]]
 ];

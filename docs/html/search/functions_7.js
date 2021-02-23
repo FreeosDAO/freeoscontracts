@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['reguser_44',['reguser',['../classfreeos.html#a2ca1c1730a7e24b590b3a5b17ac82015',1,'freeos']]],
-  ['retire_45',['retire',['../classfreeos.html#a23309a37c56ffad07669de4841b0d8bd',1,'freeos']]]
+  ['kickbp_90',['kickbp',['../classeosio_1_1eosioproton.html#a57659473d68fd259160465798a7afd6c',1,'eosio::eosioproton']]]
 ];

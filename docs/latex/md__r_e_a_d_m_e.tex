@@ -1,0 +1,414 @@
+Click here to expand for full output
+
+This document explains the commands required by the users to perform the Free\+Os Smart Contract (the contract) actions. It includes these smart contracts with set of associated actions, which are briefly described below-\/
+
+\doxysection*{The freeos contract}
+
+\begin{quote}
+Stored in the freeostokens account \end{quote}
+
+\begin{DoxyItemize}
+\item Create and issue the F\+R\+E\+E\+OS currency. (create and issue actions)
+\item Registering the user in the \textquotesingle{}users\textquotesingle{} table (reguser action)
+\item Listening for when the user transfers the required E\+OS stake to the freeosoffice account. (stake action, which is an observer of the eosio.\+token contract transfer action)
+\item Allowing the user to \textquotesingle{}unstake\textquotesingle{} the E\+OS tokens, subject to business rules. (unstake action, which calls the transfer action)
+\item Processing a weekly claim request from the user (applying the business rules for eligibility) and then transferring the weekly amount of F\+R\+E\+E\+OS to the user. (claim action, which calls the transfer action)
+\end{DoxyItemize}
+
+\doxysection*{The freeosconfig contract}
+
+\begin{quote}
+Stored in the freeosconfig account. \end{quote}
+
+
+For use by freedao members to maintain various configuration data tables\+:
+\begin{DoxyItemize}
+\item \textquotesingle{}parameters\textquotesingle{} table, for example there is a \textquotesingle{}global masterswitch\textquotesingle{} parameter which can be used to temporarily halt the system in the event of a problem. (actions are paramupsert, paramerase)
+\item \textquotesingle{}stakereqs\textquotesingle{} table, describing how many E\+OS tokens are required depending on user type and the number of users already registered. (actions are stakeupsert and stakeerase)
+\item \textquotesingle{}weeks\textquotesingle{} table. This is the freeos calendar and describes the start/end dates for each week, the amount of F\+R\+E\+E\+OS to be claimed, the amount of F\+R\+E\+E\+OS to be held by the user. (actions are weekupsert and weekerase)
+\item Various table \textquotesingle{}read\textquotesingle{} actions for use in testing and administration (actions are getweek, getconfig, getthreshold)
+\end{DoxyItemize}
+
+\doxysubsection*{Here are the actions associated with the Free\+OS Smart Contract (F\+SC)-\/}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Register}
+\DoxyCodeLine{Stake}
+\DoxyCodeLine{Unstake}
+\DoxyCodeLine{Claim}
+\end{DoxyCode}
+
+
+\doxysection*{Steps}
+
+
+\begin{DoxyEnumerate}
+\item A user holds a valid E\+OS Wallet account (it can be other accounts such as Kylin, Proton, or Liquid\+App etc.)
+\item The user purchases the necessary computation resources such as C\+PU, R\+AM, and Network Bandwidth
+\item The user registers for the contract via invoking the reguser action of the F\+SC to become an Air\+Claim Participant.
+\item Once registered, user calls for the Stake Action of the contract, as per the staking requirement communicated to him/her.
+\item The user can also invoke the Unstake action.
+\item When required, the Claim action of the contract is invoked
+\end{DoxyEnumerate}
+
+\doxysection*{Prerequisite}
+
+The cleos command is installed on the user machine. Please note that cleos supports Ubuntu Linux (L\+TS 16 amd 18) as well as Mac\+Os Catalina. For detailed list, refer this official documentation from the official E\+O\+S.\+IO \href{https://developers.eos.io/manuals/eos/v2.1/cleos/command-reference/index}{\texttt{ help document}}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{12:14:56 08/12/2020 \string~/Documents/Projects/EOS\_DAO\$ cleos -\/h}
+\DoxyCodeLine{Command Line Interface to EOSIO Client}
+\DoxyCodeLine{Usage: cleos [OPTIONS] SUBCOMMAND}
+\DoxyCodeLine{}
+\DoxyCodeLine{Options:}
+\DoxyCodeLine{  -\/h,-\/-\/help                   Print this help message and exit}
+\DoxyCodeLine{  -\/u,-\/-\/url TEXT=http://127.0.0.1:8888/}
+\DoxyCodeLine{                              the http/https URL where nodeos is running}
+\DoxyCodeLine{  -\/-\/wallet-\/url TEXT=unix:///Users/shahid/eosio-\/wallet/keosd.sock}
+\DoxyCodeLine{                              the http/https URL where keosd is running}
+\end{DoxyCode}
+
+
+$<$details$>$
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{12:14:56 08/12/2020 \string~/Documents/Projects/EOS\_DAO\$ cleos -\/h}
+\DoxyCodeLine{Command Line Interface to EOSIO Client}
+\DoxyCodeLine{Usage: cleos [OPTIONS] SUBCOMMAND}
+\DoxyCodeLine{}
+\DoxyCodeLine{Options:}
+\DoxyCodeLine{  -\/h,-\/-\/help                   Print this help message and exit}
+\DoxyCodeLine{  -\/u,-\/-\/url TEXT=http://127.0.0.1:8888/}
+\DoxyCodeLine{                              the http/https URL where nodeos is running}
+\DoxyCodeLine{  -\/-\/wallet-\/url TEXT=unix:///Users/shahid/eosio-\/wallet/keosd.sock}
+\DoxyCodeLine{                              the http/https URL where keosd is running}
+\DoxyCodeLine{  -\/r,-\/-\/header                 pass specific HTTP header; repeat this option to pass multiple headers}
+\DoxyCodeLine{  -\/n,-\/-\/no-\/verify              don't verify peer certificate when using HTTPS}
+\DoxyCodeLine{  -\/-\/no-\/auto-\/keosd             don't automatically launch a keosd if one is not currently running}
+\DoxyCodeLine{  -\/v,-\/-\/verbose                output verbose errors and action console output}
+\DoxyCodeLine{  -\/-\/print-\/request             print HTTP request to STDERR}
+\DoxyCodeLine{  -\/-\/print-\/response            print HTTP response to STDERR}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{Subcommands:}
+\DoxyCodeLine{  version                     Retrieve version information}
+\DoxyCodeLine{  create                      Create various items, on and off the blockchain}
+\DoxyCodeLine{  convert                     Pack and unpack transactions}
+\DoxyCodeLine{  get                         Retrieve various items and information from the blockchain}
+\DoxyCodeLine{  set                         Set or update blockchain state}
+\DoxyCodeLine{  transfer                    Transfer tokens from account to account}
+\DoxyCodeLine{  net                         Interact with local p2p network connections}
+\DoxyCodeLine{  wallet                      Interact with local wallet}
+\DoxyCodeLine{  sign                        Sign a transaction}
+\DoxyCodeLine{  push                        Push arbitrary transactions to the blockchain}
+\DoxyCodeLine{  multisig                    Multisig contract commands}
+\DoxyCodeLine{  wrap                        Wrap contract commands}
+\DoxyCodeLine{  system                      Send eosio.system contract action to the blockchain.}
+\end{DoxyCode}
+
+
+$<$/details$>$
+
+\doxysection*{Detailed Steps}
+
+\begin{quote}
+You need a unique account name with wallet that will be used while executing the actions of the SC. It must not be in use. The name should be less than 13 characters and only contains the following symbol .12345abcdefghijklmnopqrstuvwxyz \end{quote}
+
+
+\begin{quote}
+Creating following alias for ease. Run these commands in the terminal (shell) \end{quote}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{alias kylin='cleos -\/u https://kylin-\/dsp-\/1.liquidapps.io'}
+\end{DoxyCode}
+
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{alias proton='cleos -\/u https://api-\/testnet-\/proton.eosarabia.net:443'}
+\end{DoxyCode}
+
+
+\doxysubsection*{For demonstration I am using my account name {\ttfamily mshahid25nov}.}
+
+On the Terminal, execute these commands\+: 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{acc=mshahid25nov}
+\end{DoxyCode}
+
+
+\doxysection*{Create above account}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{curl http://faucet-\/kylin.blockzone.net/create/\$\{acc\}}
+\end{DoxyCode}
+
+
+\begin{quote}
+Note down the private keys for Owner and Active, when above command is executed. \end{quote}
+
+
+\doxysection*{Create a Wallet whose password is saved locally in the \$acc.\+pass file}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cleos wallet create -\/-\/file \$acc.pass -\/n \$acc}
+\DoxyCodeLine{cat \$acc.pass}
+\end{DoxyCode}
+
+
+\doxysubsection*{Now import the private keys to the wallet. These keys are important and if lost, you won\textquotesingle{}t be able to retrieve the account.}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cleos wallet import -\/n \$acc -\/-\/private-\/key <KEY-\/1>}
+\DoxyCodeLine{cleos wallet import -\/n \$acc -\/-\/private-\/key <KEY-\/2>}
+\end{DoxyCode}
+
+
+\doxysubsection*{To see the wallet and password files for the user\+:}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ls -\/ltr \$\{acc\}*}
+\end{DoxyCode}
+
+
+\doxysection*{Loof for the wallets and which are unlocked (marked with \textquotesingle{}$\ast$\textquotesingle{}}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cleos wallet list}
+\end{DoxyCode}
+
+
+\doxysection*{If your wallet shows as locked (no \textquotesingle{}$\ast$\textquotesingle{} against the wallet)}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{cleos wallet unlock -\/-\/password `cat \$acc.pass` -\/n \$acc}
+\end{DoxyCode}
+
+
+\doxysection*{Get the tokens to buy the computation resources \+: R\+AM, C\+PU, Network Bandwidth}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{curl http://faucet-\/kylin.blockzone.net/get\_token/\$\{acc\}}
+\DoxyCodeLine{curl http://faucet-\/kylin.blockzone.net/get\_token/\$\{acc\}}
+\end{DoxyCode}
+
+
+\begin{quote}
+Now buy the resources. You can run the U\+RL in the browser too. \end{quote}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kylin system buyram \$acc \$acc "{}100.0000 EOS"{}}
+\end{DoxyCode}
+
+
+$<$details$>$
+
+Sample Output 
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{executed transaction: ba038d01103f5f63867e8ebbe1835daa3ba69f5006964c5ad3fc74d1e97e6177  128 bytes  939 us}
+\DoxyCodeLine{\#         eosio <= eosio::buyram                \{"{}payer"{}:"{}mshahid25nov"{},"{}receiver"{}:"{}mshahid25nov"{},"{}quant"{}:"{}100.0000 EOS"{}\}}
+\DoxyCodeLine{\#   eosio.token <= eosio.token::transfer        \{"{}from"{}:"{}mshahid25nov"{},"{}to"{}:"{}eosio.ram"{},"{}quantity"{}:"{}99.5000 EOS"{},"{}memo"{}:"{}buy ram"{}\}}
+\DoxyCodeLine{\#   eosio.token <= eosio.token::transfer        \{"{}from"{}:"{}mshahid25nov"{},"{}to"{}:"{}eosio.ramfee"{},"{}quantity"{}:"{}0.5000 EOS"{},"{}memo"{}:"{}ram fee"{}\}}
+\DoxyCodeLine{\#   eosio.token <= eosio.token::transfer        \{"{}from"{}:"{}eosio.ramfee"{},"{}to"{}:"{}eosio.rex"{},"{}quantity"{}:"{}0.5000 EOS"{},"{}memo"{}:"{}transfer from eosio.ramfee t...}
+\DoxyCodeLine{\#  mshahid25nov <= eosio.token::transfer        \{"{}from"{}:"{}mshahid25nov"{},"{}to"{}:"{}eosio.ram"{},"{}quantity"{}:"{}99.5000 EOS"{},"{}memo"{}:"{}buy ram"{}\}}
+\DoxyCodeLine{\#     eosio.ram <= eosio.token::transfer        \{"{}from"{}:"{}mshahid25nov"{},"{}to"{}:"{}eosio.ram"{},"{}quantity"{}:"{}99.5000 EOS"{},"{}memo"{}:"{}buy ram"{}\}}
+\DoxyCodeLine{\#  mshahid25nov <= eosio.token::transfer        \{"{}from"{}:"{}mshahid25nov"{},"{}to"{}:"{}eosio.ramfee"{},"{}quantity"{}:"{}0.5000 EOS"{},"{}memo"{}:"{}ram fee"{}\}}
+\DoxyCodeLine{\#  eosio.ramfee <= eosio.token::transfer        \{"{}from"{}:"{}mshahid25nov"{},"{}to"{}:"{}eosio.ramfee"{},"{}quantity"{}:"{}0.5000 EOS"{},"{}memo"{}:"{}ram fee"{}\}}
+\DoxyCodeLine{\#  eosio.ramfee <= eosio.token::transfer        \{"{}from"{}:"{}eosio.ramfee"{},"{}to"{}:"{}eosio.rex"{},"{}quantity"{}:"{}0.5000 EOS"{},"{}memo"{}:"{}transfer from eosio.ramfee t...}
+\DoxyCodeLine{\#     eosio.rex <= eosio.token::transfer        \{"{}from"{}:"{}eosio.ramfee"{},"{}to"{}:"{}eosio.rex"{},"{}quantity"{}:"{}0.5000 EOS"{},"{}memo"{}:"{}transfer from eosio.ramfee t...}
+\DoxyCodeLine{warning: transaction executed locally, but may not be confirmed by the network yet         ] }
+\end{DoxyCode}
+
+
+$<$/details$>$ ~\newline
+
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kylin system delegatebw \$acc \$acc "{}20.0000 EOS"{} "{}80.0000 EOS"{} -\/p \$acc@active}
+\end{DoxyCode}
+
+
+$<$details$>$
+
+Sample Output 
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{executed transaction: a7e2a544d9715f6dff9601cd104fa93731ee41d5da2f0d1a0f50f74c10ca1896  144 bytes  645 us}
+\DoxyCodeLine{\#         eosio <= eosio::delegatebw            \{"{}from"{}:"{}mshahid25nov"{},"{}receiver"{}:"{}mshahid25nov"{},"{}stake\_net\_quantity"{}:"{}20.0000 EOS"{},"{}stake\_cpu\_quant...}
+\DoxyCodeLine{\#   eosio.token <= eosio.token::transfer        \{"{}from"{}:"{}mshahid25nov"{},"{}to"{}:"{}eosio.stake"{},"{}quantity"{}:"{}100.0000 EOS"{},"{}memo"{}:"{}stake bandwidth"{}\}}
+\DoxyCodeLine{\#  mshahid25nov <= eosio.token::transfer        \{"{}from"{}:"{}mshahid25nov"{},"{}to"{}:"{}eosio.stake"{},"{}quantity"{}:"{}100.0000 EOS"{},"{}memo"{}:"{}stake bandwidth"{}\}}
+\DoxyCodeLine{\#   eosio.stake <= eosio.token::transfer        \{"{}from"{}:"{}mshahid25nov"{},"{}to"{}:"{}eosio.stake"{},"{}quantity"{}:"{}100.0000 EOS"{},"{}memo"{}:"{}stake bandwidth"{}\}}
+\DoxyCodeLine{warning: transaction executed locally, but may not be confirmed by the network yet         ] }
+\end{DoxyCode}
+
+
+$<$/details$>$ ~\newline
+
+
+\doxysection*{Now the resources are acquired, execute the Smart Contract action {\ttfamily reguser} to Register for Free\+D\+AO}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kylin push action freeos333333 reguser "{}[\(\backslash\)"{}\$\{acc\}\(\backslash\)"{},\(\backslash\)"{}e\(\backslash\)"{}]"{} -\/p \$acc@active}
+\end{DoxyCode}
+
+
+\doxysection*{Check the state}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kylin push action freeos333333 getuser "{}[\(\backslash\)"{}\$\{acc\}\(\backslash\)"{},\(\backslash\)"{}e\(\backslash\)"{}]"{} -\/p \$acc@active}
+\end{DoxyCode}
+
+
+\doxysection*{Look into the {\ttfamily users} and {\ttfamily claims} tables}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kylin get table freeos333333 \$acc users}
+\end{DoxyCode}
+
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kylin get table freeos333333 \$acc claims}
+\end{DoxyCode}
+
+
+$<$details$>$
+
+Sample Output 
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{06:30:38 03/12/2020 \string~/Documents/Projects/EOS\_DAO\$ kylin get table freeos333333 \$acc users}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{  "{}rows"{}: [\{}
+\DoxyCodeLine{      "{}stake"{}: "{}0.0000 EOS"{},}
+\DoxyCodeLine{      "{}account\_type"{}: 101,}
+\DoxyCodeLine{      "{}stake\_requirement"{}: "{}10.0000 EOS"{},}
+\DoxyCodeLine{      "{}registered\_time"{}: "{}2020-\/12-\/03T05:24:07"{},}
+\DoxyCodeLine{      "{}staked\_time"{}: "{}1970-\/01-\/01T00:00:00"{}}
+\DoxyCodeLine{    \}}
+\DoxyCodeLine{  ],}
+\DoxyCodeLine{  "{}more"{}: false,}
+\DoxyCodeLine{  "{}next\_key"{}: "{}"{}}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{06:31:27 03/12/2020 \string~/Documents/Projects/EOS\_DAO\$ kylin get table freeos333333 \$acc claims}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{  "{}rows"{}: [],}
+\DoxyCodeLine{  "{}more"{}: false,}
+\DoxyCodeLine{  "{}next\_key"{}: "{}"{}}
+\DoxyCodeLine{\}}
+\end{DoxyCode}
+
+
+$<$/details$>$ ~\newline
+
+
+\doxysection*{Look into the {\ttfamily weeks} table}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kylin get table freeosconfig freeosconfig weeks}
+\end{DoxyCode}
+
+
+\doxysection*{Check the token and currency balances before {\ttfamily transfer} action to Stake it}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kylin get currency balance eosio.token \$acc EOS}
+\DoxyCodeLine{kylin get currency balance freeos333333  \$acc FREEOS}
+\DoxyCodeLine{kylin get currency balance eosio.token freeos333333 EOS}
+\DoxyCodeLine{kylin get currency balance freeos333333 freeos333333 FREEOS}
+\DoxyCodeLine{kylin get currency balance freeos333333 freedao33333 FREEOS}
+\end{DoxyCode}
+
+
+\doxysection*{Execute the Stake}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kylin push action eosio.token transfer "{}[\(\backslash\)"{}\$\{acc\}\(\backslash\)"{},\(\backslash\)"{}freeos333333\(\backslash\)"{}, \(\backslash\)"{}10.0000 EOS\(\backslash\)"{}, \(\backslash\)"{}\$\{acc\} stake to freeos\(\backslash\)"{}]"{} -\/p \$acc@active}
+\end{DoxyCode}
+
+
+$<$details$>$
+
+Sample {\ttfamily transfer} Output 
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{executed transaction: e831138bfe06931b900289d5ff2aa54d0e4be26d374011d76ef59b3253b2ddc9  160 bytes  364 us}
+\DoxyCodeLine{\#   eosio.token <= eosio.token::transfer        \{"{}from"{}:"{}mshahid25nov"{},"{}to"{}:"{}freeos333333"{},"{}quantity"{}:"{}10.0000 EOS"{},"{}memo"{}:"{}mshahid25nov stake to fr...}
+\DoxyCodeLine{\#  mshahid25nov <= eosio.token::transfer        \{"{}from"{}:"{}mshahid25nov"{},"{}to"{}:"{}freeos333333"{},"{}quantity"{}:"{}10.0000 EOS"{},"{}memo"{}:"{}mshahid25nov stake to fr...}
+\DoxyCodeLine{\#  freeos333333 <= eosio.token::transfer        \{"{}from"{}:"{}mshahid25nov"{},"{}to"{}:"{}freeos333333"{},"{}quantity"{}:"{}10.0000 EOS"{},"{}memo"{}:"{}mshahid25nov stake to fr...}
+\DoxyCodeLine{>> 10.0000 EOS stake received for account mshahid25nov}
+\DoxyCodeLine{warning: transaction executed locally, but may not be confirmed by the network yet         ] }
+\end{DoxyCode}
+
+
+$<$/details$>$ ~\newline
+
+
+\doxysection*{Check the token and currency balances after {\ttfamily transfer} action to Stake}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kylin get currency balance eosio.token \$acc EOS}
+\DoxyCodeLine{kylin get currency balance freeos333333 \$acc FREEOS}
+\DoxyCodeLine{kylin get currency balance eosio.token freeos333333 EOS}
+\DoxyCodeLine{kylin get currency balance freeos333333 freeos333333 FREEOS}
+\DoxyCodeLine{kylin get currency balance freeos333333 freedao33333 FREEOS}
+\end{DoxyCode}
+
+
+\doxysection*{Get the details}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kylin push action freeos333333 getuser "{}[\(\backslash\)"{}\$\{acc\}\(\backslash\)"{}]"{} -\/p \$acc@active}
+\end{DoxyCode}
+
+
+\doxysection*{C\+L\+A\+IM}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kylin push action freeos333333 claim "{}[\(\backslash\)"{}\$\{acc\}\(\backslash\)"{}]"{} -\/p \$acc@active}
+\end{DoxyCode}
+
+
+\doxysection*{U\+N\+S\+T\+A\+KE}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kylin push action freeos333333 unstake "{}[\(\backslash\)"{}\$\{acc\}\(\backslash\)"{}]"{} -\/p \$acc@active}
+\end{DoxyCode}
+
+
+\doxysection*{If you have access to the wallets of freeosconfig and freeos333333 accounts, you can get the week table entries}
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{kylin push action freeosconfig getweek '[1]' -\/p freeosconfig@active}
+\DoxyCodeLine{kylin push action freeosconfig getweek '[2]' -\/p freeosconfig@active}
+\DoxyCodeLine{kylin push action freeosconfig getweek '[3]' -\/p freeosconfig@active}
+\DoxyCodeLine{kylin push action freeos333333 getcounts '[]' -\/p freeos333333@active}
+\end{DoxyCode}
+ 

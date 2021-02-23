@@ -5,10 +5,14 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.0"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Freeos: freeos Class Reference</title>
+<title>My Project: freeos Class Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
@@ -21,8 +25,9 @@
  <tbody>
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
-   <div id="projectname">Freeos
+   <div id="projectname">My Project
    </div>
+   <div id="projectbrief">freeos AirClaim</div>
   </td>
  </tr>
  </tbody>
@@ -45,6 +50,23 @@ $(function() {
 });
 /* @license-end */</script>
 <div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classfreeos.html',''); initResizable(); });
+/* @license-end */
+</script>
+<div id="doc-content">
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -59,7 +81,6 @@ $(function() {
 </iframe>
 </div>
 
-</div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
@@ -97,11 +118,18 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>close_action</b> = e
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a2ca1c1730a7e24b590b3a5b17ac82015"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeos.html#a2ca1c1730a7e24b590b3a5b17ac82015">reguser</a> (const name &amp;user, const std::string account_type)</td></tr>
-<tr class="separator:a2ca1c1730a7e24b590b3a5b17ac82015"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0b5ae455a668097a576bcdd683643b8d"><td class="memItemLeft" align="right" valign="top"><a id="a0b5ae455a668097a576bcdd683643b8d"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>maintain</b> (std::string option)</td></tr>
-<tr class="separator:a0b5ae455a668097a576bcdd683643b8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa6a6ee550327d77100868be862365dd4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeos.html#aa6a6ee550327d77100868be862365dd4">version</a> ()</td></tr>
+<tr class="separator:aa6a6ee550327d77100868be862365dd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22658f3f4d085c4426350f8b290d5de5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeos.html#a22658f3f4d085c4426350f8b290d5de5">runscheduled</a> (std::string process_specifier, bool schedule_override)</td></tr>
+<tr class="separator:a22658f3f4d085c4426350f8b290d5de5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a694631a4474282609532f60e50406897"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeos.html#a694631a4474282609532f60e50406897">tick</a> (std::string trigger)</td></tr>
+<tr class="separator:a694631a4474282609532f60e50406897"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a077418254f7bf586787c533d66c292e8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeos.html#a077418254f7bf586787c533d66c292e8">cron</a> ()</td></tr>
+<tr class="separator:a077418254f7bf586787c533d66c292e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2daa29f0efada8ac99aa9347e98f7ed"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeos.html#af2daa29f0efada8ac99aa9347e98f7ed">clearlog</a> ()</td></tr>
+<tr class="separator:af2daa29f0efada8ac99aa9347e98f7ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a11a5ae4d2e540c151350c0a3ee7bd3cb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeos.html#a11a5ae4d2e540c151350c0a3ee7bd3cb">reguser</a> (const name &amp;user)</td></tr>
+<tr class="separator:a11a5ae4d2e540c151350c0a3ee7bd3cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adbdb65299c6cd507787403901fb223f5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeos.html#adbdb65299c6cd507787403901fb223f5">dereg</a> (const name &amp;user)</td></tr>
 <tr class="separator:adbdb65299c6cd507787403901fb223f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32074af4f0fdd077dc773ee900402311"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeos.html#a32074af4f0fdd077dc773ee900402311">stake</a> (name user, name to, asset quantity, std::string memo)</td></tr>
@@ -124,13 +152,25 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>maintain</b> (std::st
 <tr class="separator:a623a8a09d700c2c511453853995ea7ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1ae1af0bb5ea4303b18639e464641405"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeos.html#a1ae1af0bb5ea4303b18639e464641405">claim</a> (const name &amp;user)</td></tr>
 <tr class="separator:a1ae1af0bb5ea4303b18639e464641405"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad2419c32310ddd9d62962bcfd234e9d1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeos.html#ad2419c32310ddd9d62962bcfd234e9d1">unclaim</a> (const name &amp;user)</td></tr>
+<tr class="separator:ad2419c32310ddd9d62962bcfd234e9d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad79a3df104192e97dfcd307f39427fca"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeos.html#ad79a3df104192e97dfcd307f39427fca">unvest</a> (const name &amp;user)</td></tr>
+<tr class="separator:ad79a3df104192e97dfcd307f39427fca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a50f439100191afddb51db46949353cca"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeos.html#a50f439100191afddb51db46949353cca">getcounts</a> ()</td></tr>
+<tr class="separator:a50f439100191afddb51db46949353cca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03788d0ca04e0a8921fc6d5bce895172"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeos.html#a03788d0ca04e0a8921fc6d5bce895172">depositclear</a> (uint64_t iteration_number)</td></tr>
+<tr class="separator:a03788d0ca04e0a8921fc6d5bce895172"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3194ba6b7c79823ad11c490288f71093"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeos.html#a3194ba6b7c79823ad11c490288f71093">unstakecncl</a> (const name &amp;user)</td></tr>
+<tr class="separator:a3194ba6b7c79823ad11c490288f71093"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d9881f13e64e7db558e560057f971e7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeos.html#a5d9881f13e64e7db558e560057f971e7">reverify</a> (name user)</td></tr>
+<tr class="separator:a5d9881f13e64e7db558e560057f971e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:ab44b74a7025fa583dfda486c22fdac22"><td class="memItemLeft" align="right" valign="top">static asset&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeos.html#ab44b74a7025fa583dfda486c22fdac22">get_supply</a> (const name &amp;token_contract_account, const symbol_code &amp;sym_code)</td></tr>
 <tr class="separator:ab44b74a7025fa583dfda486c22fdac22"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1c38e41cbd3400ca3ee54d7dd23fcbbb"><td class="memItemLeft" align="right" valign="top">static asset&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeos.html#a1c38e41cbd3400ca3ee54d7dd23fcbbb">get_balance</a> (const name &amp;token_contract_account, const name &amp;owner, const symbol_code &amp;sym_code)</td></tr>
-<tr class="separator:a1c38e41cbd3400ca3ee54d7dd23fcbbb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b405682674adef78a2af7d4acfa4fba"><td class="memItemLeft" align="right" valign="top">static asset&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfreeos.html#a6b405682674adef78a2af7d4acfa4fba">get_balance</a> (const name &amp;token_contract_account, const name &amp;owner, const symbol &amp;currency_symbol)</td></tr>
+<tr class="separator:a6b405682674adef78a2af7d4acfa4fba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a1ae1af0bb5ea4303b18639e464641405"></a>
@@ -149,10 +189,10 @@ Static Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <p>claim action.</p>
-<p>This action is run by the user to claim this week's allocation of freeos tokens.</p>
+<p>This action is run by the user to claim this iteration's allocation of freeos tokens.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">owner</td><td>- the user account to execute the claim action for.</td></tr>
+    <tr><td class="paramname">user</td><td>- the user account to execute the claim action for.</td></tr>
   </table>
   </dd>
 </dl>
@@ -160,11 +200,30 @@ Static Public Member Functions</h2></td></tr>
 <dd>
 The user must pass claim eligibility requirements:<ul>
 <li>must be registered as a freeos user (has a record in the users table)</li>
-<li>must not have already claimed for the current week</li>
+<li>must not have already claimed for the current iteration</li>
 <li>must have staked the required amount of EOS tokens</li>
 <li>must hold the required amount of freeos tokens. </li>
 </ul>
 </dd></dl>
+
+</div>
+</div>
+<a id="af2daa29f0efada8ac99aa9347e98f7ed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af2daa29f0efada8ac99aa9347e98f7ed">&#9670;&nbsp;</a></span>clearlog()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void freeos::clearlog </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>clearlog action.</p>
+<p>clears schedulelog table. </p>
 
 </div>
 </div>
@@ -252,6 +311,51 @@ Maximum supply must be positive;</dd></dl>
 
 </div>
 </div>
+<a id="a077418254f7bf586787c533d66c292e8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a077418254f7bf586787c533d66c292e8">&#9670;&nbsp;</a></span>cron()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void freeos::cron </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>cron action.</p>
+<p>This action is run by the Proton CRON service. </p>
+
+</div>
+</div>
+<a id="a03788d0ca04e0a8921fc6d5bce895172"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03788d0ca04e0a8921fc6d5bce895172">&#9670;&nbsp;</a></span>depositclear()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void freeos::depositclear </td>
+          <td>(</td>
+          <td class="paramtype">uint64_t&#160;</td>
+          <td class="paramname"><em>iteration_number</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Clear deposit record action.</p>
+<p>Delete a record with key:iteration_number from the deposits table.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">iteration_number</td><td>- identifies the record to delete, </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="adbdb65299c6cd507787403901fb223f5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adbdb65299c6cd507787403901fb223f5">&#9670;&nbsp;</a></span>dereg()</h2>
 
@@ -284,8 +388,8 @@ The account must not have any staked EOS recorded</dd></dl>
 
 </div>
 </div>
-<a id="a1c38e41cbd3400ca3ee54d7dd23fcbbb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1c38e41cbd3400ca3ee54d7dd23fcbbb">&#9670;&nbsp;</a></span>get_balance()</h2>
+<a id="a6b405682674adef78a2af7d4acfa4fba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b405682674adef78a2af7d4acfa4fba">&#9670;&nbsp;</a></span>get_balance()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -308,8 +412,8 @@ The account must not have any staked EOS recorded</dd></dl>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const symbol_code &amp;&#160;</td>
-          <td class="paramname"><em>sym_code</em>&#160;</td>
+          <td class="paramtype">const symbol &amp;&#160;</td>
+          <td class="paramname"><em>currency_symbol</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -329,7 +433,7 @@ The account must not have any staked EOS recorded</dd></dl>
   <table class="params">
     <tr><td class="paramname">token_contract_account</td><td>- the token creator account, </td></tr>
     <tr><td class="paramname">owner</td><td>- the account for which the token balance is returned, </td></tr>
-    <tr><td class="paramname">sym_code</td><td>- the token for which the balance is returned. </td></tr>
+    <tr><td class="paramname">currency_symbol</td><td>- the token for which the balance is returned. </td></tr>
   </table>
   </dd>
 </dl>
@@ -378,6 +482,25 @@ The account must not have any staked EOS recorded</dd></dl>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a50f439100191afddb51db46949353cca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a50f439100191afddb51db46949353cca">&#9670;&nbsp;</a></span>getcounts()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void freeos::getcounts </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>getcounts action.</p>
+<p>This action is run by anyone to print the counts of users registered and claim events. </p>
 
 </div>
 </div>
@@ -496,8 +619,8 @@ The account must not have any staked EOS recorded</dd></dl>
 
 </div>
 </div>
-<a id="a2ca1c1730a7e24b590b3a5b17ac82015"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2ca1c1730a7e24b590b3a5b17ac82015">&#9670;&nbsp;</a></span>reguser()</h2>
+<a id="a11a5ae4d2e540c151350c0a3ee7bd3cb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a11a5ae4d2e540c151350c0a3ee7bd3cb">&#9670;&nbsp;</a></span>reguser()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -506,26 +629,15 @@ The account must not have any staked EOS recorded</dd></dl>
           <td class="memname">void freeos::reguser </td>
           <td>(</td>
           <td class="paramtype">const name &amp;&#160;</td>
-          <td class="paramname"><em>user</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
+          <td class="paramname"><em>user</em></td><td>)</td>
           <td></td>
-          <td class="paramtype">const std::string&#160;</td>
-          <td class="paramname"><em>account_type</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>reguser action.</p>
 <p>Creates a record for the user in the 'stakereqs' table. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">user</td><td>- the account to be registered, </td></tr>
-    <tr><td class="paramname">account_type</td><td>- the type of account: "e" is EOS wallet user, "d" is Dapp Account user, "v" is Voice verified user.</td></tr>
+    <tr><td class="paramname">user</td><td>- the account to be registered,</td></tr>
   </table>
   </dd>
 </dl>
@@ -568,6 +680,69 @@ The account must not have any staked EOS recorded</dd></dl>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a5d9881f13e64e7db558e560057f971e7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5d9881f13e64e7db558e560057f971e7">&#9670;&nbsp;</a></span>reverify()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void freeos::reverify </td>
+          <td>(</td>
+          <td class="paramtype">name&#160;</td>
+          <td class="paramname"><em>user</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Reverify account_type for user action.</p>
+<p>Checks the verification table to see if user has been verified,  Changes account_type in the user record accordingly.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">user</td><td>- identifies the user to be verified. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a22658f3f4d085c4426350f8b290d5de5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a22658f3f4d085c4426350f8b290d5de5">&#9670;&nbsp;</a></span>runscheduled()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void freeos::runscheduled </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>process_specifier</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>schedule_override</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>runscheduled action.</p>
+<p>Explicitly run a scheduled process. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">process_specifier</td><td>- hourly, daily or weekly </td></tr>
+    <tr><td class="paramname">schedule_override</td><td>- true forces the process to run regardless of scheduled times.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section pre"><dt>Precondition</dt><dd>Requires permission of the freeosticker account </dd></dl>
 
 </div>
 </div>
@@ -627,6 +802,31 @@ The asset must be equal to the stake requirement for the user</dd></dl>
 
 </div>
 </div>
+<a id="a694631a4474282609532f60e50406897"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a694631a4474282609532f60e50406897">&#9670;&nbsp;</a></span>tick()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void freeos::tick </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>trigger</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>tick action.</p>
+<p>Triggers scheduled actions. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">trigger</td><td>- "A" = runscheduled action, "U" = User driven, "P" = Proton CRON, "S" = Server CRON </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a9a62226a3cc6851ed15e51252cf69f79"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9a62226a3cc6851ed15e51252cf69f79">&#9670;&nbsp;</a></span>transfer()</h2>
 
@@ -678,6 +878,33 @@ The asset must be equal to the stake requirement for the user</dd></dl>
 
 </div>
 </div>
+<a id="ad2419c32310ddd9d62962bcfd234e9d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad2419c32310ddd9d62962bcfd234e9d1">&#9670;&nbsp;</a></span>unclaim()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void freeos::unclaim </td>
+          <td>(</td>
+          <td class="paramtype">const name &amp;&#160;</td>
+          <td class="paramname"><em>user</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>unclaim action.</p>
+<p>This action is run by the contract account to reset the user's claim record and set their balances  of liquid and vested FREEOS to zero.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">user</td><td>- the user account to execute the unclaim action for.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section pre"><dt>Precondition</dt><dd>Requires authorisation of the contract account </dd></dl>
+
+</div>
+</div>
 <a id="a36289ded2740d9a0a7d34b634a2ba636"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a36289ded2740d9a0a7d34b634a2ba636">&#9670;&nbsp;</a></span>unstake()</h2>
 
@@ -694,7 +921,7 @@ The asset must be equal to the stake requirement for the user</dd></dl>
       </table>
 </div><div class="memdoc">
 <p>unstake action.</p>
-<p>Transfer staked EOS back to the user if the waiting time of 1 week has elapsed since staking.  Updates the record of staked EOS tokens in the user account record in the 'stakereqs' table.<br  />
+<p>Transfer staked EOS back to the user if the waiting time of &lt;holding period&gt; has elapsed since staking.  Updates the record of staked EOS tokens in the user account record in the 'stakereqs' table.<br  />
  </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">user</td><td>- the account to transfer the previously EOS tokens to,</td></tr>
@@ -706,14 +933,90 @@ The asset must be equal to the stake requirement for the user</dd></dl>
 
 </div>
 </div>
+<a id="a3194ba6b7c79823ad11c490288f71093"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3194ba6b7c79823ad11c490288f71093">&#9670;&nbsp;</a></span>unstakecncl()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void freeos::unstakecncl </td>
+          <td>(</td>
+          <td class="paramtype">const name &amp;&#160;</td>
+          <td class="paramname"><em>user</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Cancel unstake request action.</p>
+<p>Delete the unstake request from the unstakes table.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">user</td><td>- identifies the user's unstake record to be deleted. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ad79a3df104192e97dfcd307f39427fca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad79a3df104192e97dfcd307f39427fca">&#9670;&nbsp;</a></span>unvest()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void freeos::unvest </td>
+          <td>(</td>
+          <td class="paramtype">const name &amp;&#160;</td>
+          <td class="paramname"><em>user</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>unvest action.</p>
+<p>This action is run by the user to release this iteration's allocation of vested freeos tokens.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">owner</td><td>- the user account to execute the unvest action for.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section pre"><dt>Precondition</dt><dd>Requires authorisation of the user account </dd></dl>
+
+</div>
+</div>
+<a id="aa6a6ee550327d77100868be862365dd4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa6a6ee550327d77100868be862365dd4">&#9670;&nbsp;</a></span>version()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void freeos::version </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>version action.</p>
+<p>Prints the version of this contract. </p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>freeos/<a class="el" href="freeos_8hpp_source.html">freeos.hpp</a></li>
 <li>freeos/freeos.cpp</li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
 <!-- start footer part -->
-<hr class="footer"/><address class="footer"><small>
-Generated by&#160;<a href="http://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.0
-</small></address>
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="classfreeos.html">freeos</a></li>
+    <li class="footer">Generated by <a href="http://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.0 </li>
+  </ul>
+</div>
 </body>
 </html>

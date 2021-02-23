@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['unstake_23',['unstake',['../classfreeos.html#a36289ded2740d9a0a7d34b634a2ba636',1,'freeos']]]
+  ['paramerase_30',['paramerase',['../classfreeosconfig.html#a200d1d93e8215b9050bced3bbb58e4d2',1,'freeosconfig']]],
+  ['paramupsert_31',['paramupsert',['../classfreeosconfig.html#ac628cf94f2c2c99848698038f5802497',1,'freeosconfig']]]
 ];

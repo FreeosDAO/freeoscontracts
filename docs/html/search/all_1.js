@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['dereg_4',['dereg',['../classfreeos.html#adbdb65299c6cd507787403901fb223f5',1,'freeos']]]
+  ['blkycprov_2',['blkycprov',['../classeosio_1_1eosioproton.html#a2e48b941307f10666eb164a0931cfe95',1,'eosio::eosioproton']]]
 ];
