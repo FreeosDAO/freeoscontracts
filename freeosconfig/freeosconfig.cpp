@@ -11,7 +11,7 @@ using namespace eosio;
 // 102 - added the usersinfo verification table, with actions for upserting and erasing records
 // 103 - implemented a hardcoded floor for the target exchange rate (floor)
 
-const std::string VERSION = "0.102";
+const std::string VERSION = "0.103";
 
 [[eosio::action]]
 void freeosconfig::version() {
@@ -118,7 +118,7 @@ void freeosconfig::targetrate(double exchangerate) {
         });
     }
 
-    print("Exchange rate floor set to ", new_exchange_rate);
+    print("Exchange rate floor set to ", new_exchangerate);
 }
 
 // erase rate from the table

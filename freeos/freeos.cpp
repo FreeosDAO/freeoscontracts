@@ -445,10 +445,6 @@ void freeos::reguser(const name& user) {
   if (result == registered_already) {
     print("user is already registered");
   } else if (result == registered_success) {
-    // get the user record to display the stake requirement
-    user_index usertable( get_self(), user.value );
-    auto u = usertable.find( symbol_code(CURRENCY_SYMBOL_CODE).raw() );
-
     // prepare the success message
     std::string account_success_msg = user.to_string() + std::string(" successfully registered");
 
