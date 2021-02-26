@@ -1627,7 +1627,7 @@ float freeos::get_vested_proportion() {
 
   // apply a cap of 0.9
   if (proportion > 0.9f) {
-    proportion = 0.0f;
+    proportion = 0.9f;
   }
 
   return proportion;
