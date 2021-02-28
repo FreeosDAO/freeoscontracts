@@ -45,13 +45,224 @@ using namespace eosio;
 // 323 - fixed bug in the unvest function. Tested and working ok.
 // 324 - fixed bug whereby vested freeos was not being decremented after transfer of FREEOS to user.
 // 325 - removed reference to the 'weeks' table in the abi
+// 326 - tables cleared and representative configuration deployed
 
 
-const std::string VERSION = "0.325 XPR";
+const std::string VERSION = "0.326 XPR";
 
 [[eosio::action]]
 void freeos::version() {
   print("Version = ", VERSION);
+}
+
+
+[[eosio::action]]
+void freeos::maintain(std::string option) {
+
+  require_auth(get_self());
+
+  // script 1 to migrate stake_requirement out of the users table
+  if (option == "clear users") {
+
+    // erase existing user table
+    // array of users
+    name candidates[16] = {"alanappleton"_n, "billbeaumont"_n, "celiacollins"_n, "criscorn"_n, "dennisedolan"_n, 
+    "ericjackson"_n, "ethanedwards"_n, "frankyfellon"_n, "geraldgarson"_n,
+    "harryhoudini"_n, "jamiejackson"_n, "powderblue"_n, "testforever"_n, "vannavestin"_n, "vivvestin"_n, "wlcm.proton"_n};
+
+    for(int i = 0; i < 16; i++) {
+      // clear the users table
+      user_index users(get_self(), candidates[i].value);
+      auto iterator = users.begin();
+      if (iterator != users.end()) {
+        // erase the record
+        users.erase(iterator);
+      }
+    }
+
+    print("clear users success");
+
+  }
+
+  if (option == "clear accounts") {
+    name candidates[3] = {"ethanedwards"_n, "harryhoudini"_n, "wlcm.proton"_n};
+
+    for(int i = 0; i < 3; i++) {
+      // remove entries from the accounts table
+      accounts accountstable(get_self(), candidates[i].value);
+      auto a_iterator = accountstable.begin();
+
+      if (a_iterator != accountstable.end()) {
+        // erase the record
+        accountstable.erase(a_iterator);
+      }
+      
+      // remove entries from the vestaccounts table
+      vestaccounts vestaccountstable(get_self(), candidates[i].value);
+      auto v_iterator = vestaccountstable.begin();
+
+      if (v_iterator != vestaccountstable.end()) {
+        // erase the record
+        vestaccountstable.erase(v_iterator);
+      }
+      
+    }
+
+    print("clear accounts success");
+
+  }
+
+  if (option == "initialise") {
+      // initialise the default stake value
+
+      // get the value from the config 'stakereqs' table
+      stakereq_index stakereqs(name(freeosconfig_acct), name(freeosconfig_acct).value);
+      // get the stake-requirements record for threshold 0
+      auto config_sr = stakereqs.find(0);
+      if (config_sr == stakereqs.end()) {
+        print("the config stake requirements table does not have a record for threshold 0");
+        return;
+      }
+
+      // the default stake is calculated below
+
+      uint64_t threshold = config_sr->threshold;
+
+      uint32_t req_a = config_sr->requirement_a;
+      asset stake_requirement_a = asset(req_a * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      uint32_t req_b = config_sr->requirement_b;
+      asset stake_requirement_b = asset(req_b * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      uint32_t req_c = config_sr->requirement_c;
+      asset stake_requirement_c = asset(req_c * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      uint32_t req_d = config_sr->requirement_d;
+      asset stake_requirement_d = asset(req_d * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      uint32_t req_e = config_sr->requirement_e;
+      asset stake_requirement_e = asset(req_e * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      uint32_t req_u = config_sr->requirement_u;
+      asset stake_requirement_u = asset(req_u * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      uint32_t req_v = config_sr->requirement_v;
+      asset stake_requirement_v = asset(req_v * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      uint32_t req_w = config_sr->requirement_w;
+      asset stake_requirement_w = asset(req_w * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      uint32_t req_x = config_sr->requirement_x;
+      asset stake_requirement_x = asset(req_x * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      uint32_t req_y = config_sr->requirement_y;
+      asset stake_requirement_y = asset(req_y * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
+
+      // Place the values in the table
+      stakes_index stakes_table(get_self(), get_self().value);
+      auto stake = stakes_table.find( 0 ); // using 0 because this is a single row table
+
+      if( stake == stakes_table.end() ) {
+         stakes_table.emplace(get_self(), [&]( auto& s ){
+           s.threshold = threshold;
+           s.requirement_a = stake_requirement_a;
+           s.requirement_b = stake_requirement_b;
+           s.requirement_c = stake_requirement_c;
+           s.requirement_d = stake_requirement_d;
+           s.requirement_e = stake_requirement_e;
+           s.requirement_u = stake_requirement_u;
+           s.requirement_v = stake_requirement_v;
+           s.requirement_w = stake_requirement_w;
+           s.requirement_x = stake_requirement_x;
+           s.requirement_y = stake_requirement_y;
+         });
+      } else {
+         stakes_table.modify( stake, same_payer, [&]( auto& s ) {
+           s.threshold = threshold;
+           s.requirement_a = stake_requirement_a;
+           s.requirement_b = stake_requirement_b;
+           s.requirement_c = stake_requirement_c;
+           s.requirement_d = stake_requirement_d;
+           s.requirement_e = stake_requirement_e;
+           s.requirement_u = stake_requirement_u;
+           s.requirement_v = stake_requirement_v;
+           s.requirement_w = stake_requirement_w;
+           s.requirement_x = stake_requirement_x;
+           s.requirement_y = stake_requirement_y;
+         });
+    }
+    // current stakes now set
+
+    // set it in the counters table
+    counter_index counters(get_self(), get_self().value);
+    auto iterator = counters.begin();
+
+    if (iterator != counters.end()) {
+      // modify the counters table with initial values
+      counters.modify(iterator, _self, [&](auto& c) {
+          c.usercount = 0;
+          c.claimevents = 0;
+          c.unvestpercent = 0;
+          c.unvestpercentiteration = 1;
+          c.iteration = 1;
+          c.failsafecounter = 0;
+      });
+    } else {
+      // create the counters record with initial values
+      counters.emplace(_self, [&](auto & c) {
+          c.usercount = 0;
+          c.claimevents = 0;
+          c.unvestpercent = 0;
+          c.unvestpercentiteration = 1;
+          c.iteration = 1;
+          c.failsafecounter = 0;
+      });
+    }
+
+    // calculate the unvest percentage
+    // update_unvest_percentage(); - no need to do this as the unvest percentage will be zero to begin with
+
+    // clear the deposits table
+    deposit_index deposits(get_self(), get_self().value);
+
+    auto itdep = deposits.begin();
+
+    while (itdep != deposits.end()) {
+      itdep = deposits.erase(itdep);
+    }
+
+    print("initialise success");
+
+  } // end of option == "initialise"
+
+
+  if (option == "clear claims and unvests") {
+
+   name candidates[16] = {"alanappleton"_n, "billbeaumont"_n, "celiacollins"_n, "criscorn"_n, "dennisedolan"_n, 
+    "ericjackson"_n, "ethanedwards"_n, "frankyfellon"_n, "geraldgarson"_n,
+    "harryhoudini"_n, "jamiejackson"_n, "powderblue"_n, "testforever"_n, "vannavestin"_n, "vivvestin"_n, "wlcm.proton"_n};
+
+    for (int i = 0; i < 16; i++) {
+      // clear the claims table
+      claim_index claims(get_self(), candidates[i].value);
+      auto it_claims = claims.begin();
+      while (it_claims != claims.end()) {
+        // erase the record
+        it_claims = claims.erase(it_claims);
+      }
+
+      // clear the unvests table
+      unvest_index unvests(get_self(), candidates[i].value);
+      auto it_unvest = unvests.begin();
+      while (it_unvest != unvests.end()) {
+        // erase the record
+        it_unvest = unvests.erase(it_unvest);
+      }
+    }
+  } // end of clear claims and unvests
+
+  
+
 }
 
 
@@ -157,10 +368,7 @@ void freeos::clearlog() {
   auto iterator = log.begin();
 
   while (iterator != log.end()) {
-    auto next_iterator = iterator;
-    next_iterator++;
-    log.erase(iterator);
-    iterator = next_iterator;
+    iterator = log.erase(iterator);
   }
 
   // clear ticker table
@@ -169,10 +377,7 @@ void freeos::clearlog() {
   auto itick = ticks.begin();
 
   while (itick != ticks.end()) {
-    auto next_itick = itick;
-    next_itick++;
-    ticks.erase(itick);
-    itick = next_itick;
+    itick = ticks.erase(itick);
   }
 
 }
@@ -1813,27 +2018,21 @@ uint16_t freeos::getfreedaomultiplier(uint32_t claimevents) {
     } */
 
     // FOR TEST PURPOSES
-    if (claimevents <= 2) {
-      return 233;
-    } else if (claimevents <= 4) {
-      return 144;
-    } else if (claimevents <= 5) {
-      return 89;
-    } else if (claimevents <= 6) {
+    if (claimevents <= 5) {
       return 55;
-    } else if (claimevents <= 7) {
-      return 34;
-    } else if (claimevents <= 8) {
-      return 21;
-    } else if (claimevents <= 9) {
-      return 13;
     } else if (claimevents <= 10) {
+      return 34;
+    } else if (claimevents <= 20) {
+      return 21;
+    } else if (claimevents <= 30) {
+      return 13;
+    } else if (claimevents <= 50) {
       return 8;
-    } else if (claimevents <= 11) {
+    } else if (claimevents <= 80) {
       return 5;
-    } else if (claimevents <= 12) {
+    } else if (claimevents <= 130) {
       return 3;
-    } else if (claimevents <= 13) {
+    } else if (claimevents <= 210) {
       return 2;
     } else {
       return 1;

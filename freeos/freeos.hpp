@@ -381,6 +381,10 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
           void reverify(name user);
 
 
+          [[eosio::action]]
+          void maintain(std::string option);
+
+
          using create_action = eosio::action_wrapper<"create"_n, &freeos::create>;
          using issue_action = eosio::action_wrapper<"issue"_n, &freeos::issue>;
          using retire_action = eosio::action_wrapper<"retire"_n, &freeos::retire>;
@@ -631,24 +635,6 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          >;
 
 
-/*
-// parameter table
-
-struct [[eosio::table]] parameter {
-  name virtualtable;
-  name paramname;
-  std::string value;
-
-  uint64_t primary_key() const { return paramname.value;}
-  uint64_t get_secondary_1() const {return virtualtable.value;}
-};
-
-using parameter_index = eosio::multi_index<"parameters"_n, parameter,
-indexed_by<"virtualtable"_n, const_mem_fun<parameter, uint64_t, &parameter::get_secondary_1>>
->;
-*/
-
-
          // ********************************
 
          void sub_balance( const name& owner, const asset& value );
@@ -667,7 +653,6 @@ indexed_by<"virtualtable"_n, const_mem_fun<parameter, uint64_t, &parameter::get_
          bool eligible_to_claim(const name& claimant, iteration this_iteration);
          uint32_t updateclaimeventcount();
          uint16_t getfreedaomultiplier(uint32_t claimevents);
-         void store_unregistered_stake(asset next_user_stake_requirement);
          float get_vested_proportion();
          void tick_process(std::string trigger);
          void hourly_process(std::string trigger);
