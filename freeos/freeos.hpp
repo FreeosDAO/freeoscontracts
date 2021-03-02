@@ -662,7 +662,7 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          void update_stake_requirements(uint32_t numusers);
          void record_deposit(uint64_t iteration_number, asset amount);
          char get_account_type(name user);
-         void request_stake_refund(name user, asset amount, time_point_sec staked_time);
+         void request_stake_refund(name user, asset amount);
          void refund_stakes();
          void refund_stake(name user, asset amount);
          void set_iteration_number();

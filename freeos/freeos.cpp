@@ -46,9 +46,13 @@ using namespace eosio;
 // 324 - fixed bug whereby vested freeos was not being decremented after transfer of FREEOS to user.
 // 325 - removed reference to the 'weeks' table in the abi
 // 326 - tables cleared and representative configuration deployed
+// 327 - fixed issue with unstaking where the stake release time was calculated as staked_time + holding time. It should
+//       of course be current_time + holding time.
+// 328 - If the user has a zero stake requirement then we consider them to have staked at registration time i.e. user.staked_time is set
+//       Related to above - if user has 0 XPR staked then we don't need to do a transfer in order to unstake
 
 
-const std::string VERSION = "0.326 XPR";
+const std::string VERSION = "0.328";
 
 [[eosio::action]]
 void freeos::version() {
@@ -697,12 +701,17 @@ registration_status freeos::register_user(const name& user) {
     });
   }
 
+  // examine the staking requirement for the user - if their staking requirement is 0 then we will consider them to have already staked
+  asset stake_requirement = get_stake_requirement(account_type);
+
   // register the user
+  time_point_sec now = time_point_sec(current_time_point().sec_since_epoch());
+
   usertable.emplace( get_self(), [&]( auto& u ) {
     u.stake = asset(0, symbol(CURRENCY_SYMBOL_CODE, 4));
     u.account_type = account_type;
-    u.registered_time = time_point_sec(current_time_point().sec_since_epoch());
-    u.staked_time = time_point_sec(0);
+    u.registered_time = now;
+    u.staked_time = stake_requirement.amount == 0 ? now : time_point_sec(0);
     });
 
    // add the user to the vested accounts table
@@ -1072,13 +1081,11 @@ void freeos::unstake(const name& user) {
   // check if the user is registered
   check(u != usertable.end(), msg_account_not_registered);
 
-  // check if the user has an amount staked
-  check(u->stake.amount > 0, "account has not staked");
-
-  // request stake refund
-  request_stake_refund(user, u->stake, u->staked_time);
-
-  print("unstake requested");
+  // request stake refund if user has a stake
+  if (u->stake.amount > 0) {
+    request_stake_refund(user, u->stake);
+    print("unstake requested");
+  }
 
   tick("U");   // User-driven tick
 
@@ -1088,9 +1095,9 @@ void freeos::unstake(const name& user) {
 // unstaking functions
 
 // request stake refund - add to stake refund queue
-void freeos::request_stake_refund(name user, asset amount, time_point_sec staked_time) {
+void freeos::request_stake_refund(name user, asset amount) {
   // calculate stake release time
-  time_point_sec release_time = time_point_sec(staked_time.utc_seconds + STAKE_HOLD_TIME_SECONDS);
+  time_point_sec release_time = time_point_sec(current_time_point().sec_since_epoch() + STAKE_HOLD_TIME_SECONDS);
 
   // add to the unstake requests queue
   unstakereq_index unstakes(get_self(), get_self().value);
