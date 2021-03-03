@@ -50,13 +50,16 @@ using namespace eosio;
 //       of course be current_time + holding time.
 // 328 - If the user has a zero stake requirement then we consider them to have staked at registration time i.e. user.staked_time is set
 //       Related to above - if user has 0 XPR staked then we don't need to do a transfer in order to unstake
+// 329 - Removed unneccesary table definitions from the hpp file and abi
 
 
-const std::string VERSION = "0.328";
+const std::string VERSION = "0.329";
 
 [[eosio::action]]
 void freeos::version() {
-  print("Version = ", VERSION);
+  iteration this_iteration = getclaimiteration();
+
+  print("Version = ", VERSION, " - it is currently iteration ", this_iteration.iteration_number);
 }
 
 

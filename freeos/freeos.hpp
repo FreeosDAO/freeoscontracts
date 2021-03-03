@@ -470,7 +470,7 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
 
 
          // FREEOS USD-price - code: freeosconfig, scope: freeosconfig
-         struct [[eosio::table]] price {
+         struct price {
            double    currentprice;
            double    targetprice;
 
@@ -481,9 +481,8 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
 
          // ********************************
 
-         // parameter table
-
-         struct [[eosio::table]] parameter {
+         // parameter table - code: freeosconfig, scope: freeosconfig
+         struct parameter {
            name virtualtable;
            name paramname;
            std::string value;
@@ -497,9 +496,8 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          >;
 
 
-         // CONFIG stake requirements table
-
-         struct [[eosio::table]] stakerequire {
+         // CONFIG stake requirements table - code: freeosconfig, scope: freeosconfig
+         struct stakerequire {
            uint64_t    threshold;
            uint32_t    requirement_a;
            uint32_t    requirement_b;
@@ -518,9 +516,8 @@ const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
          using stakereq_index = eosio::multi_index<"stakereqs"_n, stakerequire>;
 
 
-         // freeos airclaim iteration calendar
-
-         struct [[eosio::table]] iteration {
+         // freeos airclaim iteration calendar - code: freeosconfig, scope: freeosconfig
+         struct iteration {
            uint64_t    iteration_number;
            uint32_t    start;
            std::string start_date;

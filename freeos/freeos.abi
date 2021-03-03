@@ -195,40 +195,6 @@
             ]
         },
         {
-            "name": "iteration",
-            "base": "",
-            "fields": [
-                {
-                    "name": "iteration_number",
-                    "type": "uint64"
-                },
-                {
-                    "name": "start",
-                    "type": "uint32"
-                },
-                {
-                    "name": "start_date",
-                    "type": "string"
-                },
-                {
-                    "name": "end",
-                    "type": "uint32"
-                },
-                {
-                    "name": "end_date",
-                    "type": "string"
-                },
-                {
-                    "name": "claim_amount",
-                    "type": "uint16"
-                },
-                {
-                    "name": "tokens_required",
-                    "type": "uint16"
-                }
-            ]
-        },
-        {
             "name": "kyc_prov",
             "base": "",
             "fields": [
@@ -271,38 +237,6 @@
                 {
                     "name": "ram_payer",
                     "type": "name"
-                }
-            ]
-        },
-        {
-            "name": "parameter",
-            "base": "",
-            "fields": [
-                {
-                    "name": "virtualtable",
-                    "type": "name"
-                },
-                {
-                    "name": "paramname",
-                    "type": "name"
-                },
-                {
-                    "name": "value",
-                    "type": "string"
-                }
-            ]
-        },
-        {
-            "name": "price",
-            "base": "",
-            "fields": [
-                {
-                    "name": "currentprice",
-                    "type": "float64"
-                },
-                {
-                    "name": "targetprice",
-                    "type": "float64"
                 }
             ]
         },
@@ -419,56 +353,6 @@
                 {
                     "name": "requirement_y",
                     "type": "asset"
-                }
-            ]
-        },
-        {
-            "name": "stakerequire",
-            "base": "",
-            "fields": [
-                {
-                    "name": "threshold",
-                    "type": "uint64"
-                },
-                {
-                    "name": "requirement_a",
-                    "type": "uint32"
-                },
-                {
-                    "name": "requirement_b",
-                    "type": "uint32"
-                },
-                {
-                    "name": "requirement_c",
-                    "type": "uint32"
-                },
-                {
-                    "name": "requirement_d",
-                    "type": "uint32"
-                },
-                {
-                    "name": "requirement_e",
-                    "type": "uint32"
-                },
-                {
-                    "name": "requirement_u",
-                    "type": "uint32"
-                },
-                {
-                    "name": "requirement_v",
-                    "type": "uint32"
-                },
-                {
-                    "name": "requirement_w",
-                    "type": "uint32"
-                },
-                {
-                    "name": "requirement_x",
-                    "type": "uint32"
-                },
-                {
-                    "name": "requirement_y",
-                    "type": "uint32"
                 }
             ]
         },
@@ -855,36 +739,8 @@
             "key_types": []
         },
         {
-            "name": "exchangerate",
-            "type": "price",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
-            "name": "iterations",
-            "type": "iteration",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
-            "name": "parameters",
-            "type": "parameter",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
             "name": "schedulelog",
             "type": "schedulelog",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
-            "name": "stakereqs",
-            "type": "stakerequire",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
