@@ -20,10 +20,10 @@ const std::string HOURLY = "hourly";
 const std::string DAILY  = "daily";
 const std::string WEEKLY = "weekly";
 
-// ??? test figures
-const uint32_t  HOUR_SECONDS  = 180;    // 1/20 normal time
-const uint32_t  DAY_SECONDS   = 4320;    // 1/20 normal time
-const uint32_t  WEEK_SECONDS  = 30240;    // 1/20 normal time
+// Job scheduling intervals
+const uint32_t  HOUR_SECONDS  = 3600;
+const uint32_t  DAY_SECONDS   = 86400;
+const uint32_t  WEEK_SECONDS  = 604800;
 
 
    /**
