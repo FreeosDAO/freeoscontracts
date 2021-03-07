@@ -162,9 +162,14 @@
             ]
         },
         {
-            "name": "getcounts",
+            "name": "getiter",
             "base": "",
-            "fields": []
+            "fields": [
+                {
+                    "name": "current",
+                    "type": "uint32"
+                }
+            ]
         },
         {
             "name": "getuser",
@@ -629,8 +634,8 @@
             "ricardian_contract": ""
         },
         {
-            "name": "getcounts",
-            "type": "getcounts",
+            "name": "getiter",
+            "type": "getiter",
             "ricardian_contract": ""
         },
         {

@@ -51,15 +51,25 @@ using namespace eosio;
 // 328 - If the user has a zero stake requirement then we consider them to have staked at registration time i.e. user.staked_time is set
 //       Related to above - if user has 0 XPR staked then we don't need to do a transfer in order to unstake
 // 329 - Removed unneccesary table definitions from the hpp file and abi
+// 330 - All error checking performed by check function
+//       User can only request to unstake once i.e. cannot create multiple unstake requests
+//       Iterations table can now be accessed via secondary index (by start time)
 
 
-const std::string VERSION = "0.329";
+const std::string VERSION = "0.330";
 
 [[eosio::action]]
 void freeos::version() {
   iteration this_iteration = getclaimiteration();
 
-  print("Version = ", VERSION, " - it is currently iteration ", this_iteration.iteration_number);
+  if (DEBUG) print("Version = ", VERSION, " - it is currently iteration ", this_iteration.iteration_number);
+}
+
+[[eosio::action]]
+void freeos::getiter(uint32_t current) {
+  iteration this_iteration = getclaimiteration2(current);
+
+  if (DEBUG) print("Version = ", VERSION, " - it is currently iteration ", this_iteration.iteration_number);
 }
 
 
@@ -87,7 +97,7 @@ void freeos::maintain(std::string option) {
       }
     }
 
-    print("clear users success");
+    if (DEBUG) print("clear users success");
 
   }
 
@@ -115,7 +125,7 @@ void freeos::maintain(std::string option) {
       
     }
 
-    print("clear accounts success");
+    if (DEBUG) print("clear accounts success");
 
   }
 
@@ -127,7 +137,7 @@ void freeos::maintain(std::string option) {
       // get the stake-requirements record for threshold 0
       auto config_sr = stakereqs.find(0);
       if (config_sr == stakereqs.end()) {
-        print("the config stake requirements table does not have a record for threshold 0");
+        if (DEBUG) print("the config stake requirements table does not have a record for threshold 0");
         return;
       }
 
@@ -238,7 +248,7 @@ void freeos::maintain(std::string option) {
       itdep = deposits.erase(itdep);
     }
 
-    print("initialise success");
+    if (DEBUG) print("initialise success");
 
   } // end of option == "initialise"
 
@@ -397,7 +407,7 @@ void freeos::runscheduled(std::string process_specifier, bool schedule_override)
 
   require_auth(permission_level("freeosticker"_n, "active"_n));
 
-  // validate the parameters - prepare error message get_first
+  // validate the parameters - prepare error message first
   std::string validation_error_msg = "valid process specifiers are '" + HOURLY + "', '" + DAILY + "', '" + WEEKLY + "'";
   check(process_specifier == HOURLY || process_specifier == DAILY || process_specifier == WEEKLY, validation_error_msg);
 
@@ -419,7 +429,7 @@ void freeos::runscheduled(std::string process_specifier, bool schedule_override)
          row.weekly = 0;
       });
 
-  print("schedule timers have been initialised, process is not yet scheduled to run");
+  if (DEBUG) print("schedule timers have been initialised, process is not yet scheduled to run");
   return;
   }
 
@@ -443,7 +453,7 @@ void freeos::runscheduled(std::string process_specifier, bool schedule_override)
       hourly_process("A");  // "A" = runscheduled action, "U" = User driven, "P" = Proton CRON, "S" = Server CRON
 
       process_ran = true;
-      print("hourly process ran");
+      if (DEBUG) print("hourly process ran");
     }
   }
 
@@ -460,7 +470,7 @@ void freeos::runscheduled(std::string process_specifier, bool schedule_override)
       daily_process("A");   // "A" = runscheduled action, "U" = User driven, "P" = Proton CRON, "S" = Server CRON
 
       process_ran = true;
-      print("daily process ran");
+      if (DEBUG) print("daily process ran");
     }
   }
 
@@ -477,12 +487,12 @@ void freeos::runscheduled(std::string process_specifier, bool schedule_override)
       weekly_process("A");  // "A" = runscheduled action, "U" = User driven, "P" = Proton CRON, "S" = Server CRON
 
       process_ran = true;
-      print("weekly process ran");
+      if (DEBUG) print("weekly process ran");
     }
   }
 
   if (process_ran == false) {
-    print(process_specifier, " process has not run (did not override schedule)");
+    if (DEBUG) print(process_specifier, " process has not run (did not override schedule)");
   }
 
 }
@@ -643,28 +653,21 @@ void freeos::reguser(const name& user) {
   check(checkmasterswitch(), msg_freeos_system_not_available);
 
   // is this a real account?
-  if (!is_account(user)) {
-    std::string account_error_msg = std::string("account ") + user.to_string() + " is not a valid account";
-    // display the error message
-    print(account_error_msg);
-    return;
-  }
+  check(is_account(user), "user does not have an account on the network");
 
   // perform the registration
   registration_status result = register_user(user);
 
-  // give feedback to user
-  if (result == registered_already) {
-    print("user is already registered");
-  } else if (result == registered_success) {
-    // prepare the success message
-    std::string account_success_msg = user.to_string() + std::string(" successfully registered");
-
-    // display the success message including the stake requirement
-    print(account_success_msg);
+  // give feedback
+  if (DEBUG) {
+    if (result == registered_already) {
+      print("user is already registered");
+    } else if (result == registered_success) {
+      // prepare the success message
+      print(user.to_string() + std::string(" successfully registered"));
+    }
   }
 
-  return;
 }
 
 // register_user is a function available to other actions. This is to enable auto-registration i.e. user is automatically registered whenever they stake or claim.
@@ -741,11 +744,8 @@ void freeos::reverify(name user) {
   user_index users(get_self(), user.value);
   auto iterator = users.begin();
 
-  // if the user does not have a user record
-  if (iterator == users.end()) {
-    print("user ", user, " is not registered with freeos");
-    return;
-  }
+  // check if the user has a user registration record
+  check (iterator != users.end(), "user is not registered with freeos");
 
   // get the account type
   char account_type = get_account_type(user);
@@ -818,10 +818,8 @@ void freeos::update_stake_requirements(uint32_t numusers) {
     stakereq_index stakereqs(name(freeosconfig_acct), name(freeosconfig_acct).value);
     // get the stake-requirements record for threshold 0
     auto config_sr = stakereqs.find(new_threshold);
-    if (config_sr == stakereqs.end()) {
-      print("the config stake requirements table does not have a record for threshold 0");
-      return;
-    }
+
+    check(config_sr != stakereqs.end(), "the config stake requirements table does not have a record for threshold 0");
 
     // the new stakes are calculated below
 
@@ -903,79 +901,24 @@ void freeos::dereg(const name& user) {
   user_index usertable( get_self(), user.value );
   auto u = usertable.find( symbol_code(CURRENCY_SYMBOL_CODE).raw() );
 
-  if(u != usertable.end()) {
-    if (u->stake.amount == 0) {
-      // erase the user record
-      usertable.erase(u);
+  check(u != usertable.end(), "user is not registered with freeos");
+  check(u->stake.amount == 0, "user has staked and cannot be deregistered");
 
-      // decrement number of users in record_count singleton
-      counter_index usercount(get_self(), get_self().value);
-      auto iterator = usercount.begin();
+  // erase the user record
+  usertable.erase(u);
 
-      // modify
-      usercount.modify( iterator, _self, [&]( auto& c ) {
-        c.usercount = c.usercount - 1;
-        });
-    } else {
-      print("account ", user, " has staked amount and cannot be deregistered");
-    }
+  // decrement number of users in record_count singleton
+  counter_index usercount(get_self(), get_self().value);
+  auto iterator = usercount.begin();
 
-    print("account ", user, " removed from user register");
-  } else {
-    print("account ", user, " not in register");
-  }
+  // decrement user count
+  usercount.modify( iterator, _self, [&]( auto& c ) {
+    c.usercount = c.usercount - 1;
+    });
 
+  // feedback
+  if (DEBUG) print("account ", user, " removed from user register");
 }
-
-/* stake action
-[[eosio::action]]
-void freeos::stake(const name& user) {
-
-  require_auth(user);
-
-  // determine required stake and then transfer to the freeos account
-
-  // auto-register the user - if user is already registered then that is ok, the register_user function responds silently
-  registration_status result = register_user(user);
-
-  // get the user record
-  user_index users(get_self(), user.value);
-  auto u = users.begin();
-  if (u == users.end()) {
-    print("user ", user, " is not registered with Freeos");
-    return;
-  }
-
-  // check if user has already staked
-  if (u->staked_time != time_point_sec(0)) {
-    print("you have already staked");
-    return;
-  }
-
-  asset stake_requirement = get_stake_requirement(u->account_type);
-
-  // determine if the user has sufficient balance
-  asset user_balance = get_balance("eosio.token"_n, user, symbol("XPR",4));
-
-  if (user_balance < stake_requirement) {
-    print("you do not have the required ", stake_requirement.to_string(), " in your account to be able to stake");
-    return;
-  }
-
-  // perform the transfer
-  action transfer = action(
-    permission_level{get_self(),"active"_n},
-    name("eosio.token"),
-    "transfer"_n,
-    std::make_tuple(user, name(freeos_acct), stake_requirement, std::string("freeos stake"))
-  );
-
-  transfer.send();
-
-} // end of stake action */
-
-
-
 
 
 // stake confirmation
@@ -1007,8 +950,6 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
     // check if the user is registered
     check(u != usertable.end(), "user is not registered");
 
-    // print("req: ", u->stake_requirement.to_string(), " quantity: ", quantity.to_string());
-
     // check that user isn't already staked
     check(u->staked_time == time_point_sec(0), "the account is already staked");
 
@@ -1022,7 +963,8 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
       row.staked_time = time_point_sec(current_time_point().sec_since_epoch());
     });
 
-    print(quantity.to_string(), " stake received for account ", user);
+    // feedback
+    if (DEBUG) print(quantity.to_string(), " stake received for account ", user);
   }
 
   tick("U");   // User-driven tick
@@ -1084,11 +1026,18 @@ void freeos::unstake(const name& user) {
   // check if the user is registered
   check(u != usertable.end(), msg_account_not_registered);
 
-  // request stake refund if user has a stake
-  if (u->stake.amount > 0) {
-    request_stake_refund(user, u->stake);
-    print("unstake requested");
-  }
+  // check if there is already an unstake in progress
+  unstakereq_index unstakes(get_self(), get_self().value);
+  auto idx = unstakes.get_index<"staker"_n>();
+  auto iterator = idx.find(user.value);
+
+  check(iterator == idx.end(), "user has already requested to unstake");
+  check(u->stake.amount > 0, "user does not have a staked amount");
+
+  request_stake_refund(user, u->stake);
+
+  // feedback
+  if (DEBUG) print("unstake requested");
 
   tick("U");   // User-driven tick
 
@@ -1173,19 +1122,18 @@ void freeos::unstakecncl(const name& user) {
 
   unstakereq_index unstakes(get_self(), get_self().value);
   auto idx = unstakes.get_index<"staker"_n>();
-
   auto iterator = idx.find(user.value);
 
-  if (iterator != idx.end()) {
-    idx.erase(iterator);
-    print("Your unstake request has been cancelled");
-  } else {
-    print("You do not have an unstake request");
-  }
+  check(iterator != idx.end(), "user does not have an unstake request");
 
+  // cancel the unstake - erase the unstake record
+  idx.erase(iterator);
+
+  // feedback
+  if (DEBUG) print("your unstake request has been cancelled");
 }
 
-
+// the getuser action exists to help testers get all relevant information for a user
 [[eosio::action]]
 void freeos::getuser(const name& user) {
 
@@ -1209,7 +1157,6 @@ void freeos::getuser(const name& user) {
     vested_freeos_balance = ac->balance;;
   }
 
-
   // get the user's AIRKEY balance
   asset airkey_balance = get_balance(get_self(), user, symbol("AIRKEY",0));
 
@@ -1225,7 +1172,8 @@ void freeos::getuser(const name& user) {
     claimed_flag = true;
   }
 
-  print("account: ", user, ", registered: ", u->registered_time.utc_seconds, ", type: ", u->account_type, ", stake: ", u->stake.to_string(),
+  // feedback
+  if (DEBUG) print("account: ", user, ", registered: ", u->registered_time.utc_seconds, ", type: ", u->account_type, ", stake: ", u->stake.to_string(),
         ", staked-on: ", u->staked_time.utc_seconds, ", XPR: ", xpr_balance.to_string(), ", liquid: ", liquid_freeos_balance.to_string(), ", vested: ", vested_freeos_balance.to_string(),
          ", airkey: ", airkey_balance.to_string(), ", iteration: ", this_iteration.iteration_number, ", claimed: ", claimed_flag);
 
@@ -1476,12 +1424,7 @@ void freeos::claim( const name& user )
    check(checkmasterswitch(), msg_freeos_system_not_available);
 
    // is this a real account?
-   if (!is_account(user)) {
-     std::string account_error_msg = std::string("account ") + user.to_string() + " is not a valid account";
-     // display the error message
-     print(account_error_msg);
-     return;
-   }
+   check(is_account(user), "user does not have an account on the network");
 
    // auto-register the user - if user is already registered then that is ok, the register_user function responds silently
    registration_status result = register_user(user);
@@ -1491,11 +1434,8 @@ void freeos::claim( const name& user )
    iteration this_iteration = getclaimiteration();
    check(this_iteration.iteration_number != 0, "freeos is not in a claim period");
 
-   // for debugging
-   // print("this_iteration: ", this_iteration.iteration_number, " ", this_iteration.start, " ", this_iteration.start_date, " ", this_iteration.end, " ", this_iteration.end_date, " ", this_iteration.claim_amount, " ", this_iteration.tokens_required);
-
    // check user eligibility to claim
-   if (!eligible_to_claim(user, this_iteration)) return;
+   check(eligible_to_claim(user, this_iteration), "user is not eligible to claim in this iteration");
 
    // update the number of claimevents
    uint32_t claim_event_count = updateclaimeventcount();
@@ -1602,8 +1542,8 @@ void freeos::claim( const name& user )
      });
    }
 
-
-   print(user, " claimed ", liquid_amount.to_string(), " and vested ", vested_amount.to_string(), " for iteration ", this_iteration.iteration_number); // " at ", current_time_point().sec_since_epoch());
+  // feedback
+   if (DEBUG) print(user, " claimed ", liquid_amount.to_string(), " and vested ", vested_amount.to_string(), " for iteration ", this_iteration.iteration_number); // " at ", current_time_point().sec_since_epoch());
 
    tick("U");   // User-driven tick
 }
@@ -1639,11 +1579,10 @@ void freeos::depositclear(uint64_t iteration_number) {
   // find the record for the iteration
   auto iterator = deposits.find(iteration_number);
 
-  if (iterator == deposits.end()) {
-    print("A record for iteration number ", iteration_number, " does not exist");
-  } else {
-    deposits.erase(iterator);
-  }
+  check(iterator != deposits.end(), "a deposit record for the requested iteration does not exist");
+
+  deposits.erase(iterator);
+
 }
 
 void freeos::unclaim( const name& user )
@@ -1704,14 +1643,11 @@ void freeos::unvest(const name& user)
    }
 
 
-   // has the user unvested this iteration - consult the unvests history table
+   // has the user unvested this iteration? - consult the unvests history table
    unvest_index unvests(get_self(), user.value);
    auto iterator = unvests.find(this_iteration.iteration_number);
    // if the unvest record exists for the iteration then the user has unvested, so is not eligible to unvest again
-   if (iterator != unvests.end()) {
-     print("user ", user, " has already unvested in iteration ", this_iteration.iteration_number);
-     return;
-   }
+   check(iterator == unvests.end(), "user has already unvested in this iteration");
 
    // do the unvesting
 
@@ -1720,17 +1656,13 @@ void freeos::unvest(const name& user)
    counter_index usercount(get_self(), get_self().value);
    auto iter = usercount.begin();
 
-   if (iter != usercount.end()) {
-     unvest_percent = iter->unvestpercent;
-   } else {
-     // counters record not found - report error and do nothing
-     print("A system error has occurred. Please try again later.");
-     return;
-   }
+   check(iter != usercount.end(), "counters record does not exist");
 
+   unvest_percent = iter->unvestpercent;
+   
    if (unvest_percent == 0) {
-     // nothing to unvest, so inform the user
-     print("Vested FREEOS cannot be unvested in this claim period. Please try next claim period.");
+     // nothing to unvest
+     if (DEBUG) print("Vested FREEOS cannot be unvested in this claim period. Please try next claim period.");
      return;
    }
 
@@ -1745,7 +1677,7 @@ void freeos::unvest(const name& user)
 
    // if user's vested balance is 0 then nothing to do, so return
    if (user_vbalance.amount == 0) {
-     print("You have no vested FREEOS therefore nothing to unvest.");
+     if (DEBUG) print("You have no vested FREEOS therefore nothing to unvest.");
      return;
    }
 
@@ -1812,8 +1744,8 @@ void freeos::unvest(const name& user)
      });
    }
 
-   // print the result
-   print("Unvesting successful. You have gained another ", convertedfreeos.to_string());
+   // feedback
+   if (DEBUG) print("Unvesting successful. You have gained another ", convertedfreeos.to_string());
 
    tick("U");   // User-driven tick
 }
@@ -1848,18 +1780,6 @@ float freeos::get_vested_proportion() {
   return proportion;
 }
 
-void freeos::getcounts() {
-  counter_index usercount(get_self(), get_self().value);
-  auto iterator = usercount.begin();
-
-  if (iterator == usercount.begin()) {
-    print("users registered: ", iterator->usercount, ", claim events: ", iterator->claimevents, " unvest percent: ", iterator->unvestpercent);
-  } else {
-    print("the counters table has not been initialised");
-  }
-}
-
-
 
 // look up the required threshold for the number of users
 uint64_t freeos::getthreshold(uint32_t numusers) {
@@ -1875,6 +1795,31 @@ uint64_t freeos::getthreshold(uint32_t numusers) {
   } while (iterator  != stakereqs.begin());
 
   return iterator->threshold;;
+}
+
+
+// return the current iteration - version 2
+freeos::iteration freeos::getclaimiteration2(uint32_t now) {
+
+  freeos::iteration this_iteration = iteration {0, 0, "", 0, "", 0, 0};    // default null iteration value if outside of a claim period
+
+  // current time in UTC seconds
+  // ??? uint32_t now = current_time_point().sec_since_epoch();
+
+  // iterate through iteration records and find one that matches current time
+  iteration_index iterations(name(freeosconfig_acct), name(freeosconfig_acct).value);
+  auto iterator = iterations.begin();
+
+  while (iterator != iterations.end()) {
+    if ((now >= iterator->start) && (now <= iterator->end)) {
+      this_iteration = *iterator;
+      break;
+    }
+    
+    iterator++;
+  }
+
+  return this_iteration;
 }
 
 
@@ -1895,11 +1840,10 @@ freeos::iteration freeos::getclaimiteration() {
       this_iteration = *iterator;
       break;
     }
-    // print(" iteration ", iterator->iteration_number, " ", iterator->start_date, "-", iterator->end_date, " >> ");
+    
     iterator++;
   }
 
-  //print ("iteration_number = ", interation_number);
   return this_iteration;
 }
 
@@ -1910,23 +1854,21 @@ bool freeos::eligible_to_claim(const name& claimant, iteration this_iteration) {
   // get the user record - if there is no record then user is not registered
   user_index users(get_self(), claimant.value);
   auto user_record = users.begin();
-  if (user_record == users.end()) {
-    print("user ", claimant, " is not registered");
-    return false;
-  }
+
+  check(user_record != users.end(), "user is not registered in freeos");
 
   // has the user claimed this iteration - consult the claims history table
   claim_index claims(get_self(), claimant.value);
   auto iterator = claims.find(this_iteration.iteration_number);
   // if the claim record exists for the iteration then the user has claimed, so is not eligible to claim again
   if (iterator != claims.end()) {
-    print("user ", claimant, " has already claimed in claim period ", this_iteration.iteration_number);
+    if (DEBUG) print("user ", claimant, " has already claimed in claim period ", this_iteration.iteration_number);
     return false;
   }
 
   // has the user staked?
   if (user_record->staked_time.sec_since_epoch() == 0) {
-    print("user ", claimant, " has not staked");
+    if (DEBUG) print("user ", claimant, " has not staked");
     return false;
   }
 
@@ -1940,10 +1882,6 @@ bool freeos::eligible_to_claim(const name& claimant, iteration this_iteration) {
   if (user_airkey_account != user_accounts.end()) {
     user_airkey_balance = user_airkey_account->balance;
   }
-
-  // for debugging purposes
-  // print("user ", claimant, " has FREEOS balance of ", user_freeos_balance.to_string());
-  // print("user ", claimant, " has AIRKEY balance of ", user_airkey_balance.to_string());
 
   // only perform the FREEOS holding requirement check if the user does NOT have an AIRKEY token
   if (user_airkey_balance.amount == 0) {
@@ -1970,10 +1908,9 @@ bool freeos::eligible_to_claim(const name& claimant, iteration this_iteration) {
 
     // the 'holding' balance requirement for this iteration's claim
     asset iteration_holding_requirement = asset(this_iteration.tokens_required * 10000, symbol("FREEOS",4));
-    // print("holding balance required for iteration ", this_iteration.iteration_number, " is ", holding_balance.to_string());
-
+    
     if (total_freeos_balance < iteration_holding_requirement) {
-      print("user ", claimant, " has ", total_freeos_balance.to_string(), " which is less than the holding requirement of ", iteration_holding_requirement.to_string());
+      if (DEBUG) print("user ", claimant, " has ", total_freeos_balance.to_string(), " which is less than the holding requirement of ", iteration_holding_requirement.to_string());
       return false;
     }
   }

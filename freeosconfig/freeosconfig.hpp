@@ -257,8 +257,7 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
     using stakereq_index = eosio::multi_index<"stakereqs"_n, stakerequire>;
 
 
-    // freeos airclaim week calendar
-
+    // freeos airclaim iteration calendar - code: freeosconfig, scope: freeosconfig
     struct [[eosio::table]] iteration {
       uint64_t    iteration_number;
       uint32_t    start;
@@ -269,9 +268,14 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
       uint16_t    tokens_required;
 
       uint64_t primary_key() const { return iteration_number; }
+      uint64_t get_secondary() const {return start;}
     };
 
-    using iteration_index = eosio::multi_index<"iterations"_n, iteration>;
+    // using iteration_index = eosio::multi_index<"iterations"_n, iteration>;
+
+    using iteration_index = eosio::multi_index<"iterations"_n, iteration,
+    indexed_by<"start"_n, const_mem_fun<iteration, uint64_t, &iteration::get_secondary>>
+    >;
 
 
     // FREEOS USD-price - code: freeosconfig, scope: freeosconfig

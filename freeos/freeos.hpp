@@ -48,6 +48,9 @@ const uint32_t  WEEK_SECONDS  = 604800;
          [[eosio::action]]
          void version();
 
+         [[eosio::action]]
+         void getiter(uint32_t current); 
+
          /**
           * runscheduled action.
           *
@@ -299,15 +302,6 @@ const uint32_t  WEEK_SECONDS  = 604800;
          void unvest(const name& user);
 
          /**
-          * getcounts action.
-          *
-          * @details This action is run by anyone to print the counts of users registered and claim events.
-          *
-          */
-         [[eosio::action]]
-         void getcounts();
-
-         /**
           * Get supply method.
           *
           * @details Gets the supply for token `sym_code`, created by `token_contract_account` account.
@@ -422,8 +416,8 @@ const uint32_t  WEEK_SECONDS  = 604800;
 
          // the registered user table
          struct [[eosio::table]] user {
-           asset          stake;            // how many EOS tokens staked
-           char           account_type;     // user has EOS-login account, Dapp Account-login or other
+           asset          stake;            // how many XPR tokens staked
+           char           account_type;     // user's verification level
            time_point_sec registered_time;  // when the user was registered
            time_point_sec staked_time;      // when the user staked their tokens (staked tokens have a time lock)
            uint16_t       votes;            // how many votes the user has made
@@ -527,9 +521,14 @@ const uint32_t  WEEK_SECONDS  = 604800;
            uint16_t    tokens_required;
 
            uint64_t primary_key() const { return iteration_number; }
+           uint64_t get_secondary() const {return start;}
          };
 
-         using iteration_index = eosio::multi_index<"iterations"_n, iteration>;
+         // using iteration_index = eosio::multi_index<"iterations"_n, iteration>;
+
+         using iteration_index = eosio::multi_index<"iterations"_n, iteration,
+         indexed_by<"start"_n, const_mem_fun<iteration, uint64_t, &iteration::get_secondary>>
+         >;
 
 
          // claim history table - scoped on user account name
@@ -647,6 +646,7 @@ const uint32_t  WEEK_SECONDS  = 604800;
          uint64_t getthreshold(uint32_t numusers);
          asset get_stake_requirement(char account_type);
          iteration getclaimiteration();
+         iteration getclaimiteration2(uint32_t now);
          bool eligible_to_claim(const name& claimant, iteration this_iteration);
          uint32_t updateclaimeventcount();
          uint16_t getfreedaomultiplier(uint32_t claimevents);
