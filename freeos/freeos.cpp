@@ -54,9 +54,11 @@ using namespace eosio;
 // 330 - All error checking performed by check function
 //       User can only request to unstake once i.e. cannot create multiple unstake requests
 //       Iterations table can now be accessed via secondary index (by start time)
+// 331 - Changed unvest action to not allow unvesting in iteration 0
+//       Corrected problem of advancing unvestperecentiteration too often
 
 
-const std::string VERSION = "0.330";
+const std::string VERSION = "0.331";
 
 [[eosio::action]]
 void freeos::version() {
@@ -127,6 +129,18 @@ void freeos::maintain(std::string option) {
 
     if (DEBUG) print("clear accounts success");
 
+  }
+
+  if (option == "correct unvestpercent") {
+    counter_index counters(get_self(), get_self().value);
+    auto iterator = counters.begin();
+
+    if (iterator != counters.end()) {
+      // modify the counters table with initial values
+      counters.modify(iterator, _self, [&](auto& c) {
+          c.unvestpercent = 2;
+      });
+    }
   }
 
   if (option == "initialise") {
@@ -1632,12 +1646,14 @@ void freeos::unvest(const name& user)
    // get the current iteration
    iteration this_iteration = getclaimiteration();
 
+   check(this_iteration.iteration_number > 0, "Not in a valid iteration");
+
    // get the unvestpercentiteration - if different from current iteration then update it and update the unvestpercentage
    counter_index counters(get_self(), get_self().value);
    auto count = counters.begin();
 
    if (count != counters.end()) {
-     if (count->unvestpercentiteration != this_iteration.iteration_number) {
+     if (this_iteration.iteration_number > count->unvestpercentiteration) {
        update_unvest_percentage();
      }
    }
