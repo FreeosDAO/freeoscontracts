@@ -55,10 +55,12 @@ using namespace eosio;
 //       User can only request to unstake once i.e. cannot create multiple unstake requests
 //       Iterations table can now be accessed via secondary index (by start time)
 // 331 - Changed unvest action to not allow unvesting in iteration 0
-//       Corrected problem of advancing unvestperecentiteration too often
+//       Corrected problem of advancing unvestperecentiteration more often than required
+// 332 - Improved performance of getclaimiteration function - it uses secondary index based on iteration start
+//       Improved performance of getthreshold function - it uses the primary index based on threshold
 
 
-const std::string VERSION = "0.331";
+const std::string VERSION = "0.332";
 
 [[eosio::action]]
 void freeos::version() {
@@ -68,10 +70,10 @@ void freeos::version() {
 }
 
 [[eosio::action]]
-void freeos::getiter(uint32_t current) {
-  iteration this_iteration = getclaimiteration2(current);
+void freeos::currentiter() {
+  iteration this_iteration = getclaimiteration();
 
-  if (DEBUG) print("Version = ", VERSION, " - it is currently iteration ", this_iteration.iteration_number);
+  if (DEBUG) print("It is currently iteration ", this_iteration.iteration_number);
 }
 
 
@@ -1797,6 +1799,7 @@ float freeos::get_vested_proportion() {
 }
 
 
+/* old - replaced with indexed version
 // look up the required threshold for the number of users
 uint64_t freeos::getthreshold(uint32_t numusers) {
 
@@ -1812,35 +1815,52 @@ uint64_t freeos::getthreshold(uint32_t numusers) {
 
   return iterator->threshold;;
 }
+*/
 
 
-// return the current iteration - version 2
-freeos::iteration freeos::getclaimiteration2(uint32_t now) {
+// look up the required threshold for the number of users
+uint64_t freeos::getthreshold(uint32_t numusers) {
+
+  // look up the config stakereqs table
+  stakereq_index stakereqs(name(freeosconfig_acct), name(freeosconfig_acct).value);
+  auto iterator = stakereqs.upper_bound(numusers);
+  iterator--; 
+
+  return iterator->threshold;
+}
+
+
+
+// return the current iteration record
+freeos::iteration freeos::getclaimiteration() {
 
   freeos::iteration this_iteration = iteration {0, 0, "", 0, "", 0, 0};    // default null iteration value if outside of a claim period
 
   // current time in UTC seconds
-  // ??? uint32_t now = current_time_point().sec_since_epoch();
+  uint32_t now = current_time_point().sec_since_epoch();
 
   // iterate through iteration records and find one that matches current time
   iteration_index iterations(name(freeosconfig_acct), name(freeosconfig_acct).value);
-  auto iterator = iterations.begin();
+  auto idx = iterations.get_index<"start"_n>();
+  auto iterator = idx.upper_bound(now);
 
-  while (iterator != iterations.end()) {
-    if ((now >= iterator->start) && (now <= iterator->end)) {
-      this_iteration = *iterator;
-      break;
-    }
-    
-    iterator++;
+  if (iterator != idx.begin()) {
+    iterator--;
   }
 
+  // check we are within the period of the iteration
+  if (iterator != idx.end() && now >= iterator->start && now <= iterator->end) {
+    this_iteration = *iterator;
+  }  
+  
   return this_iteration;
 }
 
 
+
+/* old - replaced with indexed version
 // return the iteration record matching the current datetime
-freeos::iteration freeos::getclaimiteration() {
+freeos::iteration freeos::getclaimiteration_old() {
 
   freeos::iteration this_iteration = iteration {0, 0, "", 0, "", 0, 0};    // default null iteration value if outside of a claim period
 
@@ -1862,6 +1882,7 @@ freeos::iteration freeos::getclaimiteration() {
 
   return this_iteration;
 }
+*/
 
 
 // calculate if user is eligible to claim in this iteration

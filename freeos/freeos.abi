@@ -128,6 +128,11 @@
             ]
         },
         {
+            "name": "currentiter",
+            "base": "",
+            "fields": []
+        },
+        {
             "name": "deposit",
             "base": "",
             "fields": [
@@ -158,16 +163,6 @@
                 {
                     "name": "user",
                     "type": "name"
-                }
-            ]
-        },
-        {
-            "name": "getiter",
-            "base": "",
-            "fields": [
-                {
-                    "name": "current",
-                    "type": "uint32"
                 }
             ]
         },
@@ -624,6 +619,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "currentiter",
+            "type": "currentiter",
+            "ricardian_contract": ""
+        },
+        {
             "name": "depositclear",
             "type": "depositclear",
             "ricardian_contract": ""
@@ -631,11 +631,6 @@
         {
             "name": "dereg",
             "type": "dereg",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "getiter",
-            "type": "getiter",
             "ricardian_contract": ""
         },
         {

@@ -112,7 +112,7 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
      * @param start - string representing the start of iteration in YYYY-MM-DD HH:MM:SS format,
      * @param end - string representing the end of iteration in YYYY-MM-DD HH:MM:SS format
      * @param claim_amount - the amount of FREEOS a user can claim in the iteration
-     * @param claim_amount - the amount of FREEOS a user must hold before claiming
+     * @param tokens_required - the amount of FREEOS a user must hold before claiming
      *
      * @pre requires permission of the contract account
      */
@@ -205,6 +205,23 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
      */
     [[eosio::action]]
     void getthreshold(uint64_t numusers, std::string account_type);
+
+
+    /**
+     * additeration action.
+     *
+     * @details This action creates a new iteration (for a number of hours duration) following on from 1 second after the last iteration ended.
+     *
+     * @param hours - the number of hours to run the iteration for
+     * @param claim_amount - the amount of FREEOS a user can claim in the iteration
+     * @param tokens_required - the amount of FREEOS a user must hold before claiming
+     * 
+     * @pre requires permission of the contract account
+     */
+    [[eosio::action]]
+    void additeration(uint8_t hours, uint16_t  claim_amount, uint16_t  tokens_required);
+
+
 
     // ************************************************************************************
     // ************* eosio.proton actions for populating usersinfo table ******************

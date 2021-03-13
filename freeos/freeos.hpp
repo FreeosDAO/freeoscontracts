@@ -48,8 +48,13 @@ const uint32_t  WEEK_SECONDS  = 604800;
          [[eosio::action]]
          void version();
 
+         /**
+          * currentiter action.
+          *
+          * @details Prints the number of the current iteration.
+          */
          [[eosio::action]]
-         void getiter(uint32_t current); 
+         void currentiter(); 
 
          /**
           * runscheduled action.

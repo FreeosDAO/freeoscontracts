@@ -13,8 +13,11 @@ using namespace eosio;
 // 104 - All error checking performed by check function
 //     - Replaced all incorrect references to get_first_receiver() with get_self()
 //     - Added secondary index to the iterations table
+// 105 - additeration action added - creates a new iteration following on from the last for x number of hours duration
+// 106 - additeration action changed to remove the price parameter
 
-const std::string VERSION = "0.104";
+
+const std::string VERSION = "0.106";
 
 [[eosio::action]]
 void freeosconfig::version() {
@@ -296,6 +299,30 @@ void freeosconfig::getiter(uint64_t iteration_number) {
     if (DEBUG) print("iteration ", iteration_number, " start: ", iterator->start_date, " (", iterator->start, "), end: ", iterator->end_date,
     " (", iterator->end, "), claim amount: ", iterator->claim_amount, ", tokens required: ", iterator->tokens_required);
   }
+}
+
+[[eosio::action]]
+void freeosconfig::additeration(uint8_t hours, uint16_t  claim_amount, uint16_t  tokens_required) {
+  // get the last iteration record
+  iteration_index iterations(get_self(), get_self().value);
+  auto iterator = iterations.rbegin();
+
+  uint64_t new_iteration = iterator->iteration_number + 1;
+  uint32_t new_start = iterator->end + 1; // 1 second after previous end
+  uint32_t new_end = iterator->end + (hours * 3600);
+
+  // add the new iteration record
+  iterations.emplace(_self, [&](auto & row) {
+         row.iteration_number = new_iteration;
+         row.start = new_start;
+         row.start_date = "";
+         row.end = new_end;
+         row.end_date = "";
+         row.claim_amount = claim_amount;
+         row.tokens_required = tokens_required;
+      });
+
+  if (DEBUG) print("Iteration ", new_iteration, " created");
 }
 
 

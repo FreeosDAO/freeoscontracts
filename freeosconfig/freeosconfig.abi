@@ -4,6 +4,24 @@
     "types": [],
     "structs": [
         {
+            "name": "additeration",
+            "base": "",
+            "fields": [
+                {
+                    "name": "hours",
+                    "type": "uint8"
+                },
+                {
+                    "name": "claim_amount",
+                    "type": "uint16"
+                },
+                {
+                    "name": "tokens_required",
+                    "type": "uint16"
+                }
+            ]
+        },
+        {
             "name": "addkyc",
             "base": "",
             "fields": [
@@ -445,6 +463,11 @@
         }
     ],
     "actions": [
+        {
+            "name": "additeration",
+            "type": "additeration",
+            "ricardian_contract": ""
+        },
         {
             "name": "addkyc",
             "type": "addkyc",
