@@ -16,9 +16,17 @@ enum registration_status{ registered_already,
                           registered_success,
                           };
 
+// CRON-driven process specifiers
 const std::string HOURLY = "hourly";
 const std::string DAILY  = "daily";
 const std::string WEEKLY = "weekly";
+
+// CRON-driven process triggers
+const std::string TRIGGERED_BY_ACTION  = "A";  // triggered by the 'runscheduled' Action
+const std::string TRIGGERED_BY_USER    = "U";  // triggered by User action
+const std::string TRIGGERED_BY_PROTON  = "P";  // triggered by Proton CRON contract
+const std::string TRIGGERED_BY_SERVER  = "S";  // triggered by Server CRON service
+
 
 // Job scheduling intervals
 const uint32_t  HOUR_SECONDS  = 3600;

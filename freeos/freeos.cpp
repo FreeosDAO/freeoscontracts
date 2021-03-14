@@ -389,7 +389,7 @@ void freeos::tick(std::string trigger) {
 void freeos::cron() {
   require_auth("cron"_n);
 
-  tick("P");  // "A" = runscheduled action, "U" = User driven, "P" = Proton CRON, "S" = Server CRON
+  tick(TRIGGERED_BY_PROTON);
 }
 
 
@@ -466,7 +466,7 @@ void freeos::runscheduled(std::string process_specifier, bool schedule_override)
       });
 
       // run the process
-      hourly_process("A");  // "A" = runscheduled action, "U" = User driven, "P" = Proton CRON, "S" = Server CRON
+      hourly_process(TRIGGERED_BY_ACTION);
 
       process_ran = true;
       if (DEBUG) print("hourly process ran");
@@ -983,7 +983,7 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
     if (DEBUG) print(quantity.to_string(), " stake received for account ", user);
   }
 
-  tick("U");   // User-driven tick
+  tick(TRIGGERED_BY_USER);
 
 }
 
@@ -1055,7 +1055,7 @@ void freeos::unstake(const name& user) {
   // feedback
   if (DEBUG) print("unstake requested");
 
-  tick("U");   // User-driven tick
+  tick(TRIGGERED_BY_USER);
 
 }
 
@@ -1561,7 +1561,7 @@ void freeos::claim( const name& user )
   // feedback
    if (DEBUG) print(user, " claimed ", liquid_amount.to_string(), " and vested ", vested_amount.to_string(), " for iteration ", this_iteration.iteration_number); // " at ", current_time_point().sec_since_epoch());
 
-   tick("U");   // User-driven tick
+   tick(TRIGGERED_BY_USER);
 }
 
 // record a deposit to the freedao account
@@ -1765,7 +1765,7 @@ void freeos::unvest(const name& user)
    // feedback
    if (DEBUG) print("Unvesting successful. You have gained another ", convertedfreeos.to_string());
 
-   tick("U");   // User-driven tick
+   tick(TRIGGERED_BY_USER);
 }
 
 

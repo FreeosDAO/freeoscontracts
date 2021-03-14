@@ -48,7 +48,6 @@ void freeosconfig::paramupsert(
         // the parameter is in the table, so update
         parameters.modify(iterator, _self, [&](auto& row) {
           row.virtualtable = virtualtable;
-          row.paramname = paramname;
           row.value = value;
         });
     }
