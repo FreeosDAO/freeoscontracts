@@ -15,9 +15,10 @@ using namespace eosio;
 //     - Added secondary index to the iterations table
 // 105 - additeration action added - creates a new iteration following on from the last for x number of hours duration
 // 106 - additeration action changed to remove the price parameter
+// 107 - added checks when setting current and target exchange rates that values must be positive
 
 
-const std::string VERSION = "0.106";
+const std::string VERSION = "0.107";
 
 [[eosio::action]]
 void freeosconfig::version() {
@@ -74,6 +75,8 @@ void freeosconfig::currentrate(double price) {
 
     require_auth(_self);
 
+    check(price > 0.0, "current rate must be positive");
+
     exchange_index rate(get_self(), get_self().value);
     auto iterator = rate.begin();
 
@@ -98,6 +101,8 @@ void freeosconfig::currentrate(double price) {
 void freeosconfig::targetrate(double exchangerate) {
 
     require_auth(_self);
+
+    check(exchangerate > 0.0, "target rate must be positive");
 
     double new_exchangerate = exchangerate;
 

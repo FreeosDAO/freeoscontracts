@@ -388,9 +388,6 @@ const uint32_t  WEEK_SECONDS  = 604800;
           void reverify(name user);
 
 
-          [[eosio::action]]
-          void maintain(std::string option);
-
 
          using create_action = eosio::action_wrapper<"create"_n, &freeos::create>;
          using issue_action = eosio::action_wrapper<"issue"_n, &freeos::issue>;
@@ -432,8 +429,10 @@ const uint32_t  WEEK_SECONDS  = 604800;
            asset          stake;            // how many XPR tokens staked
            char           account_type;     // user's verification level
            time_point_sec registered_time;  // when the user was registered
-           time_point_sec staked_time;      // when the user staked their tokens (staked tokens have a time lock)
+           uint16_t       staked_iteration; // the iteration in which the user staked their tokens
            uint16_t       votes;            // how many votes the user has made
+           uint16_t       issuances;        // total number of times the user has been issued with FREEOS
+           uint16_t       last_issuance;    // the last iteration in which the user was issued with FREEOS
 
            uint64_t primary_key() const {return stake.symbol.code().raw();}
          };
@@ -632,10 +631,10 @@ const uint32_t  WEEK_SECONDS  = 604800;
          // unstake queue
          struct [[eosio::table]] unstakereq {
            name             staker;
-           time_point_sec   release_time;
+           uint32_t         iteration;
            asset            amount;
 
-           uint64_t primary_key() const { return release_time.sec_since_epoch(); }
+           uint64_t primary_key() const { return iteration; }
            uint64_t get_secondary() const {return staker.value;}
          };
 
@@ -659,7 +658,6 @@ const uint32_t  WEEK_SECONDS  = 604800;
          uint64_t getthreshold(uint32_t numusers);
          asset get_stake_requirement(char account_type);
          iteration getclaimiteration();
-         iteration getclaimiteration2(uint32_t now);
          bool eligible_to_claim(const name& claimant, iteration this_iteration);
          uint32_t updateclaimeventcount();
          uint16_t getfreedaomultiplier(uint32_t claimevents);

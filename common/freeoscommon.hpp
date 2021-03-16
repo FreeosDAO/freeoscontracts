@@ -10,9 +10,6 @@ const std::string verification_contract = "eosio.proton";   // contains the user
 // currency symbol for network
 const std::string CURRENCY_SYMBOL_CODE = "XPR";
 
-// amount of time to hold user stake for before unstaking is permitted
-const uint32_t STAKE_HOLD_TIME_SECONDS = 18000;  // 18000 = 5 hours / one week = 604800
-
 // hard floor for the target exchange rate - it can never go below this
 const double HARD_EXCHANGE_RATE_FLOOR = 0.0167;
 

@@ -58,9 +58,13 @@ using namespace eosio;
 //       Corrected problem of advancing unvestperecentiteration more often than required
 // 332 - Improved performance of getclaimiteration function - it uses secondary index based on iteration start
 //       Improved performance of getthreshold function - it uses the primary index based on threshold
+// 333 - User registration record now tracks the number of FREEOS issuances (claims) and the iteration of last issuance.
+//       User registration record no longer records staked_time. It now records the iteration in which the stake was made.
+//       Unstake requests are processed within the next iteration i.e. the 'stake hold time' is no longer used.
+//       There is a fallback 'default' unvestpercent in case the figure can't be calculated. Specified in the 'unvestpercnt' parameter.
 
 
-const std::string VERSION = "0.332";
+const std::string VERSION = "0.333";
 
 [[eosio::action]]
 void freeos::version() {
@@ -74,228 +78,6 @@ void freeos::currentiter() {
   iteration this_iteration = getclaimiteration();
 
   if (DEBUG) print("It is currently iteration ", this_iteration.iteration_number);
-}
-
-
-[[eosio::action]]
-void freeos::maintain(std::string option) {
-
-  require_auth(get_self());
-
-  // script 1 to migrate stake_requirement out of the users table
-  if (option == "clear users") {
-
-    // erase existing user table
-    // array of users
-    name candidates[16] = {"alanappleton"_n, "billbeaumont"_n, "celiacollins"_n, "criscorn"_n, "dennisedolan"_n, 
-    "ericjackson"_n, "ethanedwards"_n, "frankyfellon"_n, "geraldgarson"_n,
-    "harryhoudini"_n, "jamiejackson"_n, "powderblue"_n, "testforever"_n, "vannavestin"_n, "vivvestin"_n, "wlcm.proton"_n};
-
-    for(int i = 0; i < 16; i++) {
-      // clear the users table
-      user_index users(get_self(), candidates[i].value);
-      auto iterator = users.begin();
-      if (iterator != users.end()) {
-        // erase the record
-        users.erase(iterator);
-      }
-    }
-
-    if (DEBUG) print("clear users success");
-
-  }
-
-  if (option == "clear accounts") {
-    name candidates[3] = {"ethanedwards"_n, "harryhoudini"_n, "wlcm.proton"_n};
-
-    for(int i = 0; i < 3; i++) {
-      // remove entries from the accounts table
-      accounts accountstable(get_self(), candidates[i].value);
-      auto a_iterator = accountstable.begin();
-
-      if (a_iterator != accountstable.end()) {
-        // erase the record
-        accountstable.erase(a_iterator);
-      }
-      
-      // remove entries from the vestaccounts table
-      vestaccounts vestaccountstable(get_self(), candidates[i].value);
-      auto v_iterator = vestaccountstable.begin();
-
-      if (v_iterator != vestaccountstable.end()) {
-        // erase the record
-        vestaccountstable.erase(v_iterator);
-      }
-      
-    }
-
-    if (DEBUG) print("clear accounts success");
-
-  }
-
-  if (option == "correct unvestpercent") {
-    counter_index counters(get_self(), get_self().value);
-    auto iterator = counters.begin();
-
-    if (iterator != counters.end()) {
-      // modify the counters table with initial values
-      counters.modify(iterator, _self, [&](auto& c) {
-          c.unvestpercent = 2;
-      });
-    }
-  }
-
-  if (option == "initialise") {
-      // initialise the default stake value
-
-      // get the value from the config 'stakereqs' table
-      stakereq_index stakereqs(name(freeosconfig_acct), name(freeosconfig_acct).value);
-      // get the stake-requirements record for threshold 0
-      auto config_sr = stakereqs.find(0);
-      if (config_sr == stakereqs.end()) {
-        if (DEBUG) print("the config stake requirements table does not have a record for threshold 0");
-        return;
-      }
-
-      // the default stake is calculated below
-
-      uint64_t threshold = config_sr->threshold;
-
-      uint32_t req_a = config_sr->requirement_a;
-      asset stake_requirement_a = asset(req_a * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      uint32_t req_b = config_sr->requirement_b;
-      asset stake_requirement_b = asset(req_b * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      uint32_t req_c = config_sr->requirement_c;
-      asset stake_requirement_c = asset(req_c * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      uint32_t req_d = config_sr->requirement_d;
-      asset stake_requirement_d = asset(req_d * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      uint32_t req_e = config_sr->requirement_e;
-      asset stake_requirement_e = asset(req_e * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      uint32_t req_u = config_sr->requirement_u;
-      asset stake_requirement_u = asset(req_u * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      uint32_t req_v = config_sr->requirement_v;
-      asset stake_requirement_v = asset(req_v * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      uint32_t req_w = config_sr->requirement_w;
-      asset stake_requirement_w = asset(req_w * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      uint32_t req_x = config_sr->requirement_x;
-      asset stake_requirement_x = asset(req_x * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      uint32_t req_y = config_sr->requirement_y;
-      asset stake_requirement_y = asset(req_y * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-      // Place the values in the table
-      stakes_index stakes_table(get_self(), get_self().value);
-      auto stake = stakes_table.find( 0 ); // using 0 because this is a single row table
-
-      if( stake == stakes_table.end() ) {
-         stakes_table.emplace(get_self(), [&]( auto& s ){
-           s.threshold = threshold;
-           s.requirement_a = stake_requirement_a;
-           s.requirement_b = stake_requirement_b;
-           s.requirement_c = stake_requirement_c;
-           s.requirement_d = stake_requirement_d;
-           s.requirement_e = stake_requirement_e;
-           s.requirement_u = stake_requirement_u;
-           s.requirement_v = stake_requirement_v;
-           s.requirement_w = stake_requirement_w;
-           s.requirement_x = stake_requirement_x;
-           s.requirement_y = stake_requirement_y;
-         });
-      } else {
-         stakes_table.modify( stake, same_payer, [&]( auto& s ) {
-           s.threshold = threshold;
-           s.requirement_a = stake_requirement_a;
-           s.requirement_b = stake_requirement_b;
-           s.requirement_c = stake_requirement_c;
-           s.requirement_d = stake_requirement_d;
-           s.requirement_e = stake_requirement_e;
-           s.requirement_u = stake_requirement_u;
-           s.requirement_v = stake_requirement_v;
-           s.requirement_w = stake_requirement_w;
-           s.requirement_x = stake_requirement_x;
-           s.requirement_y = stake_requirement_y;
-         });
-    }
-    // current stakes now set
-
-    // set it in the counters table
-    counter_index counters(get_self(), get_self().value);
-    auto iterator = counters.begin();
-
-    if (iterator != counters.end()) {
-      // modify the counters table with initial values
-      counters.modify(iterator, _self, [&](auto& c) {
-          c.usercount = 0;
-          c.claimevents = 0;
-          c.unvestpercent = 0;
-          c.unvestpercentiteration = 1;
-          c.iteration = 1;
-          c.failsafecounter = 0;
-      });
-    } else {
-      // create the counters record with initial values
-      counters.emplace(_self, [&](auto & c) {
-          c.usercount = 0;
-          c.claimevents = 0;
-          c.unvestpercent = 0;
-          c.unvestpercentiteration = 1;
-          c.iteration = 1;
-          c.failsafecounter = 0;
-      });
-    }
-
-    // calculate the unvest percentage
-    // update_unvest_percentage(); - no need to do this as the unvest percentage will be zero to begin with
-
-    // clear the deposits table
-    deposit_index deposits(get_self(), get_self().value);
-
-    auto itdep = deposits.begin();
-
-    while (itdep != deposits.end()) {
-      itdep = deposits.erase(itdep);
-    }
-
-    if (DEBUG) print("initialise success");
-
-  } // end of option == "initialise"
-
-
-  if (option == "clear claims and unvests") {
-
-   name candidates[16] = {"alanappleton"_n, "billbeaumont"_n, "celiacollins"_n, "criscorn"_n, "dennisedolan"_n, 
-    "ericjackson"_n, "ethanedwards"_n, "frankyfellon"_n, "geraldgarson"_n,
-    "harryhoudini"_n, "jamiejackson"_n, "powderblue"_n, "testforever"_n, "vannavestin"_n, "vivvestin"_n, "wlcm.proton"_n};
-
-    for (int i = 0; i < 16; i++) {
-      // clear the claims table
-      claim_index claims(get_self(), candidates[i].value);
-      auto it_claims = claims.begin();
-      while (it_claims != claims.end()) {
-        // erase the record
-        it_claims = claims.erase(it_claims);
-      }
-
-      // clear the unvests table
-      unvest_index unvests(get_self(), candidates[i].value);
-      auto it_unvest = unvests.begin();
-      while (it_unvest != unvests.end()) {
-        // erase the record
-        it_unvest = unvests.erase(it_unvest);
-      }
-    }
-  } // end of clear claims and unvests
-
-  
-
 }
 
 
@@ -693,6 +475,9 @@ void freeos::reguser(const name& user) {
 
 registration_status freeos::register_user(const name& user) {
 
+  // get the current iteration
+  iteration current_iteration = getclaimiteration();
+
   // is the user already registered?
   // find the account in the user table
   user_index usertable( get_self(), user.value );
@@ -733,7 +518,7 @@ registration_status freeos::register_user(const name& user) {
     u.stake = asset(0, symbol(CURRENCY_SYMBOL_CODE, 4));
     u.account_type = account_type;
     u.registered_time = now;
-    u.staked_time = stake_requirement.amount == 0 ? now : time_point_sec(0);
+    u.staked_iteration = stake_requirement.amount == 0 ? current_iteration.iteration_number : 0;
     });
 
    // add the user to the vested accounts table
@@ -957,6 +742,8 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
 
     //****************************************************
 
+    // which iteration are we in?
+    iteration current_iteration = getclaimiteration();
 
     // get the user record - the amount of the stake requirement and the amount staked
     // find the account in the user table
@@ -967,7 +754,7 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
     check(u != usertable.end(), "user is not registered");
 
     // check that user isn't already staked
-    check(u->staked_time == time_point_sec(0), "the account is already staked");
+    check(u->staked_iteration == 0, "the account is already staked");
 
     // check that the required stake has been transferred
     asset stake_requirement = get_stake_requirement(u->account_type);
@@ -976,7 +763,7 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
     // update the user record
     usertable.modify(u, _self, [&](auto& row) {
       row.stake = quantity;
-      row.staked_time = time_point_sec(current_time_point().sec_since_epoch());
+      row.staked_iteration = current_iteration.iteration_number;
     });
 
     // feedback
@@ -1064,14 +851,13 @@ void freeos::unstake(const name& user) {
 
 // request stake refund - add to stake refund queue
 void freeos::request_stake_refund(name user, asset amount) {
-  // calculate stake release time
-  time_point_sec release_time = time_point_sec(current_time_point().sec_since_epoch() + STAKE_HOLD_TIME_SECONDS);
+  iteration current_iteration = getclaimiteration();
 
   // add to the unstake requests queue
   unstakereq_index unstakes(get_self(), get_self().value);
   unstakes.emplace( get_self(), [&]( auto& u ) {
      u.staker = user;
-     u.release_time = release_time;
+     u.iteration = current_iteration.iteration_number;
      u.amount = amount;
   });
 }
@@ -1088,15 +874,14 @@ void freeos::refund_stakes() {
     number_to_release = stoi(p_iterator->value);
   }
 
+  iteration current_iteration = getclaimiteration();
+
   unstakereq_index unstakes(get_self(), get_self().value);
-
-  uint32_t now = current_time_point().sec_since_epoch();
-
   auto iterator = unstakes.begin();
 
   for (uint16_t i = 0; i < number_to_release && iterator != unstakes.end(); i++) {
 
-    if (iterator->release_time.sec_since_epoch() <= now) {
+    if (iterator->iteration < current_iteration.iteration_number) {
       // process the unstake request
       refund_stake(iterator->staker, iterator->amount);
       iterator = unstakes.erase(iterator);
@@ -1126,7 +911,7 @@ void freeos::refund_stake(name user, asset amount) {
   // update the user record
   usertable.modify(u, _self, [&](auto& row) {
     row.stake = asset(0, symbol(CURRENCY_SYMBOL_CODE, 4));
-    row.staked_time = time_point_sec(0);
+    row.staked_iteration = 0;
   });
 }
 
@@ -1190,14 +975,14 @@ void freeos::getuser(const name& user) {
 
   // feedback
   if (DEBUG) print("account: ", user, ", registered: ", u->registered_time.utc_seconds, ", type: ", u->account_type, ", stake: ", u->stake.to_string(),
-        ", staked-on: ", u->staked_time.utc_seconds, ", XPR: ", xpr_balance.to_string(), ", liquid: ", liquid_freeos_balance.to_string(), ", vested: ", vested_freeos_balance.to_string(),
+        ", staked-iteration: ", u->staked_iteration, ", XPR: ", xpr_balance.to_string(), ", liquid: ", liquid_freeos_balance.to_string(), ", vested: ", vested_freeos_balance.to_string(),
          ", airkey: ", airkey_balance.to_string(), ", iteration: ", this_iteration.iteration_number, ", claimed: ", claimed_flag);
 
 }
 
 
 bool freeos::checkmasterswitch() {
-  parameter_index parameters("freeosconfig"_n, "freeosconfig"_n.value);
+  parameter_index parameters(name(freeosconfig_acct), name(freeosconfig_acct).value);
   auto iterator = parameters.find("masterswitch"_n.value);
 
   // check if the parameter is in the table or not
@@ -1217,7 +1002,7 @@ bool freeos::checkmasterswitch() {
 }
 
 bool freeos::checkschedulelogging() {
-  parameter_index parameters("freeosconfig"_n, "freeosconfig"_n.value);
+  parameter_index parameters(name(freeosconfig_acct), name(freeosconfig_acct).value);
   auto iterator = parameters.find("schedulelog"_n.value);
 
   // check if the parameter is in the table or not
@@ -1558,6 +1343,17 @@ void freeos::claim( const name& user )
      });
    }
 
+   // update the user's issuance stats in their registration record
+   user_index users(get_self(), user.value);
+   auto user_record = users.begin();
+
+   if (user_record != users.end()) {
+     users.modify(user_record, _self, [&]( auto& u ) {
+      u.issuances += 1;
+      u.last_issuance = this_iteration.iteration_number;
+    });
+   }
+
   // feedback
    if (DEBUG) print(user, " claimed ", liquid_amount.to_string(), " and vested ", vested_amount.to_string(), " for iteration ", this_iteration.iteration_number); // " at ", current_time_point().sec_since_epoch());
 
@@ -1674,9 +1470,19 @@ void freeos::unvest(const name& user)
    counter_index usercount(get_self(), get_self().value);
    auto iter = usercount.begin();
 
-   check(iter != usercount.end(), "counters record does not exist");
+   if (iter != usercount.end()) {
+     unvest_percent = iter->unvestpercent;
+   } else {
+     unvest_percent = 50; // default if freeosconfig parameter not found
 
-   unvest_percent = iter->unvestpercent;
+     // if no counters record then use the default unvestpercent
+     parameter_index parameters(name(freeosconfig_acct), name(freeosconfig_acct).value);
+     auto iterator = parameters.find("unvestpercnt"_n.value);
+
+     if (iterator != parameters.end()) {
+       unvest_percent = stoi(iterator->value);
+     }     
+   }
    
    if (unvest_percent == 0) {
      // nothing to unvest
@@ -1799,25 +1605,6 @@ float freeos::get_vested_proportion() {
 }
 
 
-/* old - replaced with indexed version
-// look up the required threshold for the number of users
-uint64_t freeos::getthreshold(uint32_t numusers) {
-
-  // look up the config stakereqs table
-  stakereq_index stakereqs(name(freeosconfig_acct), name(freeosconfig_acct).value);
-  auto iterator = stakereqs.end();
-
-  // find which band to apply - iterate from the end of the table upwards until the matching threshold is found
-  do {
-    iterator--;
-    if (numusers >= iterator->threshold) break;
-  } while (iterator  != stakereqs.begin());
-
-  return iterator->threshold;;
-}
-*/
-
-
 // look up the required threshold for the number of users
 uint64_t freeos::getthreshold(uint32_t numusers) {
 
@@ -1828,7 +1615,6 @@ uint64_t freeos::getthreshold(uint32_t numusers) {
 
   return iterator->threshold;
 }
-
 
 
 // return the current iteration record
@@ -1857,34 +1643,6 @@ freeos::iteration freeos::getclaimiteration() {
 }
 
 
-
-/* old - replaced with indexed version
-// return the iteration record matching the current datetime
-freeos::iteration freeos::getclaimiteration_old() {
-
-  freeos::iteration this_iteration = iteration {0, 0, "", 0, "", 0, 0};    // default null iteration value if outside of a claim period
-
-  // current time in UTC seconds
-  uint32_t now = current_time_point().sec_since_epoch();
-
-  // iterate through iteration records and find one that matches current time
-  iteration_index iterations(name(freeosconfig_acct), name(freeosconfig_acct).value);
-  auto iterator = iterations.begin();
-
-  while (iterator != iterations.end()) {
-    if ((now >= iterator->start) && (now <= iterator->end)) {
-      this_iteration = *iterator;
-      break;
-    }
-    
-    iterator++;
-  }
-
-  return this_iteration;
-}
-*/
-
-
 // calculate if user is eligible to claim in this iteration
 bool freeos::eligible_to_claim(const name& claimant, iteration this_iteration) {
 
@@ -1904,7 +1662,7 @@ bool freeos::eligible_to_claim(const name& claimant, iteration this_iteration) {
   }
 
   // has the user staked?
-  if (user_record->staked_time.sec_since_epoch() == 0) {
+  if (user_record->staked_iteration == 0) {
     if (DEBUG) print("user ", claimant, " has not staked");
     return false;
   }

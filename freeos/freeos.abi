@@ -213,16 +213,6 @@
             ]
         },
         {
-            "name": "maintain",
-            "base": "",
-            "fields": [
-                {
-                    "name": "option",
-                    "type": "string"
-                }
-            ]
-        },
-        {
             "name": "open",
             "base": "",
             "fields": [
@@ -477,8 +467,8 @@
                     "type": "name"
                 },
                 {
-                    "name": "release_time",
-                    "type": "time_point_sec"
+                    "name": "iteration",
+                    "type": "uint32"
                 },
                 {
                     "name": "amount",
@@ -527,11 +517,19 @@
                     "type": "time_point_sec"
                 },
                 {
-                    "name": "staked_time",
-                    "type": "time_point_sec"
+                    "name": "staked_iteration",
+                    "type": "uint16"
                 },
                 {
                     "name": "votes",
+                    "type": "uint16"
+                },
+                {
+                    "name": "issuances",
+                    "type": "uint16"
+                },
+                {
+                    "name": "last_issuance",
                     "type": "uint16"
                 }
             ]
@@ -641,11 +639,6 @@
         {
             "name": "issue",
             "type": "issue",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "maintain",
-            "type": "maintain",
             "ricardian_contract": ""
         },
         {
