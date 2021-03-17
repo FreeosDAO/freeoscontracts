@@ -62,15 +62,37 @@ using namespace eosio;
 //       User registration record no longer records staked_time. It now records the iteration in which the stake was made.
 //       Unstake requests are processed within the next iteration i.e. the 'stake hold time' is no longer used.
 //       There is a fallback 'default' unvestpercent in case the figure can't be calculated. Specified in the 'unvestpercnt' parameter.
+// 334 - Replaced the 'counters' table with the 'statistics' table to solve a record corruption problem
+//       The freeos::stakes table has been deleted - stake requirement code now refers to the freeosconfig::stakereqs table instead
 
-
-const std::string VERSION = "0.333";
+const std::string VERSION = "0.334";
 
 [[eosio::action]]
 void freeos::version() {
   iteration this_iteration = getclaimiteration();
 
-  if (DEBUG) print("Version = ", VERSION, " - it is currently iteration ", this_iteration.iteration_number);
+  uint32_t sr_e = get_stake_requirement('e');
+
+  if (DEBUG) print("Version = ", VERSION, " - it is currently iteration ", this_iteration.iteration_number, " stake requirement_e = ", sr_e);
+}
+
+[[eosio::action]]
+void freeos::maintain(std::string option) {
+  if (option == "populate statistics") {
+    // set it in the statistics table
+    statistic_index statistics(get_self(), get_self().value);
+    auto iterator = statistics.begin();
+
+    // create the counters record with initial values
+    statistics.modify(iterator, _self, [&](auto& s) {
+        s.usercount = 20;
+        s.claimevents = 22;
+        s.unvestpercent = 0;
+        s.unvestpercentiteration = 11;
+        s.iteration = 18;
+        s.failsafecounter = 1;
+    });
+  }
 }
 
 [[eosio::action]]
@@ -356,13 +378,13 @@ void freeos::weekly_process(std::string trigger) {
 void freeos::set_iteration_number() {
   uint32_t  iteration_number = getclaimiteration().iteration_number;
 
-  // set it in the counters table
-  counter_index counters(get_self(), get_self().value);
-  auto iterator = counters.begin();
+  // set it in the statistics table
+  statistic_index statistics(get_self(), get_self().value);
+  auto iterator = statistics.begin();
 
-  if (iterator != counters.end()) {
-    counters.modify(iterator, _self, [&](auto& c) {
-        c.iteration = iteration_number;
+  if (iterator != statistics.end()) {
+    statistics.modify(iterator, _self, [&](auto& s) {
+        s.iteration = iteration_number;
     });
   }
 
@@ -377,9 +399,9 @@ void freeos::update_unvest_percentage() {
   // find the current vested proprotion. If 0.0f it means that the exchange rate is favourable
   float vested_proportion = get_vested_proportion();
 
-  // get the counters record
-  counter_index counters(get_self(), get_self().value);
-  auto iterator = counters.begin();
+  // get the statistics record
+  statistic_index statistics(get_self(), get_self().value);
+  auto iterator = statistics.begin();
 
 
   // Decide whether we are above target or below target price
@@ -407,11 +429,11 @@ void freeos::update_unvest_percentage() {
                   break;
       }
 
-      // modify the counters table with the new percentage. Also ensure the failsafe counter is set to 0.
-      counters.modify(iterator, _self, [&](auto& c) {
-          c.unvestpercent = new_unvest_percentage;
-          c.unvestpercentiteration = getclaimiteration().iteration_number;
-          c.failsafecounter = 0;
+      // modify the statistics table with the new percentage. Also ensure the failsafe counter is set to 0.
+      statistics.modify(iterator, _self, [&](auto& s) {
+          s.unvestpercent = new_unvest_percentage;
+          s.unvestpercentiteration = getclaimiteration().iteration_number;
+          s.failsafecounter = 0;
       });
 
   } else {
@@ -434,9 +456,9 @@ void freeos::update_unvest_percentage() {
     failsafecounter++;
 
     // Store the new failsafecounter and unvestpercent
-    counters.modify(iterator, _self, [&](auto& c) {
-        c.failsafecounter = failsafecounter % failsafe_frequency;
-        c.unvestpercent = failsafecounter == failsafe_frequency ? 15 : 0;
+    statistics.modify(iterator, _self, [&](auto& s) {
+        s.failsafecounter = failsafecounter % failsafe_frequency;
+        s.unvestpercent = failsafecounter == failsafe_frequency ? 15 : 0;
     });
   }
 
@@ -493,23 +515,24 @@ registration_status freeos::register_user(const name& user) {
   // update the user count in the 'counters' record
   uint32_t numusers;
 
-  counter_index usercount(get_self(), get_self().value);
-  auto iterator = usercount.begin();
-  if (iterator == usercount.end())  {
+  statistic_index statistics(get_self(), get_self().value);
+  auto iterator = statistics.begin();
+  if (iterator == statistics.end())  {
     // emplace
-    usercount.emplace( get_self(), [&]( auto& c ) {
-      c.usercount = numusers = 1;
+    statistics.emplace( get_self(), [&]( auto& s ) {
+      s.usercount = numusers = 1;
       });
 
   } else {
     // modify
-    usercount.modify(iterator, _self, [&](auto& c) {
-        c.usercount = numusers = c.usercount + 1;
+    statistics.modify(iterator, _self, [&](auto& s) {
+        s.usercount = numusers = s.usercount + 1;
     });
   }
 
   // examine the staking requirement for the user - if their staking requirement is 0 then we will consider them to have already staked
-  asset stake_requirement = get_stake_requirement(account_type);
+  int64_t stake_requirement_amount = get_stake_requirement(account_type);
+  asset stake_requirement = asset(stake_requirement_amount, symbol(CURRENCY_SYMBOL_CODE, 4));
 
   // register the user
   time_point_sec now = time_point_sec(current_time_point().sec_since_epoch());
@@ -529,9 +552,6 @@ registration_status freeos::register_user(const name& user) {
         a.balance = asset(0, symbol("FREEOS",4));
       });
    }
-
-   // update the stake requirements record if we have reached a new threshold of users
-   update_stake_requirements(numusers);
 
    return registered_success;
 }
@@ -602,98 +622,6 @@ char freeos::get_account_type(name user) {
 }
 
 
-// update the stake requirements if we have reached a new threshold of users
-void freeos::update_stake_requirements(uint32_t numusers) {
-
-  // check the potentially new threshold
-  uint64_t new_threshold = getthreshold(numusers);
-
-  // check the current threshold in the stakes table
-  stakes_index stakes(get_self(), get_self().value);
-  auto iterator = stakes.begin();
-  uint64_t current_threshold = iterator->threshold;
-
-  if (current_threshold != new_threshold) {
-    // repopulate the stakes table with the new values from the config stakereqs table
-    // get the value from the config 'stakereqs' table
-    stakereq_index stakereqs(name(freeosconfig_acct), name(freeosconfig_acct).value);
-    // get the stake-requirements record for threshold 0
-    auto config_sr = stakereqs.find(new_threshold);
-
-    check(config_sr != stakereqs.end(), "the config stake requirements table does not have a record for threshold 0");
-
-    // the new stakes are calculated below
-
-    uint64_t threshold = config_sr->threshold;
-
-    uint32_t req_a = config_sr->requirement_a;
-    asset stake_requirement_a = asset(req_a * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-    uint32_t req_b = config_sr->requirement_b;
-    asset stake_requirement_b = asset(req_b * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-    uint32_t req_c = config_sr->requirement_c;
-    asset stake_requirement_c = asset(req_c * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-    uint32_t req_d = config_sr->requirement_d;
-    asset stake_requirement_d = asset(req_d * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-    uint32_t req_e = config_sr->requirement_e;
-    asset stake_requirement_e = asset(req_e * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-    uint32_t req_u = config_sr->requirement_u;
-    asset stake_requirement_u = asset(req_u * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-    uint32_t req_v = config_sr->requirement_v;
-    asset stake_requirement_v = asset(req_v * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-    uint32_t req_w = config_sr->requirement_w;
-    asset stake_requirement_w = asset(req_w * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-    uint32_t req_x = config_sr->requirement_x;
-    asset stake_requirement_x = asset(req_x * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-    uint32_t req_y = config_sr->requirement_y;
-    asset stake_requirement_y = asset(req_y * 10000, symbol(CURRENCY_SYMBOL_CODE,4));
-
-    // Place the values in the table
-    stakes_index stakes_table(get_self(), get_self().value);
-    auto stake = stakes_table.find( 0 ); // using 0 because this is a single row table
-
-    if( stake == stakes_table.end() ) {
-       stakes_table.emplace(get_self(), [&]( auto& s ){
-         s.threshold = threshold;
-         s.requirement_a = stake_requirement_a;
-         s.requirement_b = stake_requirement_b;
-         s.requirement_c = stake_requirement_c;
-         s.requirement_d = stake_requirement_d;
-         s.requirement_e = stake_requirement_e;
-         s.requirement_u = stake_requirement_u;
-         s.requirement_v = stake_requirement_v;
-         s.requirement_w = stake_requirement_w;
-         s.requirement_x = stake_requirement_x;
-         s.requirement_y = stake_requirement_y;
-       });
-    } else {
-       stakes_table.modify( stake, _self, [&]( auto& s ) {
-         s.threshold = threshold;
-         s.requirement_a = stake_requirement_a;
-         s.requirement_b = stake_requirement_b;
-         s.requirement_c = stake_requirement_c;
-         s.requirement_d = stake_requirement_d;
-         s.requirement_e = stake_requirement_e;
-         s.requirement_u = stake_requirement_u;
-         s.requirement_v = stake_requirement_v;
-         s.requirement_w = stake_requirement_w;
-         s.requirement_x = stake_requirement_x;
-         s.requirement_y = stake_requirement_y;
-       });
-     }
-  }
-
-}
-
-
 // for deregistering user
 [[eosio::action]]
 void freeos::dereg(const name& user) {
@@ -708,13 +636,13 @@ void freeos::dereg(const name& user) {
   // erase the user record
   usertable.erase(u);
 
-  // decrement number of users in record_count singleton
-  counter_index usercount(get_self(), get_self().value);
-  auto iterator = usercount.begin();
+  // decrement number of users in the statistics table
+  statistic_index statistics(get_self(), get_self().value);
+  auto iterator = statistics.begin();
 
   // decrement user count
-  usercount.modify( iterator, _self, [&]( auto& c ) {
-    c.usercount = c.usercount - 1;
+  statistics.modify( iterator, _self, [&]( auto& s ) {
+    s.usercount = s.usercount - 1;
     });
 
   // feedback
@@ -740,6 +668,8 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
     // auto-register the user - if user is already registered then that is ok, the register_user function responds silently
     registration_status result = register_user(user);
 
+    check(result == registered_success, "user registration did not succeed");
+
     //****************************************************
 
     // which iteration are we in?
@@ -756,8 +686,9 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
     // check that user isn't already staked
     check(u->staked_iteration == 0, "the account is already staked");
 
-    // check that the required stake has been transferred
-    asset stake_requirement = get_stake_requirement(u->account_type);
+
+    uint32_t stake_requirement_amount = get_stake_requirement(u->account_type);
+    asset stake_requirement = asset(stake_requirement_amount * 10000, symbol(CURRENCY_SYMBOL_CODE, 4));
     check(stake_requirement == quantity, "the stake amount is not what is required");
 
     // update the user record
@@ -774,44 +705,33 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
 
 }
 
-// get the current stake requirement for the user's account type
-asset freeos::get_stake_requirement(char account_type) {
 
-  // default stake value
-  asset stake_requirement = asset(0, symbol(CURRENCY_SYMBOL_CODE,4));
+uint32_t freeos::get_stake_requirement(char account_type) {
 
-  stakes_index stakes(get_self(), get_self().value);
-  auto iterator = stakes.begin();
+  // default return value
+  uint32_t stake_requirement = 0;
 
-  if (iterator != stakes.end()) {
+  // get the number of users
+  statistic_index statistics(get_self(), get_self().value);
+   auto stat = statistics.begin();
+   check(stat != statistics.end(), "the statistics record is not found");
+   uint32_t numusers = stat->usercount;
 
-    switch (account_type) {
-      case 'a' :  stake_requirement = iterator->requirement_a;
-                  break;
-      case 'b' :  stake_requirement = iterator->requirement_b;
-                  break;
-      case 'c' :  stake_requirement = iterator->requirement_c;
-                  break;
-      case 'd' :  stake_requirement = iterator->requirement_d;
-                  break;
-      case 'e' :  stake_requirement = iterator->requirement_e;
-                  break;
-      case 'u' :  stake_requirement = iterator->requirement_u;
-                  break;
-      case 'v' :  stake_requirement = iterator->requirement_v;
-                  break;
-      case 'w' :  stake_requirement = iterator->requirement_w;
-                  break;
-      case 'x' :  stake_requirement = iterator->requirement_x;
-                  break;
-      case 'y' :  stake_requirement = iterator->requirement_y;
-                  break;
-    }
+  // look up the freeosconfig stakereqs table
+  stakereq_index stakereqs(name(freeosconfig_acct), name(freeosconfig_acct).value);
+  auto sr = stakereqs.upper_bound(numusers);
+  sr--;
+
+  if (account_type == 'v') {
+    stake_requirement = sr->requirement_v;
+  } else if (account_type == 'd') {
+    stake_requirement = sr->requirement_d;
+  } else {
+    stake_requirement = sr->requirement_e;
   }
 
   return stake_requirement;
 }
-
 
 
 [[eosio::action]]
@@ -1447,11 +1367,11 @@ void freeos::unvest(const name& user)
    check(this_iteration.iteration_number > 0, "Not in a valid iteration");
 
    // get the unvestpercentiteration - if different from current iteration then update it and update the unvestpercentage
-   counter_index counters(get_self(), get_self().value);
-   auto count = counters.begin();
+   statistic_index statistics(get_self(), get_self().value);
+   auto stat = statistics.begin();
 
-   if (count != counters.end()) {
-     if (this_iteration.iteration_number > count->unvestpercentiteration) {
+   if (stat != statistics.end()) {
+     if (this_iteration.iteration_number > stat->unvestpercentiteration) {
        update_unvest_percentage();
      }
    }
@@ -1467,10 +1387,9 @@ void freeos::unvest(const name& user)
 
    // calculate the amount to be unvested - get the percentage for the iteration
    uint32_t unvest_percent = 0;
-   counter_index usercount(get_self(), get_self().value);
-   auto iter = usercount.begin();
+   auto iter = statistics.begin();
 
-   if (iter != usercount.end()) {
+   if (iter != statistics.end()) {
      unvest_percent = iter->unvestpercent;
    } else {
      unvest_percent = 50; // default if freeosconfig parameter not found
@@ -1719,12 +1638,12 @@ uint32_t freeos::updateclaimeventcount() {
 
   uint32_t claimevents;
 
-  counter_index usercount(get_self(), get_self().value);
-  auto iterator = usercount.begin();
+  statistic_index statistics(get_self(), get_self().value);
+  auto iterator = statistics.begin();
 
   // modify
-  usercount.modify(iterator, _self, [&](auto& c) {
-        c.claimevents = claimevents = c.claimevents + 1;
+  statistics.modify(iterator, _self, [&](auto& s) {
+        s.claimevents = claimevents = s.claimevents + 1;
   });
 
   return claimevents;

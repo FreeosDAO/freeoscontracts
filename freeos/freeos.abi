@@ -57,36 +57,6 @@
             ]
         },
         {
-            "name": "counter",
-            "base": "",
-            "fields": [
-                {
-                    "name": "usercount",
-                    "type": "uint32"
-                },
-                {
-                    "name": "claimevents",
-                    "type": "uint32"
-                },
-                {
-                    "name": "unvestpercent",
-                    "type": "uint32"
-                },
-                {
-                    "name": "unvestpercentiteration",
-                    "type": "uint32"
-                },
-                {
-                    "name": "iteration",
-                    "type": "uint32"
-                },
-                {
-                    "name": "failsafecounter",
-                    "type": "uint32"
-                }
-            ]
-        },
-        {
             "name": "create",
             "base": "",
             "fields": [
@@ -213,6 +183,16 @@
             ]
         },
         {
+            "name": "maintain",
+            "base": "",
+            "fields": [
+                {
+                    "name": "option",
+                    "type": "string"
+                }
+            ]
+        },
+        {
             "name": "open",
             "base": "",
             "fields": [
@@ -297,52 +277,32 @@
             ]
         },
         {
-            "name": "stakereq",
+            "name": "statistic",
             "base": "",
             "fields": [
                 {
-                    "name": "threshold",
-                    "type": "uint64"
+                    "name": "usercount",
+                    "type": "uint32"
                 },
                 {
-                    "name": "requirement_a",
-                    "type": "asset"
+                    "name": "claimevents",
+                    "type": "uint32"
                 },
                 {
-                    "name": "requirement_b",
-                    "type": "asset"
+                    "name": "unvestpercent",
+                    "type": "uint32"
                 },
                 {
-                    "name": "requirement_c",
-                    "type": "asset"
+                    "name": "unvestpercentiteration",
+                    "type": "uint32"
                 },
                 {
-                    "name": "requirement_d",
-                    "type": "asset"
+                    "name": "iteration",
+                    "type": "uint32"
                 },
                 {
-                    "name": "requirement_e",
-                    "type": "asset"
-                },
-                {
-                    "name": "requirement_u",
-                    "type": "asset"
-                },
-                {
-                    "name": "requirement_v",
-                    "type": "asset"
-                },
-                {
-                    "name": "requirement_w",
-                    "type": "asset"
-                },
-                {
-                    "name": "requirement_x",
-                    "type": "asset"
-                },
-                {
-                    "name": "requirement_y",
-                    "type": "asset"
+                    "name": "failsafecounter",
+                    "type": "uint32"
                 }
             ]
         },
@@ -642,6 +602,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "maintain",
+            "type": "maintain",
+            "ricardian_contract": ""
+        },
+        {
             "name": "open",
             "type": "open",
             "ricardian_contract": ""
@@ -718,13 +683,6 @@
             "key_types": []
         },
         {
-            "name": "counters",
-            "type": "counter",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
             "name": "deposits",
             "type": "deposit",
             "index_type": "i64",
@@ -739,15 +697,15 @@
             "key_types": []
         },
         {
-            "name": "stakes",
-            "type": "stakereq",
+            "name": "stat",
+            "type": "currency_stats",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "stat",
-            "type": "currency_stats",
+            "name": "statistics",
+            "type": "statistic",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

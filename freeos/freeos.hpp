@@ -56,6 +56,9 @@ const uint32_t  WEEK_SECONDS  = 604800;
          [[eosio::action]]
          void version();
 
+         [[eosio::action]]
+         void maintain(std::string option);
+
          /**
           * currentiter action.
           *
@@ -440,8 +443,9 @@ const uint32_t  WEEK_SECONDS  = 604800;
          using user_index = eosio::multi_index<"users"_n, user>;
 
 
-         // new counters table - to replace the singleton
-         struct [[eosio::table]] counter {
+
+         // new statistics table - to replace counters
+         struct [[eosio::table]] statistic {
            uint32_t  usercount;
            uint32_t  claimevents;
            uint32_t  unvestpercent;
@@ -452,10 +456,11 @@ const uint32_t  WEEK_SECONDS  = 604800;
            uint64_t primary_key() const { return 0; } // return a constant (0 in this case) to ensure a single-row table
          };
 
-         using counter_index = eosio::multi_index<"counters"_n, counter>;
+         using statistic_index = eosio::multi_index<"statistics"_n, statistic>;
 
 
          // the user stake requirements
+         /*
          struct [[eosio::table]] stakereq {
            uint64_t threshold;
            asset    requirement_a;
@@ -473,6 +478,7 @@ const uint32_t  WEEK_SECONDS  = 604800;
          };
 
          using stakes_index = eosio::multi_index<"stakes"_n, stakereq>;
+         */
 
 
          // FREEOS USD-price - code: freeosconfig, scope: freeosconfig
@@ -656,7 +662,7 @@ const uint32_t  WEEK_SECONDS  = 604800;
          bool checkmasterswitch();
          bool checkschedulelogging();
          uint64_t getthreshold(uint32_t numusers);
-         asset get_stake_requirement(char account_type);
+         uint32_t get_stake_requirement(char account_type);
          iteration getclaimiteration();
          bool eligible_to_claim(const name& claimant, iteration this_iteration);
          uint32_t updateclaimeventcount();
@@ -667,7 +673,6 @@ const uint32_t  WEEK_SECONDS  = 604800;
          void daily_process(std::string trigger);
          void weekly_process(std::string trigger);
          void update_unvest_percentage();
-         void update_stake_requirements(uint32_t numusers);
          void record_deposit(uint64_t iteration_number, asset amount);
          char get_account_type(name user);
          void request_stake_refund(name user, asset amount);
