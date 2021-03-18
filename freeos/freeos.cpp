@@ -76,24 +76,6 @@ void freeos::version() {
   if (DEBUG) print("Version = ", VERSION, " - it is currently iteration ", this_iteration.iteration_number, " stake requirement_e = ", sr_e);
 }
 
-[[eosio::action]]
-void freeos::maintain(std::string option) {
-  if (option == "populate statistics") {
-    // set it in the statistics table
-    statistic_index statistics(get_self(), get_self().value);
-    auto iterator = statistics.begin();
-
-    // create the counters record with initial values
-    statistics.modify(iterator, _self, [&](auto& s) {
-        s.usercount = 20;
-        s.claimevents = 22;
-        s.unvestpercent = 0;
-        s.unvestpercentiteration = 11;
-        s.iteration = 18;
-        s.failsafecounter = 1;
-    });
-  }
-}
 
 [[eosio::action]]
 void freeos::currentiter() {

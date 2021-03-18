@@ -56,9 +56,6 @@ const uint32_t  WEEK_SECONDS  = 604800;
          [[eosio::action]]
          void version();
 
-         [[eosio::action]]
-         void maintain(std::string option);
-
          /**
           * currentiter action.
           *
