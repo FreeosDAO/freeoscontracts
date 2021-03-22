@@ -64,8 +64,13 @@ using namespace eosio;
 //       There is a fallback 'default' unvestpercent in case the figure can't be calculated. Specified in the 'unvestpercnt' parameter.
 // 334 - Replaced the 'counters' table with the 'statistics' table to solve a record corruption problem
 //       The freeos::stakes table has been deleted - stake requirement code now refers to the freeosconfig::stakereqs table instead
+// 335 - Fixed bug where return value from register_user was being misinterpreted i.e. user account already registered
+// 336 - update_unvest_percent called by hourly process
+//       Staking not allowed in iteration 0
+//       Unstaking not allowed in iteration 0
 
-const std::string VERSION = "0.334";
+
+const std::string VERSION = "0.336";
 
 [[eosio::action]]
 void freeos::version() {
@@ -338,6 +343,7 @@ void freeos::hourly_process(std::string trigger) {
 
   // do whatever...
   set_iteration_number(); // advance the iteration number if required (used by the dividend contract)
+  update_unvest_percentage();
   refund_stakes();
 
 }
@@ -668,12 +674,14 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
     // auto-register the user - if user is already registered then that is ok, the register_user function responds silently
     registration_status result = register_user(user);
 
-    check(result == registered_success, "user registration did not succeed");
+    check(result == registered_success || result == registered_already, "user registration did not succeed");
 
     //****************************************************
 
     // which iteration are we in?
     iteration current_iteration = getclaimiteration();
+
+    check(current_iteration.iteration_number != 0, "Staking not allowed in iteration 0");
 
     // get the user record - the amount of the stake requirement and the amount staked
     // find the account in the user table
@@ -741,6 +749,9 @@ void freeos::unstake(const name& user) {
 
   // check that system is operational (global masterswitch parameter set to "1")
   check(checkmasterswitch(), msg_freeos_system_not_available);
+
+  iteration current_iteration = getclaimiteration();
+  check(current_iteration.iteration_number != 0, "Unstaking is not allowed in iteration 0");
 
   // find user record
   user_index usertable( get_self(), user.value );
