@@ -48,9 +48,6 @@ const uint32_t  WEEK_SECONDS  = 604800;
       public:
          using contract::contract;
 
-         [[eosio::action]]
-         void maintain(std::string option);
-         
          /**
           * version action.
           *

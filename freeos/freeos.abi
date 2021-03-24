@@ -183,16 +183,6 @@
             ]
         },
         {
-            "name": "maintain",
-            "base": "",
-            "fields": [
-                {
-                    "name": "option",
-                    "type": "string"
-                }
-            ]
-        },
-        {
             "name": "open",
             "base": "",
             "fields": [
@@ -599,11 +589,6 @@
         {
             "name": "issue",
             "type": "issue",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "maintain",
-            "type": "maintain",
             "ricardian_contract": ""
         },
         {

@@ -69,6 +69,7 @@ using namespace eosio;
 //       Staking not allowed in iteration 0
 //       Unstaking not allowed in iteration 0
 // 337 - Unstake requests error fixed - unstakes table changed to unstakereqs
+//       AIRKEY possession allows user to bypass staking requirements as well as holding requirements
 
 
 const std::string VERSION = "0.337";
@@ -90,72 +91,6 @@ void freeos::currentiter() {
   if (DEBUG) print("It is currently iteration ", this_iteration.iteration_number);
 }
 
-
-[[eosio::action]]
-void freeos::maintain(std::string option) {
-
-  if (option == "populate unstakerequests") {
-    unstakerequest_index unstakes(get_self(), get_self().value);
-
-    // emplace unstakerequest 1
-    unstakes.emplace(_self, [&](auto & u) {
-      u.staker = "alanappleton"_n;
-      u.iteration = 1;
-      u.amount = asset(10000, symbol("XPR", 4));
-    });
-
-    // emplace unstakerequest 2
-    unstakes.emplace(_self, [&](auto & u) {
-      u.staker = "billbeaumont"_n;
-      u.iteration = 1;
-      u.amount = asset(20000, symbol("XPR", 4));
-    });
-  }
-
-  if (option == "query unstakerequests by user") {
-    unstakerequest_index unstakes(get_self(), get_self().value);
-
-    auto iteration1 = unstakes.find("alanappleton"_n.value);
-
-    if (iteration1 != unstakes.end()) {
-      print("alanappleton found, stake = ", iteration1->amount, " ");
-    } else {
-      print("alanappleton not found ");
-    }
-
-    auto iteration2 = unstakes.find("billbeaumont"_n.value);
-
-    if (iteration2 != unstakes.end()) {
-      print("billbeaumont found, stake = ", iteration2->amount, " ");
-    } else {
-      print("billbeaumont not found ");
-    }
-
-    auto iteration3 = unstakes.find("celiacollins"_n.value);
-
-    if (iteration3 != unstakes.end()) {
-      print("celiacollins found, stake = ", iteration3->amount, " ");
-    } else {
-      print("celiacollins not found ");
-    }
-  }
-
-
-  if (option == "query unstakerequests by iteration") {
-    unstakerequest_index unstakes(get_self(), get_self().value);
-
-    uint64_t iter = 1;
-    auto idx = unstakes.get_index<"iteration"_n>();
-    auto iterator = idx.find(iter);
-
-    while (iterator != idx.end()) {
-      print(iterator->staker, ": ", iterator->amount, " ");
-      iterator++;
-    }
-
-  }
-
-}
 
 [[eosio::action]]
 void freeos::tick(std::string trigger) {
@@ -1642,12 +1577,6 @@ bool freeos::eligible_to_claim(const name& claimant, iteration this_iteration) {
     return false;
   }
 
-  // has the user staked?
-  if (user_record->staked_iteration == 0) {
-    if (DEBUG) print("user ", claimant, " has not staked");
-    return false;
-  }
-
   // how many airkey tokens does the user have?
   asset user_airkey_balance = asset(0, symbol("AIRKEY",0));  // default = 0 AIRKEY
 
@@ -1659,8 +1588,15 @@ bool freeos::eligible_to_claim(const name& claimant, iteration this_iteration) {
     user_airkey_balance = user_airkey_account->balance;
   }
 
-  // only perform the FREEOS holding requirement check if the user does NOT have an AIRKEY token
+  // Possession of an AIRKEY allows the user to bypass the staking and holding requirements
   if (user_airkey_balance.amount == 0) {
+
+    // has the user staked?
+    if (user_record->staked_iteration == 0) {
+      if (DEBUG) print("user ", claimant, " has not staked");
+      return false;
+    }
+
     // check that the user has the required balance of FREEOS
     asset liquid_freeos_balance = asset(0, symbol("FREEOS",4));  // default holding = 0 FREEOS
 
