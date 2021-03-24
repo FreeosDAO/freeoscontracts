@@ -68,9 +68,10 @@ using namespace eosio;
 // 336 - update_unvest_percent called by hourly process
 //       Staking not allowed in iteration 0
 //       Unstaking not allowed in iteration 0
+// 337 - Unstake requests error fixed - unstakes table changed to unstakereqs
 
 
-const std::string VERSION = "0.336d";
+const std::string VERSION = "0.337";
 
 [[eosio::action]]
 void freeos::version() {
@@ -812,11 +813,10 @@ void freeos::unstake(const name& user) {
   check(u != usertable.end(), msg_account_not_registered);
 
   // check if there is already an unstake in progress
-  unstakereq_index unstakes(get_self(), get_self().value);
-  auto idx = unstakes.get_index<"staker"_n>();
-  auto iterator = idx.find(user.value);
+  unstakerequest_index unstakes(get_self(), get_self().value);
+  auto iterator = unstakes.find(user.value);
 
-  check(iterator == idx.end(), "user has already requested to unstake");
+  check(iterator == unstakes.end(), "user has already requested to unstake");
   check(u->stake.amount > 0, "user does not have a staked amount");
 
   request_stake_refund(user, u->stake);
@@ -836,7 +836,7 @@ void freeos::request_stake_refund(name user, asset amount) {
   iteration current_iteration = getclaimiteration();
 
   // add to the unstake requests queue
-  unstakereq_index unstakes(get_self(), get_self().value);
+  unstakerequest_index unstakes(get_self(), get_self().value);
   unstakes.emplace( get_self(), [&]( auto& u ) {
      u.staker = user;
      u.iteration = current_iteration.iteration_number;
@@ -858,15 +858,16 @@ void freeos::refund_stakes() {
 
   iteration current_iteration = getclaimiteration();
 
-  unstakereq_index unstakes(get_self(), get_self().value);
-  auto iterator = unstakes.begin();
+  unstakerequest_index unstakes(get_self(), get_self().value);
+  auto idx = unstakes.get_index<"iteration"_n>();
+  auto iterator = idx.begin();
 
-  for (uint16_t i = 0; i < number_to_release && iterator != unstakes.end(); i++) {
+  for (uint16_t i = 0; i < number_to_release && iterator != idx.end(); i++) {
 
     if (iterator->iteration < current_iteration.iteration_number) {
       // process the unstake request
       refund_stake(iterator->staker, iterator->amount);
-      iterator = unstakes.erase(iterator);
+      iterator = idx.erase(iterator);
     } else {
       // we've reached stakes to be released in the future
       break;
@@ -903,14 +904,13 @@ void freeos::unstakecncl(const name& user) {
 
   require_auth(user);
 
-  unstakereq_index unstakes(get_self(), get_self().value);
-  auto idx = unstakes.get_index<"staker"_n>();
-  auto iterator = idx.find(user.value);
+  unstakerequest_index unstakes(get_self(), get_self().value);
+  auto iterator = unstakes.find(user.value);
 
-  check(iterator != idx.end(), "user does not have an unstake request");
+  check(iterator != unstakes.end(), "user does not have an unstake request");
 
   // cancel the unstake - erase the unstake record
-  idx.erase(iterator);
+  unstakes.erase(iterator);
 
   // feedback
   if (DEBUG) print("your unstake request has been cancelled");

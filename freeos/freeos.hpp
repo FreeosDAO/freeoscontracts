@@ -634,22 +634,7 @@ const uint32_t  WEEK_SECONDS  = 604800;
          using deposit_index = eosio::multi_index<"deposits"_n, deposit>;
 
 
-         // unstake queue
-         struct [[eosio::table]] unstakereq {
-           name             staker;
-           uint32_t         iteration;
-           asset            amount;
-
-           uint64_t primary_key() const { return iteration; }
-           uint64_t get_secondary() const {return staker.value;}
-         };
-
-         using unstakereq_index = eosio::multi_index<"unstakes"_n, unstakereq,
-         indexed_by<"staker"_n, const_mem_fun<unstakereq, uint64_t, &unstakereq::get_secondary>>
-         >;
-
-
-         // new unstake requests queue (to replace unstakes table)
+         // unstake requests queue (replaces unstakes table)
          struct [[eosio::table]] unstakerequest {
            name             staker;
            uint32_t         iteration;
