@@ -437,6 +437,24 @@
             ]
         },
         {
+            "name": "unstakerequest",
+            "base": "",
+            "fields": [
+                {
+                    "name": "staker",
+                    "type": "name"
+                },
+                {
+                    "name": "iteration",
+                    "type": "uint32"
+                },
+                {
+                    "name": "amount",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
             "name": "unvest",
             "base": "",
             "fields": [
@@ -713,6 +731,13 @@
         {
             "name": "tickers",
             "type": "ticker",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "unstakereqs",
+            "type": "unstakerequest",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

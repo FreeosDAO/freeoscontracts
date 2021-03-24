@@ -70,7 +70,7 @@ using namespace eosio;
 //       Unstaking not allowed in iteration 0
 
 
-const std::string VERSION = "0.336";
+const std::string VERSION = "0.336d";
 
 [[eosio::action]]
 void freeos::version() {
@@ -81,24 +81,6 @@ void freeos::version() {
   if (DEBUG) print("Version = ", VERSION, " - it is currently iteration ", this_iteration.iteration_number, " stake requirement_e = ", sr_e);
 }
 
-[[eosio::action]]
-void freeos::maintain(std::string option) {
-  if (option == "populate statistics") {
-    // set it in the statistics table
-    statistic_index statistics(get_self(), get_self().value);
-    auto iterator = statistics.begin();
-
-    // create the counters record with initial values
-    statistics.modify(iterator, _self, [&](auto& s) {
-        s.usercount = 20;
-        s.claimevents = 22;
-        s.unvestpercent = 0;
-        s.unvestpercentiteration = 11;
-        s.iteration = 18;
-        s.failsafecounter = 1;
-    });
-  }
-}
 
 [[eosio::action]]
 void freeos::currentiter() {
@@ -107,6 +89,72 @@ void freeos::currentiter() {
   if (DEBUG) print("It is currently iteration ", this_iteration.iteration_number);
 }
 
+
+[[eosio::action]]
+void freeos::maintain(std::string option) {
+
+  if (option == "populate unstakerequests") {
+    unstakerequest_index unstakes(get_self(), get_self().value);
+
+    // emplace unstakerequest 1
+    unstakes.emplace(_self, [&](auto & u) {
+      u.staker = "alanappleton"_n;
+      u.iteration = 1;
+      u.amount = asset(10000, symbol("XPR", 4));
+    });
+
+    // emplace unstakerequest 2
+    unstakes.emplace(_self, [&](auto & u) {
+      u.staker = "billbeaumont"_n;
+      u.iteration = 1;
+      u.amount = asset(20000, symbol("XPR", 4));
+    });
+  }
+
+  if (option == "query unstakerequests by user") {
+    unstakerequest_index unstakes(get_self(), get_self().value);
+
+    auto iteration1 = unstakes.find("alanappleton"_n.value);
+
+    if (iteration1 != unstakes.end()) {
+      print("alanappleton found, stake = ", iteration1->amount, " ");
+    } else {
+      print("alanappleton not found ");
+    }
+
+    auto iteration2 = unstakes.find("billbeaumont"_n.value);
+
+    if (iteration2 != unstakes.end()) {
+      print("billbeaumont found, stake = ", iteration2->amount, " ");
+    } else {
+      print("billbeaumont not found ");
+    }
+
+    auto iteration3 = unstakes.find("celiacollins"_n.value);
+
+    if (iteration3 != unstakes.end()) {
+      print("celiacollins found, stake = ", iteration3->amount, " ");
+    } else {
+      print("celiacollins not found ");
+    }
+  }
+
+
+  if (option == "query unstakerequests by iteration") {
+    unstakerequest_index unstakes(get_self(), get_self().value);
+
+    uint64_t iter = 1;
+    auto idx = unstakes.get_index<"iteration"_n>();
+    auto iterator = idx.find(iter);
+
+    while (iterator != idx.end()) {
+      print(iterator->staker, ": ", iterator->amount, " ");
+      iterator++;
+    }
+
+  }
+
+}
 
 [[eosio::action]]
 void freeos::tick(std::string trigger) {
@@ -401,6 +449,9 @@ void freeos::update_unvest_percentage() {
 
   uint32_t current_unvest_percentage;
   uint32_t new_unvest_percentage;
+
+  // ??? put in check that we are in a new iteration
+
 
   // find the current vested proprotion. If 0.0f it means that the exchange rate is favourable
   float vested_proportion = get_vested_proportion();

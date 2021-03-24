@@ -165,7 +165,7 @@ void freeosconfig::stakeupsert(
         ) {
 
     require_auth(_self);
-    stakereq_index stakereqs(get_self(), get_self().value);
+    stakereq_index (get_self(), get_self().value);
     auto iterator = stakereqs.find(threshold);
 
     // check if the threshold is in the table or not

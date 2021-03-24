@@ -48,6 +48,9 @@ const uint32_t  WEEK_SECONDS  = 604800;
       public:
          using contract::contract;
 
+         [[eosio::action]]
+         void maintain(std::string option);
+         
          /**
           * version action.
           *
@@ -55,9 +58,6 @@ const uint32_t  WEEK_SECONDS  = 604800;
           */
          [[eosio::action]]
          void version();
-
-         [[eosio::action]]
-         void maintain(std::string option);
 
          /**
           * currentiter action.
@@ -646,6 +646,21 @@ const uint32_t  WEEK_SECONDS  = 604800;
 
          using unstakereq_index = eosio::multi_index<"unstakes"_n, unstakereq,
          indexed_by<"staker"_n, const_mem_fun<unstakereq, uint64_t, &unstakereq::get_secondary>>
+         >;
+
+
+         // new unstake requests queue (to replace unstakes table)
+         struct [[eosio::table]] unstakerequest {
+           name             staker;
+           uint32_t         iteration;
+           asset            amount;
+
+           uint64_t primary_key() const { return staker.value; }
+           uint64_t get_secondary() const {return iteration;}
+         };
+
+         using unstakerequest_index = eosio::multi_index<"unstakereqs"_n, unstakerequest,
+         indexed_by<"iteration"_n, const_mem_fun<unstakerequest, uint64_t, &unstakerequest::get_secondary>>
          >;
 
 
