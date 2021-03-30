@@ -38,11 +38,6 @@
             ]
         },
         {
-            "name": "clearlog",
-            "base": "",
-            "fields": []
-        },
-        {
             "name": "close",
             "base": "",
             "fields": [
@@ -96,11 +91,6 @@
                     "type": "name"
                 }
             ]
-        },
-        {
-            "name": "currentiter",
-            "base": "",
-            "fields": []
         },
         {
             "name": "deposit",
@@ -235,38 +225,6 @@
             ]
         },
         {
-            "name": "runscheduled",
-            "base": "",
-            "fields": [
-                {
-                    "name": "process_specifier",
-                    "type": "string"
-                },
-                {
-                    "name": "schedule_override",
-                    "type": "bool"
-                }
-            ]
-        },
-        {
-            "name": "schedulelog",
-            "base": "",
-            "fields": [
-                {
-                    "name": "task",
-                    "type": "string"
-                },
-                {
-                    "name": "trigger",
-                    "type": "string"
-                },
-                {
-                    "name": "time",
-                    "type": "uint64"
-                }
-            ]
-        },
-        {
             "name": "statistic",
             "base": "",
             "fields": [
@@ -299,34 +257,7 @@
         {
             "name": "tick",
             "base": "",
-            "fields": [
-                {
-                    "name": "trigger",
-                    "type": "string"
-                }
-            ]
-        },
-        {
-            "name": "ticker",
-            "base": "",
-            "fields": [
-                {
-                    "name": "tickly",
-                    "type": "uint32"
-                },
-                {
-                    "name": "hourly",
-                    "type": "uint32"
-                },
-                {
-                    "name": "daily",
-                    "type": "uint32"
-                },
-                {
-                    "name": "weekly",
-                    "type": "uint32"
-                }
-            ]
+            "fields": []
         },
         {
             "name": "transfer",
@@ -375,16 +306,6 @@
                 {
                     "name": "field_1",
                     "type": "string"
-                }
-            ]
-        },
-        {
-            "name": "unclaim",
-            "base": "",
-            "fields": [
-                {
-                    "name": "user",
-                    "type": "name"
                 }
             ]
         },
@@ -547,11 +468,6 @@
             "ricardian_contract": ""
         },
         {
-            "name": "clearlog",
-            "type": "clearlog",
-            "ricardian_contract": ""
-        },
-        {
             "name": "close",
             "type": "close",
             "ricardian_contract": ""
@@ -564,11 +480,6 @@
         {
             "name": "cron",
             "type": "cron",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "currentiter",
-            "type": "currentiter",
             "ricardian_contract": ""
         },
         {
@@ -612,11 +523,6 @@
             "ricardian_contract": ""
         },
         {
-            "name": "runscheduled",
-            "type": "runscheduled",
-            "ricardian_contract": ""
-        },
-        {
             "name": "tick",
             "type": "tick",
             "ricardian_contract": ""
@@ -624,11 +530,6 @@
         {
             "name": "transfer",
             "type": "transfer",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "unclaim",
-            "type": "unclaim",
             "ricardian_contract": ""
         },
         {
@@ -675,13 +576,6 @@
             "key_types": []
         },
         {
-            "name": "schedulelog",
-            "type": "schedulelog",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
             "name": "stat",
             "type": "currency_stats",
             "index_type": "i64",
@@ -691,13 +585,6 @@
         {
             "name": "statistics",
             "type": "statistic",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
-            "name": "tickers",
-            "type": "ticker",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

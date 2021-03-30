@@ -70,111 +70,71 @@ using namespace eosio;
 //       Unstaking not allowed in iteration 0
 // 337 - Unstake requests error fixed - unstakes table changed to unstakereqs
 //       AIRKEY possession allows user to bypass staking requirements as well as holding requirements
+// 338 - Removed unclaim action
+//       Removed tick_process(), hourly_process(), daily_process(), weekly_process()
+//       Removed clearschedule action
+//       Removed tickers table
+//       Tick process called first on all 'user activity' actions (stake, unstake, claim, unvest)
+//       Tick process updated: Either it calls recalculate iteration statistics (on change of iteration) OR refund stakes
+//       getclaimiteration() called as part of tick process. Thereafter all code refers to get_cached_iteration which reads the iteration number from the statistics table
+//       currentiter action removed
+//       removed print of stake amount from version action
+//       default 'unvestpercnt' parameter retired as not required
+//       default 'vestpercent' config parameter implemented for when a current price not set
 
 
-const std::string VERSION = "0.337";
+const std::string VERSION = "0.338";
 
 [[eosio::action]]
 void freeos::version() {
-  iteration this_iteration = getclaimiteration();
+  uint32_t this_iteration = get_cached_iteration();
 
-  uint32_t sr_e = get_stake_requirement('e');
-
-  if (DEBUG) print("Version = ", VERSION, " - it is currently iteration ", this_iteration.iteration_number, " stake requirement_e = ", sr_e);
+  if (DEBUG) print("Version = ", VERSION, " - it is currently iteration ", this_iteration);
 }
 
 
 [[eosio::action]]
-void freeos::currentiter() {
-  iteration this_iteration = getclaimiteration();
-
-  if (DEBUG) print("It is currently iteration ", this_iteration.iteration_number);
-}
-
-
-[[eosio::action]]
-void freeos::tick(std::string trigger) {
-
-  // flags to indicate if a time period has elapsed - default values
-  bool  hour_elapsed = false;
-  bool  day_elapsed = false;
-  bool  week_elapsed = false;
+void freeos::tick() {
 
   // current time
   uint32_t now = current_time_point().sec_since_epoch();
 
-  // work out if any time periods have elapsed
-  tickers ticks(get_self(), get_self().value);
-  auto iterator = ticks.begin();
+  // what iteration are we in?
+  iteration this_iteration = getclaimiteration();
 
-  // check if the ticks record exists in the table (there is only one record)
-  if (iterator == ticks.end() ) {
-      // no record in the table, so insert initialised values
-      ticks.emplace(_self, [&](auto & row) {
-         row.tickly = now;
-         row.hourly = 0;
-         row.daily  = 0;
-         row.weekly = 0;
+  // what iteration is in the statistics table?
+  statistic_index statistics(get_self(), get_self().value);
+  auto iterator = statistics.begin();
+  check(iterator != statistics.end(), "statistics record is not found");
+
+  if (this_iteration.iteration_number > iterator->iteration) {
+    // update iteration in statistics table
+    statistic_index statistics(get_self(), get_self().value);
+    auto iterator = statistics.begin();
+
+    if (iterator != statistics.end()) {
+      statistics.modify(iterator, _self, [&](auto& s) {
+          s.iteration = this_iteration.iteration_number;
       });
-
-      return; // do nothing in this 'initialisation' tick
-
-  } else {
-      uint32_t previous_hourly = iterator->hourly;
-      uint32_t previous_daily  = iterator->daily;
-      uint32_t previous_weekly = iterator->weekly;
-
-      // default new values if a period has not been elapsed
-      uint32_t new_hourly = previous_hourly;
-      uint32_t new_daily  = previous_daily;
-      uint32_t new_weekly = previous_weekly;
-
-      // Have we crossed an hourly boundary?
-      if (now >= (previous_hourly + HOUR_SECONDS)) {
-        new_hourly = now - (now % HOUR_SECONDS);  // the earliest time the new hour could have started
-        hour_elapsed = true;
-      }
-
-      // Have we crossed a daily boundary?
-      if (now >= (previous_daily + DAY_SECONDS)) {
-        new_daily = now - (now % DAY_SECONDS);    // the earliest time the new day could have started
-        day_elapsed = true;
-      }
-
-      // Have we crossed a weekly boundary?
-      if (now >= (previous_weekly + WEEK_SECONDS)) {
-        new_weekly = now - (now % WEEK_SECONDS);      // the earliest time the new week could have started
-        week_elapsed = true;
-      }
-
-      // the record is in the table, so update
-      ticks.modify(iterator, _self, [&](auto& row) {
-          row.tickly = now;
-          row.hourly = new_hourly;
-          row.daily  = new_daily;
-          row.weekly = new_weekly;
-      });
-
-      // run the tick process
-      tick_process(trigger);
-
-      // run the hourly process
-      if (hour_elapsed == true) {
-        hourly_process(trigger);
-      }
-
-      // run the daily process
-      if (day_elapsed == true) {
-        daily_process(trigger);
-      }
-
-      // run the weekly process
-      if (week_elapsed == true) {
-        weekly_process(trigger);
-      }
-
     }
 
+    // update unvest percent
+    update_unvest_percentage();
+  } else {
+    // do some unstaking
+    refund_stakes();
+  }
+
+}
+
+
+uint32_t freeos::get_cached_iteration() {
+  statistic_index statistics(get_self(), get_self().value);
+  auto iterator = statistics.begin();
+
+  check(iterator != statistics.end(), "statistics record is not found");
+
+  return iterator->iteration;
 }
 
 
@@ -182,227 +142,33 @@ void freeos::tick(std::string trigger) {
 void freeos::cron() {
   require_auth("cron"_n);
 
-  tick(TRIGGERED_BY_PROTON);
+  tick();
 }
 
 
-[[eosio::action]]
-void freeos::clearlog() {
-  // clear schedule log
-  schedulelog_index log(get_self(), get_self().value);
-
-  auto iterator = log.begin();
-
-  while (iterator != log.end()) {
-    iterator = log.erase(iterator);
-  }
-
-  // clear ticker table
-  tickers ticks(get_self(), get_self().value);
-
-  auto itick = ticks.begin();
-
-  while (itick != ticks.end()) {
-    itick = ticks.erase(itick);
-  }
-
-}
-
-
-// These actions allow the scheduled processes to be invoked explicitly by the freeosticker account
-
-// run scheduled process action
-void freeos::runscheduled(std::string process_specifier, bool schedule_override) {
-
-  require_auth(permission_level("freeosticker"_n, "active"_n));
-
-  // validate the parameters - prepare error message first
-  std::string validation_error_msg = "valid process specifiers are '" + HOURLY + "', '" + DAILY + "', '" + WEEKLY + "'";
-  check(process_specifier == HOURLY || process_specifier == DAILY || process_specifier == WEEKLY, validation_error_msg);
-
-  // get the current time
-  uint32_t now = current_time_point().sec_since_epoch();
-
-  // work out if any time periods have elapsed
-  tickers ticks(get_self(), get_self().value);
-  auto iterator = ticks.begin();
-
-  // check if the ticks record exists in the table (there is only one record)
-  // if the record doesn't exist then create/initialise it and do nothing
-  if (iterator == ticks.end() ) {
-      // no record in the table, so insert initialised values
-      ticks.emplace(_self, [&](auto & row) {
-         row.tickly = now;
-         row.hourly = 0;
-         row.daily  = 0;
-         row.weekly = 0;
-      });
-
-  if (DEBUG) print("schedule timers have been initialised, process is not yet scheduled to run");
-  return;
-  }
-
-  // get previous run times
-  uint32_t previous_hourly = iterator->hourly;
-  uint32_t previous_daily  = iterator->daily;
-  uint32_t previous_weekly = iterator->weekly;
-
-  // check whether the scheduled process is eligible to run
-  bool process_ran = false;
-
-  // Have we crossed an hourly boundary?
-  if (process_specifier == HOURLY) {
-    if (schedule_override == true || now >= (previous_hourly + HOUR_SECONDS)) {
-      // record the run
-      ticks.modify(iterator, _self, [&](auto& row) {
-          row.hourly = now - (now % HOUR_SECONDS);    // the earliest time the new hour could have started
-      });
-
-      // run the process
-      hourly_process(TRIGGERED_BY_ACTION);
-
-      process_ran = true;
-      if (DEBUG) print("hourly process ran");
-    }
-  }
-
-
-  // Have we crossed a daily boundary?
-  if (process_specifier == DAILY) {
-    if (schedule_override == true || now >= (previous_daily + DAY_SECONDS)) {
-      // record the run
-      ticks.modify(iterator, _self, [&](auto& row) {
-          row.daily  = now - (now % DAY_SECONDS);    // the earliest time the new day could have started
-      });
-
-      // run the process
-      daily_process("A");   // "A" = runscheduled action, "U" = User driven, "P" = Proton CRON, "S" = Server CRON
-
-      process_ran = true;
-      if (DEBUG) print("daily process ran");
-    }
-  }
-
-
-  // Have we crossed a weekly boundary?
-  if (process_specifier == WEEKLY) {
-    if (schedule_override == true || now >= (previous_weekly + WEEK_SECONDS)) {
-      // record the run
-      ticks.modify(iterator, _self, [&](auto& row) {
-          row.weekly = now - (now % WEEK_SECONDS);    // the earliest time the new week could have started
-      });
-
-      // run the process
-      weekly_process("A");  // "A" = runscheduled action, "U" = User driven, "P" = Proton CRON, "S" = Server CRON
-
-      process_ran = true;
-      if (DEBUG) print("weekly process ran");
-    }
-  }
-
-  if (process_ran == false) {
-    if (DEBUG) print(process_specifier, " process has not run (did not override schedule)");
-  }
-
-}
-
-
-// process to run every tick
-void freeos::tick_process(std::string trigger) {
-
-}
-
-
-// process to run every hour
-void freeos::hourly_process(std::string trigger) {
-  if (checkschedulelogging()) {
-    // log the run
-    schedulelog_index log(get_self(), get_self().value);
-    log.emplace(_self, [&](auto & row) {
-       row.task = "H";
-       row.trigger = trigger;
-       row.time = current_time_point().sec_since_epoch() + 10000000000; // 64 bit number added to provide primary-key uniqueness
-    });
-  }
-
-  // do whatever...
-  set_iteration_number(); // advance the iteration number if required (used by the dividend contract)
-  update_unvest_percentage();
-  refund_stakes();
-
-}
-
-// process to run every day
-void freeos::daily_process(std::string trigger) {
-  if (checkschedulelogging()) {
-    // log the run
-    schedulelog_index log(get_self(), get_self().value);
-    log.emplace(_self, [&](auto & row) {
-       row.task = "D";
-       row.trigger = trigger;
-       row.time = current_time_point().sec_since_epoch() + 20000000000; // 64 bit number added to provide primary-key uniqueness
-    });
-  }
-
-  // do whatever...
-
-}
-
-// process to run every week
-void freeos::weekly_process(std::string trigger) {
-  if (checkschedulelogging()) {
-    // log the run
-    schedulelog_index log(get_self(), get_self().value);
-    log.emplace(_self, [&](auto & row) {
-       row.task = "W";
-       row.trigger = trigger;
-       row.time = current_time_point().sec_since_epoch() + 30000000000; // 64 bit number added to provide primary-key uniqueness
-    });
-  }
-
-  // do whatever...
-
-}
-
-
-void freeos::set_iteration_number() {
-  uint32_t  iteration_number = getclaimiteration().iteration_number;
-
-  // set it in the statistics table
-  statistic_index statistics(get_self(), get_self().value);
-  auto iterator = statistics.begin();
-
-  if (iterator != statistics.end()) {
-    statistics.modify(iterator, _self, [&](auto& s) {
-        s.iteration = iteration_number;
-    });
-  }
-
-}
-
-
+// this is only ever called by tick() when a new iteration is in force
 void freeos::update_unvest_percentage() {
 
   uint32_t current_unvest_percentage;
   uint32_t new_unvest_percentage;
 
-  // ??? put in check that we are in a new iteration
-
-
-  // find the current vested proprotion. If 0.0f it means that the exchange rate is favourable
-  float vested_proportion = get_vested_proportion();
-
   // get the statistics record
   statistic_index statistics(get_self(), get_self().value);
   auto iterator = statistics.begin();
 
+  check(iterator != statistics.end(), "statistics record is not found");
+
+  // find the current vested proportion. If 0.0f it means that the exchange rate is favourable
+  float vested_proportion = get_vested_proportion();
+
 
   // Decide whether we are above target or below target price
   if (vested_proportion == 0.0f) {
+
     // favourable exchange rate, so implement the 'good times' strategy - calculate the new unvest_percentage
     current_unvest_percentage = iterator->unvestpercent;
 
-    // move the unvest_percentage on to next level
+    // move the unvest_percentage on to next level if we have reached a new 'good times' iteration
     switch (current_unvest_percentage) {
         case 0 :  new_unvest_percentage = 1;
                   break;
@@ -425,7 +191,7 @@ void freeos::update_unvest_percentage() {
       // modify the statistics table with the new percentage. Also ensure the failsafe counter is set to 0.
       statistics.modify(iterator, _self, [&](auto& s) {
           s.unvestpercent = new_unvest_percentage;
-          s.unvestpercentiteration = getclaimiteration().iteration_number;
+          s.unvestpercentiteration = get_cached_iteration();
           s.failsafecounter = 0;
       });
 
@@ -653,6 +419,9 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
       return;
     }
 
+    // user-activity-driven background process
+    tick();
+
     // check that system is operational (global masterswitch parameter set to "1")
     check(checkmasterswitch(), msg_freeos_system_not_available);
 
@@ -666,9 +435,9 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
     //****************************************************
 
     // which iteration are we in?
-    iteration current_iteration = getclaimiteration();
+    uint32_t current_iteration = get_cached_iteration();
 
-    check(current_iteration.iteration_number != 0, "Staking not allowed in iteration 0");
+    check(current_iteration != 0, "Staking not allowed in iteration 0");
 
     // get the user record - the amount of the stake requirement and the amount staked
     // find the account in the user table
@@ -689,14 +458,12 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
     // update the user record
     usertable.modify(u, _self, [&](auto& row) {
       row.stake = quantity;
-      row.staked_iteration = current_iteration.iteration_number;
+      row.staked_iteration = current_iteration;
     });
 
     // feedback
     if (DEBUG) print(quantity.to_string(), " stake received for account ", user);
   }
-
-  tick(TRIGGERED_BY_USER);
 
 }
 
@@ -734,11 +501,14 @@ void freeos::unstake(const name& user) {
 
   require_auth(user);
 
+  // user-activity-driven background process
+  tick();
+
   // check that system is operational (global masterswitch parameter set to "1")
   check(checkmasterswitch(), msg_freeos_system_not_available);
 
-  iteration current_iteration = getclaimiteration();
-  check(current_iteration.iteration_number != 0, "Unstaking is not allowed in iteration 0");
+  uint32_t current_iteration = get_cached_iteration();
+  check(current_iteration != 0, "Unstaking is not allowed in iteration 0");
 
   // find user record
   user_index usertable( get_self(), user.value );
@@ -759,8 +529,6 @@ void freeos::unstake(const name& user) {
   // feedback
   if (DEBUG) print("unstake requested");
 
-  tick(TRIGGERED_BY_USER);
-
 }
 
 
@@ -768,13 +536,13 @@ void freeos::unstake(const name& user) {
 
 // request stake refund - add to stake refund queue
 void freeos::request_stake_refund(name user, asset amount) {
-  iteration current_iteration = getclaimiteration();
+  uint32_t current_iteration = get_cached_iteration();
 
   // add to the unstake requests queue
   unstakerequest_index unstakes(get_self(), get_self().value);
   unstakes.emplace( get_self(), [&]( auto& u ) {
      u.staker = user;
-     u.iteration = current_iteration.iteration_number;
+     u.iteration = current_iteration;
      u.amount = amount;
   });
 }
@@ -791,7 +559,7 @@ void freeos::refund_stakes() {
     number_to_release = stoi(p_iterator->value);
   }
 
-  iteration current_iteration = getclaimiteration();
+  uint32_t current_iteration = get_cached_iteration();
 
   unstakerequest_index unstakes(get_self(), get_self().value);
   auto idx = unstakes.get_index<"iteration"_n>();
@@ -799,7 +567,7 @@ void freeos::refund_stakes() {
 
   for (uint16_t i = 0; i < number_to_release && iterator != idx.end(); i++) {
 
-    if (iterator->iteration < current_iteration.iteration_number) {
+    if (iterator->iteration < current_iteration) {
       // process the unstake request
       refund_stake(iterator->staker, iterator->amount);
       iterator = idx.erase(iterator);
@@ -880,11 +648,11 @@ void freeos::getuser(const name& user) {
 
   // has user claimed in the current iteration?
   // what iteration is it
-  iteration this_iteration = getclaimiteration();
+  uint32_t this_iteration = get_cached_iteration();
 
   bool claimed_flag = false;
   claim_index claims(get_self(), user.value);
-  auto iterator = claims.find(this_iteration.iteration_number);
+  auto iterator = claims.find(this_iteration);
   // if the claim record exists for this iteration then the user has claimed
   if (iterator != claims.end()) {
     claimed_flag = true;
@@ -893,7 +661,7 @@ void freeos::getuser(const name& user) {
   // feedback
   if (DEBUG) print("account: ", user, ", registered: ", u->registered_time.utc_seconds, ", type: ", u->account_type, ", stake: ", u->stake.to_string(),
         ", staked-iteration: ", u->staked_iteration, ", XPR: ", xpr_balance.to_string(), ", liquid: ", liquid_freeos_balance.to_string(), ", vested: ", vested_freeos_balance.to_string(),
-         ", airkey: ", airkey_balance.to_string(), ", iteration: ", this_iteration.iteration_number, ", claimed: ", claimed_flag);
+         ", airkey: ", airkey_balance.to_string(), ", iteration: ", this_iteration, ", claimed: ", claimed_flag);
 
 }
 
@@ -1138,6 +906,10 @@ void freeos::claim( const name& user )
 {
    require_auth ( user );
 
+   // user-activity-driven background process
+   tick();
+
+
    // check that system is operational (global masterswitch parameter set to "1")
    check(checkmasterswitch(), msg_freeos_system_not_available);
 
@@ -1274,7 +1046,6 @@ void freeos::claim( const name& user )
   // feedback
    if (DEBUG) print(user, " claimed ", liquid_amount.to_string(), " and vested ", vested_amount.to_string(), " for iteration ", this_iteration.iteration_number); // " at ", current_time_point().sec_since_epoch());
 
-   tick(TRIGGERED_BY_USER);
 }
 
 // record a deposit to the freedao account
@@ -1314,43 +1085,15 @@ void freeos::depositclear(uint64_t iteration_number) {
 
 }
 
-void freeos::unclaim( const name& user )
-{
-   require_auth (get_self());
-
-   // remove the user's history from the claims table
-   claim_index claims(get_self(), user.value);
-   auto iterator = claims.begin();
-
-   while (iterator != claims.end()) {
-     iterator = claims.erase(iterator);
-   }
-
-   // set the user's liquid FREEOS balance to zero
-   accounts user_liquid_accounts(get_self(), user.value);
-   auto user_liquid_freeos = user_liquid_accounts.find(symbol_code("FREEOS").raw());
-   if (user_liquid_freeos != user_liquid_accounts.end()) {
-     user_liquid_accounts.modify(user_liquid_freeos, same_payer, [&]( auto& a ) {
-       a.balance = asset(0, symbol("FREEOS",4));
-     });
-   }
-
-   // set the user's vested FREEOS balance to zero
-   vestaccounts user_vested_accounts(get_self(), user.value);
-   auto user_vested_freeos = user_vested_accounts.find(symbol_code("FREEOS").raw());
-   if (user_vested_freeos != user_vested_accounts.end()) {
-     user_vested_accounts.modify(user_vested_freeos, same_payer, [&]( auto& a ) {
-       a.balance = asset(0, symbol("FREEOS",4));
-     });
-   }
-
-}
 
 
 
 void freeos::unvest(const name& user)
 {
    require_auth ( user );
+
+   // user-activity-driven background process
+   tick();
 
    // check that system is operational (global masterswitch parameter set to "1")
    check(checkmasterswitch(), msg_freeos_system_not_available);
@@ -1359,53 +1102,25 @@ void freeos::unvest(const name& user)
    check(is_account(user), "User does not have an account");
 
    // get the current iteration
-   iteration this_iteration = getclaimiteration();
+   uint32_t this_iteration = get_cached_iteration();
+   check(this_iteration > 0, "Not in a valid iteration");
 
-   check(this_iteration.iteration_number > 0, "Not in a valid iteration");
-
-   // get the unvestpercentiteration - if different from current iteration then update it and update the unvestpercentage
+   // calculate the amount to be unvested - get the percentage for the iteration
    statistic_index statistics(get_self(), get_self().value);
-   auto stat = statistics.begin();
-
-   if (stat != statistics.end()) {
-     if (this_iteration.iteration_number > stat->unvestpercentiteration) {
-       update_unvest_percentage();
-     }
-   }
-
+   auto iter = statistics.begin();
+   check(iter != statistics.end(), "statistics record is not found");
+   uint32_t unvest_percent = iter->unvestpercent; 
+   
+   // check that the unvest percentage is within limits
+   check(unvest_percent > 0 && unvest_percent <= 100, "vested FREEOS cannot be unvested in this claim period. Please try during next claim period.");
 
    // has the user unvested this iteration? - consult the unvests history table
    unvest_index unvests(get_self(), user.value);
-   auto iterator = unvests.find(this_iteration.iteration_number);
+   auto iterator = unvests.find(this_iteration);
    // if the unvest record exists for the iteration then the user has unvested, so is not eligible to unvest again
    check(iterator == unvests.end(), "user has already unvested in this iteration");
 
    // do the unvesting
-
-   // calculate the amount to be unvested - get the percentage for the iteration
-   uint32_t unvest_percent = 0;
-   auto iter = statistics.begin();
-
-   if (iter != statistics.end()) {
-     unvest_percent = iter->unvestpercent;
-   } else {
-     unvest_percent = 50; // default if freeosconfig parameter not found
-
-     // if no counters record then use the default unvestpercent
-     parameter_index parameters(name(freeosconfig_acct), name(freeosconfig_acct).value);
-     auto iterator = parameters.find("unvestpercnt"_n.value);
-
-     if (iterator != parameters.end()) {
-       unvest_percent = stoi(iterator->value);
-     }     
-   }
-   
-   if (unvest_percent == 0) {
-     // nothing to unvest
-     if (DEBUG) print("Vested FREEOS cannot be unvested in this claim period. Please try next claim period.");
-     return;
-   }
-
    // get the user's unvested FREEOS balance
    asset user_vbalance = asset(0, symbol("FREEOS",4));
    vestaccounts v_accounts(get_self(), user.value);
@@ -1424,9 +1139,6 @@ void freeos::unvest(const name& user)
 
    // calculate the amount of vested FREEOS to convert to liquid FREEOS
    // Warning: these calculations use mixed-type arithmetic. Any changes need to be thoroughly tested.
-
-   // check that the unvest percentage is within limits
-   check(unvest_percent > 0 && unvest_percent <= 100, "The unvest percentage is incorrect. Please notify FreeDAO.");
 
    uint64_t vestedunits = user_vbalance.amount;   // in currency units (i.e. number of 0.0001 FREEOS)
    double percentage = unvest_percent / 100.0;    // required to be a double
@@ -1476,10 +1188,10 @@ void freeos::unvest(const name& user)
 
 
    // write the unvest event to the unvests history table
-   iterator = unvests.find(this_iteration.iteration_number);
+   iterator = unvests.find(this_iteration);
    if (iterator == unvests.end()) {
      unvests.emplace( get_self(), [&]( auto& unvest ) {
-       unvest.iteration_number = this_iteration.iteration_number;
+       unvest.iteration_number = this_iteration;
        unvest.unvest_time = current_time_point().sec_since_epoch();
      });
    }
@@ -1487,7 +1199,6 @@ void freeos::unvest(const name& user)
    // feedback
    if (DEBUG) print("Unvesting successful. You have gained another ", convertedfreeos.to_string());
 
-   tick(TRIGGERED_BY_USER);
 }
 
 

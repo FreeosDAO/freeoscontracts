@@ -16,23 +16,6 @@ enum registration_status{ registered_already,
                           registered_success,
                           };
 
-// CRON-driven process specifiers
-const std::string HOURLY = "hourly";
-const std::string DAILY  = "daily";
-const std::string WEEKLY = "weekly";
-
-// CRON-driven process triggers
-const std::string TRIGGERED_BY_ACTION  = "A";  // triggered by the 'runscheduled' Action
-const std::string TRIGGERED_BY_USER    = "U";  // triggered by User action
-const std::string TRIGGERED_BY_PROTON  = "P";  // triggered by Proton CRON contract
-const std::string TRIGGERED_BY_SERVER  = "S";  // triggered by Server CRON service
-
-
-// Job scheduling intervals
-const uint32_t  HOUR_SECONDS  = 3600;
-const uint32_t  DAY_SECONDS   = 86400;
-const uint32_t  WEEK_SECONDS  = 604800;
-
 
    /**
     * @defgroup freeos freeos contract
@@ -57,35 +40,12 @@ const uint32_t  WEEK_SECONDS  = 604800;
          void version();
 
          /**
-          * currentiter action.
-          *
-          * @details Prints the number of the current iteration.
-          */
-         [[eosio::action]]
-         void currentiter(); 
-
-         /**
-          * runscheduled action.
-          *
-          * @details Explicitly run a scheduled process.
-          * @param process_specifier - hourly, daily or weekly
-          * @param schedule_override - true forces the process to run regardless of scheduled times.
-          *
-          * @pre Requires permission of the freeosticker account
-          *
-          */
-         [[eosio::action]]
-         void runscheduled(std::string process_specifier, bool schedule_override);
-
-
-         /**
           * tick action.
           *
-          * @details Triggers scheduled actions.
-          * @param trigger - "A" = runscheduled action, "U" = User driven, "P" = Proton CRON, "S" = Server CRON
+          * @details Triggers 'background' actions.
           */
          [[eosio::action]]
-         void tick(std::string trigger);
+         void tick();
 
 
          /**
@@ -95,15 +55,6 @@ const uint32_t  WEEK_SECONDS  = 604800;
           */
          [[eosio::action]]
          void cron();
-
-
-         /**
-          * clearlog action.
-          *
-          * @details clears schedulelog table.
-          */
-         [[eosio::action]]
-         void clearlog();
 
 
          /**
@@ -288,18 +239,6 @@ const uint32_t  WEEK_SECONDS  = 604800;
          [[eosio::action]]
          void claim( const name& user);
 
-         /**
-          * unclaim action.
-          *
-          * @details This action is run by the contract account to reset the user's claim record and set their balances
-          * @details of liquid and vested FREEOS to zero.
-          *
-          * @param user - the user account to execute the unclaim action for.
-          *
-          * @pre Requires authorisation of the contract account
-          */
-         [[eosio::action]]
-         void unclaim( const name& user);
 
          /**
           * unvest action.
@@ -456,28 +395,6 @@ const uint32_t  WEEK_SECONDS  = 604800;
          using statistic_index = eosio::multi_index<"statistics"_n, statistic>;
 
 
-         // the user stake requirements
-         /*
-         struct [[eosio::table]] stakereq {
-           uint64_t threshold;
-           asset    requirement_a;
-           asset    requirement_b;
-           asset    requirement_c;
-           asset    requirement_d;
-           asset    requirement_e;
-           asset    requirement_u;
-           asset    requirement_v;
-           asset    requirement_w;
-           asset    requirement_x;
-           asset    requirement_y;
-
-           uint64_t primary_key() const { return 0; } // return a constant (0 in this case) to ensure a single-row table
-         };
-
-         using stakes_index = eosio::multi_index<"stakes"_n, stakereq>;
-         */
-
-
          // FREEOS USD-price - code: freeosconfig, scope: freeosconfig
          struct price {
            double    currentprice;
@@ -568,30 +485,6 @@ const uint32_t  WEEK_SECONDS  = 604800;
          using unvest_index = eosio::multi_index<"unvests"_n, unvestevent>;
 
 
-         // record of last time timed processes were run - there is one record hence zero is returned as primary_key
-         struct [[eosio::table]] ticker {
-            uint32_t  tickly;
-            uint32_t  hourly;
-            uint32_t  daily;
-            uint32_t  weekly;
-
-            uint64_t primary_key()const { return 0; }
-         };
-
-         typedef eosio::multi_index< "tickers"_n, ticker > tickers;
-
-
-         // schedulelog - recording scheduled task runs
-         struct [[eosio::table]] schedulelog {
-           std::string        task;
-           std::string        trigger;
-           uint64_t           time;
-
-           uint64_t primary_key() const { return time;}
-         };
-
-         using schedulelog_index = eosio::multi_index<"schedulelog"_n, schedulelog>;
-
 
          // ***************** KYC from eosio.proton *************
          struct kyc_prov {
@@ -657,6 +550,7 @@ const uint32_t  WEEK_SECONDS  = 604800;
          registration_status register_user(const name& user);
 
          bool checkmasterswitch();
+         uint32_t get_cached_iteration();
          bool checkschedulelogging();
          uint64_t getthreshold(uint32_t numusers);
          uint32_t get_stake_requirement(char account_type);
@@ -665,17 +559,12 @@ const uint32_t  WEEK_SECONDS  = 604800;
          uint32_t updateclaimeventcount();
          uint16_t getfreedaomultiplier(uint32_t claimevents);
          float get_vested_proportion();
-         void tick_process(std::string trigger);
-         void hourly_process(std::string trigger);
-         void daily_process(std::string trigger);
-         void weekly_process(std::string trigger);
          void update_unvest_percentage();
          void record_deposit(uint64_t iteration_number, asset amount);
          char get_account_type(name user);
          void request_stake_refund(name user, asset amount);
          void refund_stakes();
          void refund_stake(name user, asset amount);
-         void set_iteration_number();
 
    };
    /** @}*/ // end of @defgroup freeos freeos contract
