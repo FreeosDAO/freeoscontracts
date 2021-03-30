@@ -81,9 +81,11 @@ using namespace eosio;
 //       removed print of stake amount from version action
 //       default 'unvestpercnt' parameter retired as not required
 //       default 'vestpercent' config parameter implemented for when a current price not set
+// 339 - When calculating vested proportion, uses default 'vestpercent' parameter value if the exchangerate record is not present
+//       Changes to logic in update_unvest_percentage function
 
 
-const std::string VERSION = "0.338";
+const std::string VERSION = "0.339";
 
 [[eosio::action]]
 void freeos::version() {
@@ -96,33 +98,27 @@ void freeos::version() {
 [[eosio::action]]
 void freeos::tick() {
 
-  // current time
-  uint32_t now = current_time_point().sec_since_epoch();
-
-  // what iteration are we in?
+  // what iteration are we in? ! Important that we use the uncached iteration function
   iteration this_iteration = getclaimiteration();
 
   // what iteration is in the statistics table?
   statistic_index statistics(get_self(), get_self().value);
-  auto iterator = statistics.begin();
-  check(iterator != statistics.end(), "statistics record is not found");
+  auto stat = statistics.begin();
+  check(stat != statistics.end(), "statistics record is not found");
 
-  if (this_iteration.iteration_number > iterator->iteration) {
+  if (this_iteration.iteration_number > stat->iteration) {
     // update iteration in statistics table
-    statistic_index statistics(get_self(), get_self().value);
-    auto iterator = statistics.begin();
-
-    if (iterator != statistics.end()) {
-      statistics.modify(iterator, _self, [&](auto& s) {
+    if (stat != statistics.end()) {
+      statistics.modify(stat, _self, [&](auto& s) {
           s.iteration = this_iteration.iteration_number;
       });
     }
 
-    // update unvest percent
-    update_unvest_percentage();
+    // update unvest percent if we are in a valid iteration
+    if (stat->iteration > 0) update_unvest_percentage();
   } else {
-    // do some unstaking
-    refund_stakes();
+    // do some unstaking if we are in a valid iteration
+    if (stat->iteration > 0) refund_stakes();
   }
 
 }
@@ -146,7 +142,7 @@ void freeos::cron() {
 }
 
 
-// this is only ever called by tick() when a new iteration is in force
+// this is only ever called by tick() when a switch to a new iteration is detected
 void freeos::update_unvest_percentage() {
 
   uint32_t current_unvest_percentage;
@@ -154,9 +150,8 @@ void freeos::update_unvest_percentage() {
 
   // get the statistics record
   statistic_index statistics(get_self(), get_self().value);
-  auto iterator = statistics.begin();
-
-  check(iterator != statistics.end(), "statistics record is not found");
+  auto stat = statistics.begin();
+  check(stat != statistics.end(), "statistics record is not found");
 
   // find the current vested proportion. If 0.0f it means that the exchange rate is favourable
   float vested_proportion = get_vested_proportion();
@@ -165,8 +160,10 @@ void freeos::update_unvest_percentage() {
   // Decide whether we are above target or below target price
   if (vested_proportion == 0.0f) {
 
+    // GOOD TIMES
+
     // favourable exchange rate, so implement the 'good times' strategy - calculate the new unvest_percentage
-    current_unvest_percentage = iterator->unvestpercent;
+    current_unvest_percentage = stat->unvestpercent;
 
     // move the unvest_percentage on to next level if we have reached a new 'good times' iteration
     switch (current_unvest_percentage) {
@@ -189,13 +186,16 @@ void freeos::update_unvest_percentage() {
       }
 
       // modify the statistics table with the new percentage. Also ensure the failsafe counter is set to 0.
-      statistics.modify(iterator, _self, [&](auto& s) {
+      statistics.modify(stat, _self, [&](auto& s) {
           s.unvestpercent = new_unvest_percentage;
           s.unvestpercentiteration = get_cached_iteration();
           s.failsafecounter = 0;
       });
 
   } else {
+
+    // BAD TIMES
+
     // unfavourable exchange rate, so implement the 'bad times' strategy
     // calculate failsafe unvest percentage - every Xth week of unfavourable rate, set unvest percentage to 15%
 
@@ -210,14 +210,15 @@ void freeos::update_unvest_percentage() {
       failsafe_frequency = stoi(p_iterator->value);
     }
 
-    // increment the failsafecounter and determine if we are at 24 weeks
-    uint32_t failsafecounter = iterator->failsafecounter;
+    // increment the failsafecounter
+    uint32_t failsafecounter = stat->failsafecounter;
     failsafecounter++;
 
     // Store the new failsafecounter and unvestpercent
-    statistics.modify(iterator, _self, [&](auto& s) {
+    statistics.modify(stat, _self, [&](auto& s) {
         s.failsafecounter = failsafecounter % failsafe_frequency;
-        s.unvestpercent = failsafecounter == failsafe_frequency ? 15 : 0;
+        s.unvestpercent = (failsafecounter == failsafe_frequency ? 15 : 0);
+        s.unvestpercentiteration = get_cached_iteration();
     });
   }
 
@@ -1207,13 +1208,13 @@ float freeos::get_vested_proportion() {
   // default rate if exchange rate record not found, or if current price >= target price (so no need to vest)
   float proportion = 0.0f;
 
-  exchange_index rate(name(freeosconfig_acct), name(freeosconfig_acct).value);
+  exchange_index exchangerate(name(freeosconfig_acct), name(freeosconfig_acct).value);
 
-  // there is a single record so we can position iterator on first record
-  auto iterator = rate.begin();
+  // there is a single record
+  auto iterator = exchangerate.begin();
 
   // if the exchange rate exists in the table
-  if (iterator != rate.end() ) {
+  if (iterator != exchangerate.end() ) {
       // get current and target rates
       double currentprice = iterator->currentprice;
       double targetprice = iterator->targetprice;
@@ -1221,6 +1222,15 @@ float freeos::get_vested_proportion() {
       if (targetprice > 0 && currentprice < targetprice) {
         proportion = 1.0f - (currentprice / targetprice);
       }
+  } else {
+    // use the default proportion specified in the 'vestpercent' parameter
+    parameter_index parameters(name(freeosconfig_acct), name(freeosconfig_acct).value);
+    auto p_iterator = parameters.find(name("vestpercent").value);
+
+    if (p_iterator != parameters.end()) {
+      uint8_t intpercent = stoi(p_iterator->value);
+      proportion = ((float) intpercent) / 100.0f;
+    }
   }
 
   // apply a cap of 0.9
