@@ -191,6 +191,40 @@
             ]
         },
         {
+            "name": "proposalnew",
+            "base": "",
+            "fields": [
+                {
+                    "name": "proposer",
+                    "type": "name"
+                },
+                {
+                    "name": "eosaccount",
+                    "type": "name"
+                },
+                {
+                    "name": "roi_target_cap",
+                    "type": "uint8"
+                },
+                {
+                    "name": "period_percentage",
+                    "type": "float64"
+                },
+                {
+                    "name": "threshold",
+                    "type": "asset"
+                },
+                {
+                    "name": "rates_left",
+                    "type": "uint32"
+                },
+                {
+                    "name": "locked",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
             "name": "reguser",
             "base": "",
             "fields": [
@@ -505,6 +539,11 @@
         {
             "name": "open",
             "type": "open",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "proposalnew",
+            "type": "proposalnew",
             "ricardian_contract": ""
         },
         {
