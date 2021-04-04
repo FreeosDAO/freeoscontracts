@@ -84,6 +84,7 @@ using namespace eosio;
 // 339 - When calculating vested proportion, uses default 'vestpercent' parameter value if the exchangerate record is not present
 //       Changes to logic in update_unvest_percentage function
 // 340 - Change to tick to improve caching of iteration number
+//       Removed test code
 
 
 const std::string VERSION = "0.340";
@@ -93,22 +94,6 @@ void freeos::version() {
   uint32_t this_iteration = get_cached_iteration();
 
   if (DEBUG) print("Version = ", VERSION, " - iteration ", this_iteration);
-}
-
-
-[[eosio::action]]
-void freeos::proposalnew(
-  		  const name      proposer,
-        const name      eosaccount,          //!< freeos account used to receive dividends and for identification
-        const uint8_t   roi_target_cap,      // 1-(I)teration, 2-(H)orizontal, 3-(V)ertical
-        const double    period_percentage,
-        const asset     threshold,           // max value for total (cap=2) or weekly (cap=3) pay-cut actions
-        const uint32_t  rates_left,          // number of dividend rates which cause pay-stop (roi_target_cap=1)
-        const bool      locked               //!< lock dividends for selected new founders. Note: When unlock cannot be locked again.
-    )
-{
-  print(proposer, " ", eosaccount, " ", roi_target_cap, " ", period_percentage, " ", threshold, " ", rates_left, " ", locked);
-  check(proposer == "freeosfreeos"_n, "check activated");
 }
 
 [[eosio::action]]

@@ -39,17 +39,6 @@ enum registration_status{ registered_already,
          [[eosio::action]]
          void version();
 
-        [[eosio::action]]
-        void proposalnew(
-  		  const name      proposer,
-        const name      eosaccount,          //!< freeos account used to receive dividends and for identification
-        const uint8_t   roi_target_cap,      // 1-(I)teration, 2-(H)orizontal, 3-(V)ertical
-        const double    period_percentage,
-        const asset     threshold,           // max value for total (cap=2) or weekly (cap=3) pay-cut actions
-        const uint32_t  rates_left,          // number of dividend rates which cause pay-stop (roi_target_cap=1)
-        const bool      locked               //!< lock dividends for selected new founders. Note: When unlock cannot be locked again.
-        );
-
 
          /**
           * tick action.
