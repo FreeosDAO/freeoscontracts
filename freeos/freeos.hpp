@@ -31,6 +31,7 @@ enum registration_status{ registered_already,
       public:
          using contract::contract;
 
+#ifdef TEST_BUILD
          /**
           * version action.
           *
@@ -38,6 +39,7 @@ enum registration_status{ registered_already,
           */
          [[eosio::action]]
          void version();
+#endif
 
 
          /**
@@ -122,6 +124,7 @@ enum registration_status{ registered_already,
          [[eosio::action]]
          void unstake(const name& user);
 
+#ifdef TEST_BUILD
          /**
           * getuser action.
           *
@@ -134,6 +137,7 @@ enum registration_status{ registered_already,
           */
          [[eosio::action]]
          void getuser(const name& user);
+#endif
 
          /**
           * Create action.

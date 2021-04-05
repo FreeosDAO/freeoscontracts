@@ -89,12 +89,15 @@ using namespace eosio;
 
 const std::string VERSION = "0.340";
 
+#ifdef TEST_BUILD
 [[eosio::action]]
 void freeos::version() {
   uint32_t this_iteration = get_cached_iteration();
 
-  if (DEBUG) print("Version = ", VERSION, " - iteration ", this_iteration);
+  print("Version = ", VERSION, " - iteration ", this_iteration);
 }
+#endif
+
 
 [[eosio::action]]
 void freeos::tick() {
@@ -239,15 +242,13 @@ void freeos::reguser(const name& user) {
   // perform the registration
   registration_status result = register_user(user);
 
-  // give feedback
-  if (DEBUG) {
-    if (result == registered_already) {
-      print("user is already registered");
-    } else if (result == registered_success) {
-      // prepare the success message
-      print(user.to_string() + std::string(" successfully registered"));
-    }
+  #ifdef TEST_BUILD
+  if (result == registered_already) {
+    print("user is already registered");
+  } else if (result == registered_success) {
+    print(user.to_string() + std::string(" successfully registered"));
   }
+  #endif
 
 }
 
@@ -406,8 +407,9 @@ void freeos::dereg(const name& user) {
     s.usercount = s.usercount - 1;
     });
 
-  // feedback
-  if (DEBUG) print("account ", user, " removed from user register");
+  #ifdef TEST_BUILD
+  print("account ", user, " removed from user register");
+  #endif
 }
 
 
@@ -463,8 +465,9 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
       row.staked_iteration = current_iteration;
     });
 
-    // feedback
-    if (DEBUG) print(quantity.to_string(), " stake received for account ", user);
+    #ifdef TEST_BUILD
+    print(quantity.to_string(), " stake received for account ", user);
+    #endif
   }
 
 }
@@ -528,8 +531,9 @@ void freeos::unstake(const name& user) {
 
   request_stake_refund(user, u->stake);
 
-  // feedback
-  if (DEBUG) print("unstake requested");
+  #ifdef TEST_BUILD
+  print("unstake requested");
+  #endif
 
 }
 
@@ -617,10 +621,13 @@ void freeos::unstakecncl(const name& user) {
   // cancel the unstake - erase the unstake record
   unstakes.erase(iterator);
 
-  // feedback
-  if (DEBUG) print("your unstake request has been cancelled");
+  #ifdef TEST_BUILD
+  print("your unstake request has been cancelled");
+  #endif
 }
 
+
+#ifdef TEST_BUILD
 // the getuser action exists to help testers get all relevant information for a user
 [[eosio::action]]
 void freeos::getuser(const name& user) {
@@ -661,11 +668,12 @@ void freeos::getuser(const name& user) {
   }
 
   // feedback
-  if (DEBUG) print("account: ", user, ", registered: ", u->registered_time.utc_seconds, ", type: ", u->account_type, ", stake: ", u->stake.to_string(),
+  print("account: ", user, ", registered: ", u->registered_time.utc_seconds, ", type: ", u->account_type, ", stake: ", u->stake.to_string(),
         ", staked-iteration: ", u->staked_iteration, ", XPR: ", xpr_balance.to_string(), ", liquid: ", liquid_freeos_balance.to_string(), ", vested: ", vested_freeos_balance.to_string(),
          ", airkey: ", airkey_balance.to_string(), ", iteration: ", this_iteration, ", claimed: ", claimed_flag);
 
 }
+#endif
 
 
 bool freeos::checkmasterswitch() {
@@ -1045,8 +1053,10 @@ void freeos::claim( const name& user )
     });
    }
 
-  // feedback
-   if (DEBUG) print(user, " claimed ", liquid_amount.to_string(), " and vested ", vested_amount.to_string(), " for iteration ", this_iteration.iteration_number); // " at ", current_time_point().sec_since_epoch());
+
+   #ifdef TEST_BUILD
+   print(user, " claimed ", liquid_amount.to_string(), " and vested ", vested_amount.to_string(), " for iteration ", this_iteration.iteration_number); // " at ", current_time_point().sec_since_epoch());
+   #endif
 
 }
 
@@ -1134,7 +1144,10 @@ void freeos::unvest(const name& user)
 
    // if user's vested balance is 0 then nothing to do, so return
    if (user_vbalance.amount == 0) {
-     if (DEBUG) print("You have no vested FREEOS therefore nothing to unvest.");
+     #ifdef TEST_BUILD
+     print("You have no vested FREEOS therefore nothing to unvest.");
+     #endif
+
      return;
    }
 
@@ -1198,8 +1211,9 @@ void freeos::unvest(const name& user)
      });
    }
 
-   // feedback
-   if (DEBUG) print("Unvesting successful. You have gained another ", convertedfreeos.to_string());
+   #ifdef TEST_BUILD
+   print("Unvesting successful. You have gained another ", convertedfreeos.to_string());
+   #endif
 
 }
 
@@ -1295,7 +1309,11 @@ bool freeos::eligible_to_claim(const name& claimant, iteration this_iteration) {
   auto iterator = claims.find(this_iteration.iteration_number);
   // if the claim record exists for the iteration then the user has claimed, so is not eligible to claim again
   if (iterator != claims.end()) {
-    if (DEBUG) print("user ", claimant, " has already claimed in claim period ", this_iteration.iteration_number);
+
+    #ifdef TEST_BUILD
+    print("user ", claimant, " has already claimed in claim period ", this_iteration.iteration_number);
+    #endif
+
     return false;
   }
 
@@ -1315,7 +1333,11 @@ bool freeos::eligible_to_claim(const name& claimant, iteration this_iteration) {
 
     // has the user staked?
     if (user_record->staked_iteration == 0) {
-      if (DEBUG) print("user ", claimant, " has not staked");
+
+      #ifdef TEST_BUILD
+      print("user ", claimant, " has not staked");
+      #endif
+
       return false;
     }
 
@@ -1344,7 +1366,11 @@ bool freeos::eligible_to_claim(const name& claimant, iteration this_iteration) {
     asset iteration_holding_requirement = asset(this_iteration.tokens_required * 10000, symbol("FREEOS",4));
     
     if (total_freeos_balance < iteration_holding_requirement) {
-      if (DEBUG) print("user ", claimant, " has ", total_freeos_balance.to_string(), " which is less than the holding requirement of ", iteration_holding_requirement.to_string());
+
+      #ifdef TEST_BUILD
+      print("user ", claimant, " has ", total_freeos_balance.to_string(), " which is less than the holding requirement of ", iteration_holding_requirement.to_string());
+      #endif
+      
       return false;
     }
   }

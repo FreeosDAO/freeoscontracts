@@ -20,5 +20,5 @@ const uint64_t MAX_UNSTAKES_TO_PERFORM = 2;
 const std::string msg_freeos_system_not_available = "Freeos system is not currently operating. Please try later";
 const std::string msg_account_not_registered = "Account is not registered with freeos";
 
-// set to false for production use
-const bool DEBUG = true;
+// define for test/debug build
+#define TEST_BUILD

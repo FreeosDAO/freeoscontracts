@@ -20,10 +20,12 @@ using namespace eosio;
 
 const std::string VERSION = "0.107";
 
+#ifdef TEST_BUILD
 [[eosio::action]]
 void freeosconfig::version() {
-  if (DEBUG) print("Version = ", VERSION);
+  print("Version = ", VERSION);
 }
+#endif
 
 [[eosio::action]]
 void freeosconfig::paramupsert(
@@ -94,7 +96,10 @@ void freeosconfig::currentrate(double price) {
         });
     }
 
-    if (DEBUG) print("Current exchange rate set to ", price);
+#ifdef TEST_BUILD
+    print("Current exchange rate set to ", price);
+#endif
+
 }
 
 [[eosio::action]]
@@ -128,7 +133,10 @@ void freeosconfig::targetrate(double exchangerate) {
         });
     }
 
-    if (DEBUG) print("Exchange rate floor set to ", new_exchangerate);
+#ifdef TEST_BUILD
+    print("Exchange rate floor set to ", new_exchangerate);
+#endif
+
 }
 
 // erase rate from the table
@@ -165,7 +173,7 @@ void freeosconfig::stakeupsert(
         ) {
 
     require_auth(_self);
-    stakereq_index (get_self(), get_self().value);
+    stakereq_index stakereqs(get_self(), get_self().value);
     auto iterator = stakereqs.find(threshold);
 
     // check if the threshold is in the table or not
@@ -228,13 +236,21 @@ void freeosconfig::iterupsert(uint64_t iteration_number, std::string start, std:
   // parse the iteration start and end strings
   uint32_t nstart = parsetime(start);
   if (nstart == 0) {
-    if (DEBUG) print("start date ", start, " cannot be parsed; must be in YYYY-MM-DD HH:MM:SS format");
+
+    #ifdef TEST_BUILD
+    print("start date ", start, " cannot be parsed; must be in YYYY-MM-DD HH:MM:SS format");
+    #endif
+
     return;
   }
 
   uint32_t nend = parsetime(end);
   if (nend == 0) {
-    if (DEBUG) print("end date ", end, " cannot be parsed; must be in YYYY-MM-DD HH:MM:SS format");
+
+    #ifdef TEST_BUILD
+    print("end date ", end, " cannot be parsed; must be in YYYY-MM-DD HH:MM:SS format");
+    #endif
+
     return;
   }
 
@@ -254,7 +270,9 @@ void freeosconfig::iterupsert(uint64_t iteration_number, std::string start, std:
          row.tokens_required = tokens_required;
       });
 
-      if (DEBUG) print("iteration: ", iteration_number, " start: ", start, ", end: ", end, ", claim amount: ", claim_amount, ", tokens_required: ", tokens_required, " added to the iterations table");
+      #ifdef TEST_BUILD
+      print("iteration: ", iteration_number, " start: ", start, ", end: ", end, ", claim amount: ", claim_amount, ", tokens_required: ", tokens_required, " added to the iterations table");
+      #endif
 
   } else {
       // the iteration is in the table, so update
@@ -268,7 +286,9 @@ void freeosconfig::iterupsert(uint64_t iteration_number, std::string start, std:
         row.tokens_required = tokens_required;
       });
 
-      if (DEBUG) print("iteration: ", iteration_number, " start: ", start, ", end: ", end, ", claim amount: ", claim_amount, ", tokens_required: ", tokens_required, ", modified in the iterations table");
+      #ifdef TEST_BUILD
+      print("iteration: ", iteration_number, " start: ", start, ", end: ", end, ", claim amount: ", claim_amount, ", tokens_required: ", tokens_required, ", modified in the iterations table");
+      #endif
   }
 }
 
@@ -286,9 +306,13 @@ void freeosconfig::itererase(uint64_t iteration_number) {
   // the iteration is in the table, so delete
   iterations.erase(iterator);
 
-  if (DEBUG) print("record for iteration ", iteration_number, " deleted from iterations table");
+  #ifdef TEST_BUILD
+  print("record for iteration ", iteration_number, " deleted from iterations table");
+  #endif
+
 }
 
+#ifdef TEST_BUILD
 // for testing - get an iteration from the iterations table
 [[eosio::action]]
 void freeosconfig::getiter(uint64_t iteration_number) {
@@ -298,13 +322,16 @@ void freeosconfig::getiter(uint64_t iteration_number) {
 
   // check if the iteration is in the table or not
   if (iterator == iterations.end() ) {
-    if (DEBUG) print("a record for iteration ", iteration_number, " does not exist in the iterations table" );
+    print("a record for iteration ", iteration_number, " does not exist in the iterations table" );
   } else {
-    if (DEBUG) print("iteration ", iteration_number, " start: ", iterator->start_date, " (", iterator->start, "), end: ", iterator->end_date,
+    print("iteration ", iteration_number, " start: ", iterator->start_date, " (", iterator->start, "), end: ", iterator->end_date,
     " (", iterator->end, "), claim amount: ", iterator->claim_amount, ", tokens required: ", iterator->tokens_required);
   }
 }
+#endif
 
+
+#ifdef TEST_BUILD
 [[eosio::action]]
 void freeosconfig::additeration(uint8_t hours, uint16_t  claim_amount, uint16_t  tokens_required) {
   // get the last iteration record
@@ -326,11 +353,12 @@ void freeosconfig::additeration(uint8_t hours, uint16_t  claim_amount, uint16_t 
          row.tokens_required = tokens_required;
       });
 
-  if (DEBUG) print("Iteration ", new_iteration, " created");
+  print("Iteration ", new_iteration, " created");
 }
+#endif
 
 
-
+#ifdef TEST_BUILD
 // Required for testing
 // Prints out a stake requirements value record
 [[eosio::action]]
@@ -340,16 +368,18 @@ void freeosconfig::getstakes(uint64_t threshold) {
   auto iterator = stakereqs.find(threshold);
 
   if (iterator == stakereqs.end()) {
-    if (DEBUG) print("threshold does not exist");
+    print("threshold does not exist");
   } else {
     const auto& s = *iterator;
-    // if (DEBUG) print(s.threshold, ": ", s.requirement_e, " ", s.requirement_d, " ", s.requirement_v, " ", s.requirement_x, " ");
-    if (DEBUG) print(s.threshold, ": a=", s.requirement_a, " b=", s.requirement_b, " c=", s.requirement_c, " d=", s.requirement_d, " e=", s.requirement_e,
+    print(s.threshold, ": a=", s.requirement_a, " b=", s.requirement_b, " c=", s.requirement_c, " d=", s.requirement_d, " e=", s.requirement_e,
                         " u=", s.requirement_u, " v=", s.requirement_v, " w=", s.requirement_w, " x=", s.requirement_x, " y=", s.requirement_y);
   }
 
 }
+#endif
 
+
+#ifdef TEST_BUILD
 // Required for testing
 [[eosio::action]]
 void freeosconfig::getthreshold(uint64_t numusers, std::string account_type) {
@@ -402,9 +432,10 @@ void freeosconfig::getthreshold(uint64_t numusers, std::string account_type) {
       break;
   }
 
-  if (DEBUG) print("In band ", iterator->threshold, ", required_stake: ", required_stake);
+  print("In band ", iterator->threshold, ", required_stake: ", required_stake);
 
 }
+#endif
 
 
 // ************************************************************************************
@@ -507,9 +538,6 @@ uint32_t freeosconfig::parsetime(const std::string sdatetime) {
       if (ltm.tm_sec < 0 || ltm.tm_sec > 59) return 0;
 
       uint32_t epoch_seconds = GetTimeStamp(ltm.tm_year, ltm.tm_mon, ltm.tm_mday, ltm.tm_hour, ltm.tm_min, ltm.tm_sec);
-
-      // print various components of tm structure.
-      // if (DEBUG) print("Date: ", ltm.tm_year, "-", ltm.tm_mon, "-", ltm.tm_mday, " ", ltm.tm_hour, ":", ltm.tm_min, ":", ltm.tm_sec, " UTC: ", epoch_seconds);
 
       return epoch_seconds;
 

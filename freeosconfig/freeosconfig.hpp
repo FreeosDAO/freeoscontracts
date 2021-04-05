@@ -19,6 +19,7 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
      */
     freeosconfig(name receiver, name code, datastream<const char*> ds):contract(receiver, code, ds) {}
 
+#ifdef TEST_BUILD
     /**
      * version action.
      *
@@ -26,6 +27,7 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
      */
     [[eosio::action]]
     void version();
+#endif
 
     /**
      * paramupsert action
@@ -124,6 +126,7 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
     uint16_t  tokens_required);
 
 
+#ifdef TEST_BUILD
     /**
      * getiter action.
      *
@@ -135,6 +138,8 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
      */
     [[eosio::action]]
     void getiter(uint64_t iteration_number);
+#endif
+
 
     /**
      * itererase action.
@@ -183,6 +188,7 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
     [[eosio::action]]
     void rateerase();
 
+#ifdef TEST_BUILD
     /**
      * getstakes action.
      *
@@ -193,7 +199,9 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
      */
     [[eosio::action]]
     void getstakes(uint64_t threshold);
+#endif
 
+#ifdef TEST_BUILD
     /**
      * getthreshold action.
      *
@@ -205,8 +213,9 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
      */
     [[eosio::action]]
     void getthreshold(uint64_t numusers, std::string account_type);
+#endif
 
-
+#ifdef TEST_BUILD
     /**
      * additeration action.
      *
@@ -220,7 +229,7 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
      */
     [[eosio::action]]
     void additeration(uint8_t hours, uint16_t  claim_amount, uint16_t  tokens_required);
-
+#endif
 
 
     // ************************************************************************************
