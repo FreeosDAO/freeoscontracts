@@ -87,13 +87,13 @@ using namespace eosio;
 //       Removed test code
 
 
-const std::string VERSION = "0.340";
+const std::string VERSION = "0.340m";
 
 [[eosio::action]]
 void freeos::version() {
   uint32_t this_iteration = get_cached_iteration();
 
-  if (DEBUG) print("Version = ", VERSION, " - iteration ", this_iteration);
+  check(false, VERSION);
 }
 
 [[eosio::action]]
