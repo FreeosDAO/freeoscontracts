@@ -1,4 +1,4 @@
-// common include definitions
+#include <eosio/eosio.hpp>
 #include <string>
 
 // account names
@@ -22,3 +22,12 @@ const std::string msg_account_not_registered = "Account is not registered with f
 
 // define for test/debug build
 #define TEST_BUILD
+
+ struct price {
+   double    currentprice;
+   double    targetprice;
+
+   uint64_t primary_key() const { return 0; } // return a constant (0 in this case) to ensure a single-row table
+ };
+
+ using exchange_index = eosio::multi_index<"exchangerate"_n, price>;

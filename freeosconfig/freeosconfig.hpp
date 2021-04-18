@@ -1,3 +1,5 @@
+#pragma once
+
 #include <eosio/eosio.hpp>
 #include "eosio.proton.hpp"
 
@@ -313,6 +315,7 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
     };
 
     using exchange_index = eosio::multi_index<"exchangerate"_n, price>;
+  
 
 
     // Verification table - a mockup of the verification table on Proton - so that we can test how to determine a user's account_type

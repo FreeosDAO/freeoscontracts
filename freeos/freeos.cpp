@@ -1,5 +1,6 @@
 #include <eosio/eosio.hpp>
 #include <eosio/system.hpp>
+#include "../freeosconfig/freeosconfig.hpp"
 #include "../common/freeoscommon.hpp"
 #include "freeos.hpp"
 #include <cmath>
@@ -85,16 +86,20 @@ using namespace eosio;
 //       Changes to logic in update_unvest_percentage function
 // 340 - Change to tick to improve caching of iteration number
 //       Removed test code
+// 341 - On reverify, check if user has a zero stake requirement and consider them staked (user record staked_iteration field set)
+//       reverify action cannot be run if in iteration 0
+//       reguser cannot be run if in iteration 0
 
 
-const std::string VERSION = "0.340";
+const std::string VERSION = "0.341";
 
 #ifdef TEST_BUILD
 [[eosio::action]]
 void freeos::version() {
-  uint32_t this_iteration = get_cached_iteration();
+  iteration this_iteration = getclaimiteration();
 
-  print("Version = ", VERSION, " - iteration ", this_iteration);
+  std::string version_message = "Version = " + VERSION + " - iteration " + std::to_string(this_iteration.iteration_number);
+  check(false, version_message);
 }
 #endif
 
@@ -236,6 +241,12 @@ void freeos::reguser(const name& user) {
   // check that system is operational (global masterswitch parameter set to "1")
   check(checkmasterswitch(), msg_freeos_system_not_available);
 
+  // get the current iteration
+  iteration current_iteration = getclaimiteration();
+
+  // nothing is allowed when not in a valid claim period (when iteration is 0)
+  check(current_iteration.iteration_number != 0, "freeos is not in a claim period");
+
   // is this a real account?
   check(is_account(user), "user does not have an account on the network");
 
@@ -258,9 +269,6 @@ void freeos::reguser(const name& user) {
 // All prerequisities must be handled by the calling action.
 
 registration_status freeos::register_user(const name& user) {
-
-  // get the current iteration
-  iteration current_iteration = getclaimiteration();
 
   // is the user already registered?
   // find the account in the user table
@@ -292,6 +300,9 @@ registration_status freeos::register_user(const name& user) {
     });
   }
 
+  // get the current iteration
+  iteration current_iteration = getclaimiteration();
+
   // examine the staking requirement for the user - if their staking requirement is 0 then we will consider them to have already staked
   int64_t stake_requirement_amount = get_stake_requirement(account_type);
   asset stake_requirement = asset(stake_requirement_amount, symbol(CURRENCY_SYMBOL_CODE, 4));
@@ -318,10 +329,17 @@ registration_status freeos::register_user(const name& user) {
    return registered_success;
 }
 
+
 // action to allow user to reverify their account_type
 [[eosio::action]]
 void freeos::reverify(name user) {
   require_auth(user);
+
+  // get the current iteration
+  iteration current_iteration = getclaimiteration();
+
+  // nothing is allowed when not in a valid claim period (when iteration is 0)
+  check(current_iteration.iteration_number != 0, "freeos is not in a claim period");
 
   // set the account type
   user_index users(get_self(), user.value);
@@ -333,9 +351,18 @@ void freeos::reverify(name user) {
   // get the account type
   char account_type = get_account_type(user);
 
+  // examine the staking requirement for the user - if their staking requirement is 0 then we will consider them to have already staked
+  int64_t stake_requirement_amount = get_stake_requirement(account_type);
+  asset stake_requirement = asset(stake_requirement_amount, symbol(CURRENCY_SYMBOL_CODE, 4));
+
   // set the user account type
   users.modify(iterator, _self, [&]( auto& u) {
     u.account_type = account_type;
+
+    // if user not already staked and stake requirement is 0, then consider the user to have staked
+    if (u.staked_iteration == 0 && stake_requirement.amount == 0) {
+      u.staked_iteration = current_iteration.iteration_number;
+    }
   });
 
 }
@@ -919,7 +946,6 @@ void freeos::claim( const name& user )
    // user-activity-driven background process
    tick();
 
-
    // check that system is operational (global masterswitch parameter set to "1")
    check(checkmasterswitch(), msg_freeos_system_not_available);
 
@@ -1397,7 +1423,27 @@ uint32_t freeos::updateclaimeventcount() {
 
 uint16_t freeos::getfreedaomultiplier(uint32_t claimevents) {
 
-/*  FOR PRODUCTION
+#ifdef TEST_BUILD
+  if (claimevents <= 5) {
+      return 55;
+    } else if (claimevents <= 10) {
+      return 34;
+    } else if (claimevents <= 20) {
+      return 21;
+    } else if (claimevents <= 30) {
+      return 13;
+    } else if (claimevents <= 50) {
+      return 8;
+    } else if (claimevents <= 80) {
+      return 5;
+    } else if (claimevents <= 130) {
+      return 3;
+    } else if (claimevents <= 210) {
+      return 2;
+    } else {
+      return 1;
+    }
+#else
     if (claimevents <= 100) {
       return 233;
     } else if (claimevents <= 200) {
@@ -1423,26 +1469,9 @@ uint16_t freeos::getfreedaomultiplier(uint32_t claimevents) {
     } else {
       return 1;
     } */
+#endif
 
     // FOR TEST PURPOSES
-    if (claimevents <= 5) {
-      return 55;
-    } else if (claimevents <= 10) {
-      return 34;
-    } else if (claimevents <= 20) {
-      return 21;
-    } else if (claimevents <= 30) {
-      return 13;
-    } else if (claimevents <= 50) {
-      return 8;
-    } else if (claimevents <= 80) {
-      return 5;
-    } else if (claimevents <= 130) {
-      return 3;
-    } else if (claimevents <= 210) {
-      return 2;
-    } else {
-      return 1;
-    }
+    
 
 }

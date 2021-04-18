@@ -401,14 +401,14 @@ enum registration_status{ registered_already,
 
 
          // FREEOS USD-price - code: freeosconfig, scope: freeosconfig
-         struct price {
-           double    currentprice;
-           double    targetprice;
+        //  struct price {
+        //    double    currentprice;
+        //    double    targetprice;
 
-           uint64_t primary_key() const { return 0; } // return a constant (0 in this case) to ensure a single-row table
-         };
+        //    uint64_t primary_key() const { return 0; } // return a constant (0 in this case) to ensure a single-row table
+        //  };
 
-         using exchange_index = eosio::multi_index<"exchangerate"_n, price>;
+        //  using exchange_index = eosio::multi_index<"exchangerate"_n, price>;
 
          // ********************************
 

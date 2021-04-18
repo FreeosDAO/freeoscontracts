@@ -1,4 +1,4 @@
-#include <eosio/eosio.hpp>
+//#include <eosio/eosio.hpp>
 #include "../common/freeoscommon.hpp"
 #include "freeosconfig.hpp"
 
