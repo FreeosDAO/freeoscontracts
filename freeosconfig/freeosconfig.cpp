@@ -233,6 +233,8 @@ void freeosconfig::iterupsert(uint64_t iteration_number, std::string start, std:
 
   require_auth(_self);
 
+  check(iteration_number != 0, "iteration number must not be 0");
+
   // parse the iteration start and end strings
   uint32_t nstart = parsetime(start);
   if (nstart == 0) {

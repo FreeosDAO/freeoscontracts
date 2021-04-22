@@ -88,7 +88,7 @@ using namespace eosio;
 //       Removed test code
 // 341 - On reverify, check if user has a zero stake requirement and consider them staked (user record staked_iteration field set)
 //       reverify action cannot be run if in iteration 0
-//       reguser cannot be run if in iteration 0
+//       reguser action cannot be run if in iteration 0
 
 
 const std::string VERSION = "0.341";
@@ -706,26 +706,6 @@ void freeos::getuser(const name& user) {
 bool freeos::checkmasterswitch() {
   parameter_index parameters(name(freeosconfig_acct), name(freeosconfig_acct).value);
   auto iterator = parameters.find("masterswitch"_n.value);
-
-  // check if the parameter is in the table or not
-  if (iterator == parameters.end() ) {
-      // the parameter is not in the table, or table not found, return false because it should be accessible (failsafe)
-      return false;
-  } else {
-      // the parameter is in the table
-      const auto& parameter = *iterator;
-
-      if (parameter.value.compare("1") == 0) {
-        return true;
-      } else {
-        return false;
-      }
-  }
-}
-
-bool freeos::checkschedulelogging() {
-  parameter_index parameters(name(freeosconfig_acct), name(freeosconfig_acct).value);
-  auto iterator = parameters.find("schedulelog"_n.value);
 
   // check if the parameter is in the table or not
   if (iterator == parameters.end() ) {
