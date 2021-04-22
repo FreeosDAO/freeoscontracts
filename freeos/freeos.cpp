@@ -91,7 +91,7 @@ using namespace eosio;
 //       reguser action cannot be run if in iteration 0
 
 
-const std::string VERSION = "0.341";
+const std::string VERSION = "0.341o";
 
 #ifdef TEST_BUILD
 [[eosio::action]]
