@@ -192,10 +192,24 @@ enum registration_status{ registered_already,
           * @param memo - the memo string to accompany the transaction.
           */
          [[eosio::action]]
-         void transfer( const name&    from,
+         void transfer( const name&    owner,
                         const name&    to,
                         const asset&   quantity,
                         const string&  memo );
+         
+         /**
+          * Convert action.
+          *
+          * @details Converts an amount of non-exchangeable currency to exchangeable currency.
+          * The non-exchangeable currency is burned and an equivalent amount of exchangeable currency issued and transferred.
+          *
+          * @param owner - the account to convert from,
+          * @param quantity - the quantity of tokens to be converted.
+          */
+         [[eosio::action]]
+         void convert( const name&    owner,
+                       const asset&   quantity);
+         
          /**
           * Open action.
           *
@@ -332,11 +346,29 @@ enum registration_status{ registered_already,
           void reverify(name user);
 
 
+          /**
+           * allocate - an action wrapper for the transfer function
+           *
+           * @details Checks that the 'from' user belongs to a whitelist and then calls the transfer function.
+           * 
+           * @param from      - the account to be deducted
+           * @param to        - the account to be incremented
+           * @param quantity  - the amount to be transferred
+           * @param memo      - the memo accompanying the transaction
+           *
+           */
+          [[eosio::action]]
+          void allocate(const name&    from,
+                        const name&    to,
+                        const asset&   quantity,
+                        const string&  memo);
+
+
 
          using create_action = eosio::action_wrapper<"create"_n, &freeos::create>;
          using issue_action = eosio::action_wrapper<"issue"_n, &freeos::issue>;
          using retire_action = eosio::action_wrapper<"retire"_n, &freeos::retire>;
-         using transfer_action = eosio::action_wrapper<"transfer"_n, &freeos::transfer>;
+         // using transfer_action = eosio::action_wrapper<"transfer"_n, &freeos::transfer>;
          using open_action = eosio::action_wrapper<"open"_n, &freeos::open>;
          using close_action = eosio::action_wrapper<"close"_n, &freeos::close>;
 
@@ -375,8 +407,8 @@ enum registration_status{ registered_already,
            time_point_sec registered_time;  // when the user was registered
            uint16_t       staked_iteration; // the iteration in which the user staked their tokens
            uint16_t       votes;            // how many votes the user has made
-           uint16_t       issuances;        // total number of times the user has been issued with FREEOS
-           uint16_t       last_issuance;    // the last iteration in which the user was issued with FREEOS
+           uint16_t       issuances;        // total number of times the user has been issued with OPTIONs
+           uint16_t       last_issuance;    // the last iteration in which the user was issued with OPTIONs
 
            uint64_t primary_key() const {return stake.symbol.code().raw();}
          };
@@ -467,22 +499,19 @@ enum registration_status{ registered_already,
          indexed_by<"start"_n, const_mem_fun<iteration, uint64_t, &iteration::get_secondary>>
          >;
 
+        // Transferer table - a whitelist to determine who can call the transfer function - code: freeosconfig, scope: freeosconfig
+        struct [[eosio::table]] transferer {
+          name    account;
 
-         // claim history table - scoped on user account name
-         struct [[eosio::table]] claimevent {
-           uint64_t   iteration_number;
-           uint32_t   claim_time;
+          uint64_t primary_key() const { return account.value; }
+        };
 
-           uint64_t primary_key() const { return iteration_number; }
-         };
-
-         using claim_index = eosio::multi_index<"claims"_n, claimevent>;
+        using transferer_index = eosio::multi_index<"transferers"_n, transferer>;
 
 
          // unvest history table - scoped on user account name
          struct [[eosio::table]] unvestevent {
            uint64_t   iteration_number;
-           uint32_t   unvest_time;
 
            uint64_t primary_key() const { return iteration_number; }
          };

@@ -361,6 +361,36 @@
             ]
         },
         {
+            "name": "transfadd",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "transferase",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "transferer",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                }
+            ]
+        },
+        {
             "name": "tuple_name_name",
             "base": "",
             "fields": [
@@ -534,6 +564,16 @@
             "ricardian_contract": ""
         },
         {
+            "name": "transfadd",
+            "type": "transfadd",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "transferase",
+            "type": "transferase",
+            "ricardian_contract": ""
+        },
+        {
             "name": "userverify",
             "type": "userverify",
             "ricardian_contract": ""
@@ -569,6 +609,13 @@
         {
             "name": "stakereqs",
             "type": "stakerequire",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "transferers",
+            "type": "transferer",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

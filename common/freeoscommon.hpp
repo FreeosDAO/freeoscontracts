@@ -2,13 +2,16 @@
 #include <string>
 
 // account names
-const std::string freeos_acct = "freeost";
-const std::string freeosconfig_acct = "freeoscfgt";
+const std::string freeos_acct = "freeos";
+const std::string freeostokens_acct = "freeostokens";
+const std::string freeosconfig_acct = "freeosconfig";
 const std::string freedao_acct = "dividendfree";
 const std::string verification_contract = "eosio.proton";   // contains the usersinfo table
 
 // currency symbol for network
-const std::string CURRENCY_SYMBOL_CODE = "XPR";
+const std::string SYSTEM_CURRENCY_CODE = "XPR";
+const std::string NON_EXCHANGEABLE_CURRENCY_CODE = "OPTION";
+const std::string EXCHANGEABLE_CURRENCY_CODE = "FREEOS";
 
 // hard floor for the target exchange rate - it can never go below this
 const double HARD_EXCHANGE_RATE_FLOOR = 0.0167;

@@ -89,9 +89,14 @@ using namespace eosio;
 // 341 - On reverify, check if user has a zero stake requirement and consider them staked (user record staked_iteration field set)
 //       reverify action cannot be run if in iteration 0
 //       reguser action cannot be run if in iteration 0
+// 342 - Support for OPTION currency added - i.e. NON_EXCHANGEABLE_CURRENCY_CODE = "OPTION"
+//       allocate action added to act as a wrapper for the transfer function - checks against the transferers table before calling transfer function
+//       convert action enables the user to convert OPTION tokens to equivalent number of FREEOS tokens
+//       claims table has been removed - the claim eligibility check now uses the 'last_issuance' field in the user record
+//       unvest table only records the iteration number and not the date. Only one record per user to record iteration of last unvest
 
 
-const std::string VERSION = "0.341o";
+const std::string VERSION = "0.342a";
 
 #ifdef TEST_BUILD
 [[eosio::action]]
@@ -273,7 +278,7 @@ registration_status freeos::register_user(const name& user) {
   // is the user already registered?
   // find the account in the user table
   user_index usertable( get_self(), user.value );
-  auto u = usertable.find( symbol_code(CURRENCY_SYMBOL_CODE).raw() );
+  auto u = usertable.find( symbol_code(SYSTEM_CURRENCY_CODE).raw() );
 
   if( u != usertable.end() ) {
     return registered_already;
@@ -305,13 +310,13 @@ registration_status freeos::register_user(const name& user) {
 
   // examine the staking requirement for the user - if their staking requirement is 0 then we will consider them to have already staked
   int64_t stake_requirement_amount = get_stake_requirement(account_type);
-  asset stake_requirement = asset(stake_requirement_amount, symbol(CURRENCY_SYMBOL_CODE, 4));
+  asset stake_requirement = asset(stake_requirement_amount, symbol(SYSTEM_CURRENCY_CODE, 4));
 
   // register the user
   time_point_sec now = time_point_sec(current_time_point().sec_since_epoch());
 
   usertable.emplace( get_self(), [&]( auto& u ) {
-    u.stake = asset(0, symbol(CURRENCY_SYMBOL_CODE, 4));
+    u.stake = asset(0, symbol(SYSTEM_CURRENCY_CODE, 4));
     u.account_type = account_type;
     u.registered_time = now;
     u.staked_iteration = stake_requirement.amount == 0 ? current_iteration.iteration_number : 0;
@@ -319,10 +324,10 @@ registration_status freeos::register_user(const name& user) {
 
    // add the user to the vested accounts table
    vestaccounts v_accounts( get_self(), user.value );
-   auto usr = v_accounts.find( symbol_code("FREEOS").raw() );
+   auto usr = v_accounts.find( symbol_code(NON_EXCHANGEABLE_CURRENCY_CODE).raw() );
    if( usr == v_accounts.end() ) {
       v_accounts.emplace(get_self(), [&]( auto& a ){
-        a.balance = asset(0, symbol("FREEOS",4));
+        a.balance = asset(0, symbol(NON_EXCHANGEABLE_CURRENCY_CODE,4));
       });
    }
 
@@ -353,7 +358,7 @@ void freeos::reverify(name user) {
 
   // examine the staking requirement for the user - if their staking requirement is 0 then we will consider them to have already staked
   int64_t stake_requirement_amount = get_stake_requirement(account_type);
-  asset stake_requirement = asset(stake_requirement_amount, symbol(CURRENCY_SYMBOL_CODE, 4));
+  asset stake_requirement = asset(stake_requirement_amount, symbol(SYSTEM_CURRENCY_CODE, 4));
 
   // set the user account type
   users.modify(iterator, _self, [&]( auto& u) {
@@ -417,7 +422,7 @@ void freeos::dereg(const name& user) {
   require_auth( get_self() );
 
   user_index usertable( get_self(), user.value );
-  auto u = usertable.find( symbol_code(CURRENCY_SYMBOL_CODE).raw() );
+  auto u = usertable.find( symbol_code(SYSTEM_CURRENCY_CODE).raw() );
 
   check(u != usertable.end(), "user is not registered with freeos");
   check(u->stake.amount == 0, "user has staked and cannot be deregistered");
@@ -483,7 +488,7 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
 
 
     uint32_t stake_requirement_amount = get_stake_requirement(u->account_type);
-    asset stake_requirement = asset(stake_requirement_amount * 10000, symbol(CURRENCY_SYMBOL_CODE, 4));
+    asset stake_requirement = asset(stake_requirement_amount * 10000, symbol(SYSTEM_CURRENCY_CODE, 4));
     check(stake_requirement == quantity, "the stake amount is not what is required");
 
     // update the user record
@@ -544,7 +549,7 @@ void freeos::unstake(const name& user) {
 
   // find user record
   user_index usertable( get_self(), user.value );
-  auto u = usertable.find( symbol_code(CURRENCY_SYMBOL_CODE).raw() );
+  auto u = usertable.find( symbol_code(SYSTEM_CURRENCY_CODE).raw() );
 
   // check if the user is registered
   check(u != usertable.end(), msg_account_not_registered);
@@ -615,13 +620,13 @@ void freeos::refund_stakes() {
 void freeos::refund_stake(name user, asset amount) {
   // find user record
   user_index usertable( get_self(), user.value );
-  auto u = usertable.find( symbol_code(CURRENCY_SYMBOL_CODE).raw() );
+  auto u = usertable.find( symbol_code(SYSTEM_CURRENCY_CODE).raw() );
 
   // transfer stake from freeos to user account using the eosio.token contract
   action transfer = action(
     permission_level{get_self(),"active"_n},
     "eosio.token"_n,
-    "transfer"_n,
+    "allocate"_n,
     std::make_tuple(get_self(), user, amount, std::string("refund of freeos stake"))
   );
 
@@ -629,7 +634,7 @@ void freeos::refund_stake(name user, asset amount) {
 
   // update the user record
   usertable.modify(u, _self, [&](auto& row) {
-    row.stake = asset(0, symbol(CURRENCY_SYMBOL_CODE, 4));
+    row.stake = asset(0, symbol(SYSTEM_CURRENCY_CODE, 4));
     row.staked_iteration = 0;
   });
 }
@@ -668,15 +673,15 @@ void freeos::getuser(const name& user) {
   // get the user's XPR balance
   asset xpr_balance = get_balance("eosio.token"_n, user, symbol("XPR",4));
 
-  // get the user's liquid FREEOS balance
-  asset liquid_freeos_balance = get_balance(get_self(), user, symbol("FREEOS",4));
+  // get the user's liquid OPTION balance
+  asset liquid_option_balance = get_balance(get_self(), user, symbol(NON_EXCHANGEABLE_CURRENCY_CODE,4));
 
-  // get the user's vested FREEOS balance
-  asset vested_freeos_balance = asset(0, symbol("FREEOS",4)); // default if account record not found
+  // get the user's vested OPTION balance
+  asset vested_option_balance = asset(0, symbol(NON_EXCHANGEABLE_CURRENCY_CODE,4)); // default if account record not found
   vestaccounts v_accounts(get_self(), user.value );
-  const auto& ac = v_accounts.find(symbol_code("FREEOS").raw());
+  const auto& ac = v_accounts.find(symbol_code(NON_EXCHANGEABLE_CURRENCY_CODE).raw());
   if (ac != v_accounts.end()) {
-    vested_freeos_balance = ac->balance;;
+    vested_option_balance = ac->balance;;
   }
 
   // get the user's AIRKEY balance
@@ -687,16 +692,14 @@ void freeos::getuser(const name& user) {
   uint32_t this_iteration = get_cached_iteration();
 
   bool claimed_flag = false;
-  claim_index claims(get_self(), user.value);
-  auto iterator = claims.find(this_iteration);
-  // if the claim record exists for this iteration then the user has claimed
-  if (iterator != claims.end()) {
+  // if the last issuance is for this iteration then the user has claimed
+  if (u->last_issuance == this_iteration) {
     claimed_flag = true;
   }
 
   // feedback
   print("account: ", user, ", registered: ", u->registered_time.utc_seconds, ", type: ", u->account_type, ", stake: ", u->stake.to_string(),
-        ", staked-iteration: ", u->staked_iteration, ", XPR: ", xpr_balance.to_string(), ", liquid: ", liquid_freeos_balance.to_string(), ", vested: ", vested_freeos_balance.to_string(),
+        ", staked-iteration: ", u->staked_iteration, ", XPR: ", xpr_balance.to_string(), ", liquid: ", liquid_option_balance.to_string(), ", vested: ", vested_option_balance.to_string(),
          ", airkey: ", airkey_balance.to_string(), ", iteration: ", this_iteration, ", claimed: ", claimed_flag);
 
 }
@@ -799,17 +802,33 @@ void freeos::retire( const asset& quantity, const string& memo )
 }
 
 
-void freeos::transfer( const name&    from,
+// Replacement for the transfer action - 'allocate' enforces a whitelist of those who can transfer
+void freeos::allocate(const name&    from,
                       const name&    to,
                       const asset&   quantity,
-                      const string&  memo )
+                      const string&  memo)
+{
+  // check if the 'from' account is in the transferer whitelist
+  transferer_index transferers_table(name(freeosconfig_acct), name(freeosconfig_acct).value);
+  auto iterator = transferers_table.find(from.value);
+
+  check(iterator != transferers_table.end(), "the allocate action is protected");
+
+  // if the 'from' user is in the transferers table then call the transfer action
+  transfer(from, to, quantity, memo);
+}
+
+void freeos::transfer(const name&    from,
+                      const name&    to,
+                      const asset&   quantity,
+                      const string&  memo)
 {
     check( from != to, "cannot transfer to self" );
     require_auth( from );
     check( is_account( to ), "to account does not exist");
 
     // AIRKEY tokens are non-transferable, except by the freeostokens account
-    check(quantity.symbol.code().to_string().compare("AIRKEY") != 0 || from == name(freeos_acct), "AIRKEY tokens are non-transferable");
+    // check(quantity.symbol.code().to_string().compare("AIRKEY") != 0 || from == name(freeos_acct), "AIRKEY tokens are non-transferable");
 
     auto sym = quantity.symbol.code();
     stats statstable( get_self(), sym.raw() );
@@ -827,6 +846,58 @@ void freeos::transfer( const name&    from,
 
     sub_balance( from, quantity );
     add_balance( to, quantity, payer );
+}
+
+
+// convert non-exchangeable currency for exchangeable currency
+void freeos::convert(const name& owner, const asset& quantity) {
+
+  require_auth(owner);
+
+  auto sym = quantity.symbol;
+  check( sym == symbol(NON_EXCHANGEABLE_CURRENCY_CODE, 4), "invalid symbol name" );
+
+  stats statstable( get_self(), sym.code().raw() );
+  auto existing = statstable.find( sym.code().raw() );
+  check( existing != statstable.end(), "token with symbol does not exist" );
+  const auto& st = *existing;
+
+  check( quantity.is_valid(), "invalid quantity" );
+  check( quantity.amount > 0, "must convert positive quantity" );
+
+  statstable.modify( st, same_payer, [&]( auto& s ) {
+      s.supply -= quantity;
+  });
+
+  // decrease owner's balance of non-exchangeable tokens
+  sub_balance(owner, quantity);
+
+
+  // Issue exchangeable tokens
+  asset exchangeable_amount = asset(quantity.amount, symbol(EXCHANGEABLE_CURRENCY_CODE,4));
+  std::string memo = std::string("conversion");
+
+  // issue an equivalent amount of exchangeable tokens to the freeos account
+   action issue_action = action(
+     permission_level{get_self(),"active"_n},
+     name(freeostokens_acct),
+     "issue"_n,
+     std::make_tuple(name(freeos_acct), exchangeable_amount, memo)
+   );
+
+   issue_action.send();
+
+
+   // transfer exchangeable tokens to the owner
+   action transfer_action = action(
+     permission_level{get_self(),"active"_n},
+     name(freeostokens_acct),
+     "transfer"_n,
+     std::make_tuple(name(freeos_acct), owner, exchangeable_amount, memo)
+   );
+
+   transfer_action.send();
+
 }
 
 
@@ -857,35 +928,6 @@ void freeos::add_balance( const name& owner, const asset& value, const name& ram
    }
 }
 
-/*
-void freeos::add_stake( const name& owner, const asset& value, const name& ram_payer )
-{
-   user_index to_acnts( get_self(), owner.value );
-   auto to = to_acnts.find( value.symbol.code().raw() );
-   if( to == to_acnts.end() ) {
-      to_acnts.emplace( ram_payer, [&]( auto& a ){
-        a.stake = value;
-      });
-   } else {
-      to_acnts.modify( to, same_payer, [&]( auto& a ) {
-        a.stake += value;
-      });
-   }
-}
-
-
-
-void freeos::sub_stake( const name& owner, const asset& value ) {
-   user_index from_acnts( get_self(), owner.value );
-
-   const auto& from = from_acnts.get( value.symbol.code().raw(), "no stake balance found" );
-   check( from.stake.amount >= value.amount, "overdrawn balance" );
-
-   from_acnts.modify( from, owner, [&]( auto& a ) {
-         a.stake -= value;
-      });
-}
-*/
 
 void freeos::open( const name& owner, const symbol& symbol, const name& ram_payer )
 {
@@ -954,29 +996,29 @@ void freeos::claim( const name& user )
    // first get the proportion that is vested
    float vested_proportion = get_vested_proportion();
 
-   // work out the vested proportion and liquid proportion of FREEOS to be claimed
+   // work out the vested proportion and liquid proportion of OPTION to be claimed
    uint16_t claim_tokens = this_iteration.claim_amount;
-   asset claim_amount = asset(claim_tokens * 10000, symbol("FREEOS",4));
+   asset claim_amount = asset(claim_tokens * 10000, symbol(NON_EXCHANGEABLE_CURRENCY_CODE,4));
 
    uint16_t vested_tokens = claim_tokens * vested_proportion;
-   asset vested_amount = asset(vested_tokens * 10000, symbol("FREEOS",4));
+   asset vested_amount = asset(vested_tokens * 10000, symbol(NON_EXCHANGEABLE_CURRENCY_CODE,4));
 
    uint16_t liquid_tokens = claim_tokens - vested_tokens;
-   asset liquid_amount = asset(liquid_tokens * 10000, symbol("FREEOS",4));
+   asset liquid_amount = asset(liquid_tokens * 10000, symbol(NON_EXCHANGEABLE_CURRENCY_CODE,4));
 
    uint16_t freedao_tokens = claim_tokens * freedao_multiplier;
-   asset freedao_amount = asset(freedao_tokens * 10000, symbol("FREEOS",4));
+   asset freedao_amount = asset(freedao_tokens * 10000, symbol(NON_EXCHANGEABLE_CURRENCY_CODE,4));
 
    uint16_t minted_tokens = liquid_tokens + freedao_tokens;
-   asset minted_amount = asset(minted_tokens * 10000, symbol("FREEOS",4));
+   asset minted_amount = asset(minted_tokens * 10000, symbol(NON_EXCHANGEABLE_CURRENCY_CODE,4));
 
 
    // prepare the memo string
    std::string memo = std::string("claim by ") + user.to_string();
 
    // conditionally limited supply - increment the conditional_supply by total amount of issue
-   stats statstable( get_self(), symbol_code("FREEOS").raw() );
-   auto currency_record = statstable.find( symbol_code("FREEOS").raw() );
+   stats statstable( get_self(), symbol_code(NON_EXCHANGEABLE_CURRENCY_CODE).raw() );
+   auto currency_record = statstable.find( symbol_code(NON_EXCHANGEABLE_CURRENCY_CODE).raw() );
 
    check( currency_record != statstable.end(), "token with symbol does not exist" );
    const auto& st = *currency_record;
@@ -997,22 +1039,22 @@ void freeos::claim( const name& user )
    issue_action.send();
 
 
-   // transfer liquid FREEOS to user
+   // transfer liquid OPTION to user
    action user_transfer = action(
      permission_level{get_self(),"active"_n},
      name(freeos_acct),
-     "transfer"_n,
+     "allocate"_n,
      std::make_tuple(get_self(), user, liquid_amount, memo)
    );
 
    user_transfer.send();
 
 
-   // transfer FREEOS to freedao_acct
+   // transfer OPTION to freedao_acct
    action freedao_transfer = action(
      permission_level{get_self(),"active"_n},
      name(freeos_acct),
-     "transfer"_n,
+     "allocate"_n,
      std::make_tuple(get_self(), name(freedao_acct), freedao_amount, memo)
    );
 
@@ -1021,7 +1063,7 @@ void freeos::claim( const name& user )
    // record the deposit to the freedao account
    record_deposit(this_iteration.iteration_number, freedao_amount);
 
-   // update the user's vested FREEOS balance
+   // update the user's vested OPTION balance
    if (vested_tokens > 0) {
      vestaccounts to_acnts( get_self(), user.value );
      auto to = to_acnts.find( vested_amount.symbol.code().raw() );
@@ -1034,18 +1076,6 @@ void freeos::claim( const name& user )
           a.balance += vested_amount;
         });
      }
-   }
-
-
-   // write the claim event to the claim history table
-   claim_index claims(get_self(), user.value);
-   auto iterator = claims.find(this_iteration.iteration_number);
-
-   if (iterator == claims.end()) {
-     claims.emplace( get_self(), [&]( auto& claim ) {
-     claim.iteration_number = this_iteration.iteration_number;
-     claim.claim_time = current_time_point().sec_since_epoch();
-     });
    }
 
    // update the user's issuance stats in their registration record
@@ -1130,7 +1160,7 @@ void freeos::unvest(const name& user)
    uint32_t unvest_percent = iter->unvestpercent; 
    
    // check that the unvest percentage is within limits
-   check(unvest_percent > 0 && unvest_percent <= 100, "vested FREEOS cannot be unvested in this claim period. Please try during next claim period.");
+   check(unvest_percent > 0 && unvest_percent <= 100, "vested OPTIONs cannot be unvested in this claim period. Please try during next claim period.");
 
    // has the user unvested this iteration? - consult the unvests history table
    unvest_index unvests(get_self(), user.value);
@@ -1139,8 +1169,8 @@ void freeos::unvest(const name& user)
    check(iterator == unvests.end(), "user has already unvested in this iteration");
 
    // do the unvesting
-   // get the user's unvested FREEOS balance
-   asset user_vbalance = asset(0, symbol("FREEOS",4));
+   // get the user's unvested OPTION balance
+   asset user_vbalance = asset(0, symbol(NON_EXCHANGEABLE_CURRENCY_CODE,4));
    vestaccounts v_accounts(get_self(), user.value);
    auto v_it = v_accounts.begin();
 
@@ -1151,35 +1181,35 @@ void freeos::unvest(const name& user)
    // if user's vested balance is 0 then nothing to do, so return
    if (user_vbalance.amount == 0) {
      #ifdef TEST_BUILD
-     print("You have no vested FREEOS therefore nothing to unvest.");
+     print("You have no vested OPTIONs therefore nothing to unvest.");
      #endif
 
      return;
    }
 
 
-   // calculate the amount of vested FREEOS to convert to liquid FREEOS
+   // calculate the amount of vested OPTIONs to convert to liquid OPTIONs
    // Warning: these calculations use mixed-type arithmetic. Any changes need to be thoroughly tested.
 
-   uint64_t vestedunits = user_vbalance.amount;   // in currency units (i.e. number of 0.0001 FREEOS)
+   uint64_t vestedunits = user_vbalance.amount;   // in currency units (i.e. number of 0.0001 OPTION)
    double percentage = unvest_percent / 100.0;    // required to be a double
-   uint64_t convertedunits = vestedunits * percentage;  // in currency units (i.e. number of 0.0001 FREEOS)
-   uint32_t roundedupfreeos = (uint32_t) ceil(convertedunits / 10000.0);  // ceil rounds up to the next whole number of FREEOS
-   asset convertedfreeos = asset(roundedupfreeos * 10000, symbol("FREEOS", 4)); // express the roundedupfreeos as an asset
+   uint64_t convertedunits = vestedunits * percentage;  // in currency units (i.e. number of 0.0001 OPTION)
+   uint32_t roundedupoptions = (uint32_t) ceil(convertedunits / 10000.0);  // ceil rounds up to the next whole number of OPTION
+   asset convertedoptions = asset(roundedupoptions * 10000, symbol(NON_EXCHANGEABLE_CURRENCY_CODE, 4)); // express the roundedupoptions as an asset
 
 
    // conditionally limited supply - increment the conditional_supply by total amount of issue
-   stats statstable( get_self(), symbol_code("FREEOS").raw() );
-   auto currency_record = statstable.find( symbol_code("FREEOS").raw() );
+   stats statstable( get_self(), symbol_code(NON_EXCHANGEABLE_CURRENCY_CODE).raw() );
+   auto currency_record = statstable.find( symbol_code(NON_EXCHANGEABLE_CURRENCY_CODE).raw() );
 
    check( currency_record != statstable.end(), "token with symbol does not exist" );
    const auto& st = *currency_record;
 
    statstable.modify( st, same_payer, [&]( auto& s ) {
-      s.conditional_supply += convertedfreeos;
+      s.conditional_supply += convertedoptions;
    });
 
-   std::string memo = std::string("unvesting FREEOS by ");
+   std::string memo = std::string("unvesting OPTIONs by ");
    memo.append(user.to_string());
 
    // Issue the required amount to the freeos account
@@ -1187,24 +1217,24 @@ void freeos::unvest(const name& user)
      permission_level{get_self(),"active"_n},
      name(freeos_acct),
      "issue"_n,
-     std::make_tuple(get_self(), convertedfreeos, memo)
+     std::make_tuple(get_self(), convertedoptions, memo)
    );
 
    issue_action.send();
 
-   // transfer liquid FREEOS to user
+   // transfer liquid OPTIONs to user
    action user_transfer = action(
      permission_level{get_self(),"active"_n},
      name(freeos_acct),
-     "transfer"_n,
-     std::make_tuple(get_self(), user, convertedfreeos, memo)
+     "allocate"_n,
+     std::make_tuple(get_self(), user, convertedoptions, memo)
    );
 
    user_transfer.send();
 
    // subtract the amount transferred from the unvested record
    v_accounts.modify( v_it, _self, [&]( auto& v ) {
-     v.balance -= convertedfreeos;
+     v.balance -= convertedoptions;
    });
 
 
@@ -1213,12 +1243,15 @@ void freeos::unvest(const name& user)
    if (iterator == unvests.end()) {
      unvests.emplace( get_self(), [&]( auto& unvest ) {
        unvest.iteration_number = this_iteration;
-       unvest.unvest_time = current_time_point().sec_since_epoch();
      });
+   } else {
+     unvests.modify(iterator, same_payer, [&]( auto& unvest ) {
+      unvest.iteration_number = this_iteration;
+    });
    }
 
    #ifdef TEST_BUILD
-   print("Unvesting successful. You have gained another ", convertedfreeos.to_string());
+   print("Unvesting successful. You have gained another ", convertedoptions.to_string());
    #endif
 
 }
@@ -1310,12 +1343,8 @@ bool freeos::eligible_to_claim(const name& claimant, iteration this_iteration) {
 
   check(user_record != users.end(), "user is not registered in freeos");
 
-  // has the user claimed this iteration - consult the claims history table
-  claim_index claims(get_self(), claimant.value);
-  auto iterator = claims.find(this_iteration.iteration_number);
-  // if the claim record exists for the iteration then the user has claimed, so is not eligible to claim again
-  if (iterator != claims.end()) {
-
+  // has the user claimed this iteration - consult the last_issuance field in the user record
+  if (user_record->last_issuance == this_iteration.iteration_number) {
     #ifdef TEST_BUILD
     print("user ", claimant, " has already claimed in claim period ", this_iteration.iteration_number);
     #endif
@@ -1347,34 +1376,34 @@ bool freeos::eligible_to_claim(const name& claimant, iteration this_iteration) {
       return false;
     }
 
-    // check that the user has the required balance of FREEOS
-    asset liquid_freeos_balance = asset(0, symbol("FREEOS",4));  // default holding = 0 FREEOS
+    // check that the user has the required balance of OPTION
+    asset liquid_option_balance = asset(0, symbol(NON_EXCHANGEABLE_CURRENCY_CODE,4));  // default holding = 0 OPTION
 
-    symbol_code freeos = symbol_code("FREEOS");
-    auto user_freeos_account = user_accounts.find(freeos.raw());
+    symbol_code option = symbol_code(NON_EXCHANGEABLE_CURRENCY_CODE);
+    auto user_option_account = user_accounts.find(option.raw());
 
-    if (user_freeos_account != user_accounts.end()) {
-      liquid_freeos_balance = user_freeos_account->balance;
+    if (user_option_account != user_accounts.end()) {
+      liquid_option_balance = user_option_account->balance;
     }
 
-    // check the user's vested FREEOS balance
-    asset vested_freeos_balance = asset(0, symbol("FREEOS",4)); // default if account record not found
+    // check the user's vested OPTION balance
+    asset vested_option_balance = asset(0, symbol(NON_EXCHANGEABLE_CURRENCY_CODE,4)); // default if account record not found
     vestaccounts v_accounts(get_self(), claimant.value );
-    const auto& ac = v_accounts.find(symbol_code("FREEOS").raw());
+    const auto& ac = v_accounts.find(symbol_code(NON_EXCHANGEABLE_CURRENCY_CODE).raw());
     if (ac != v_accounts.end()) {
-      vested_freeos_balance = ac->balance;;
+      vested_option_balance = ac->balance;;
     }
 
-    // user's total FREEOS balance is liquid-FREEOS plus vested-FREEOS
-    asset total_freeos_balance = liquid_freeos_balance + vested_freeos_balance;
+    // user's total OPTION balance is liquid-OPTION plus vested-OPTION
+    asset total_option_balance = liquid_option_balance + vested_option_balance;
 
     // the 'holding' balance requirement for this iteration's claim
-    asset iteration_holding_requirement = asset(this_iteration.tokens_required * 10000, symbol("FREEOS",4));
+    asset iteration_holding_requirement = asset(this_iteration.tokens_required * 10000, symbol(NON_EXCHANGEABLE_CURRENCY_CODE,4));
     
-    if (total_freeos_balance < iteration_holding_requirement) {
+    if (total_option_balance < iteration_holding_requirement) {
 
       #ifdef TEST_BUILD
-      print("user ", claimant, " has ", total_freeos_balance.to_string(), " which is less than the holding requirement of ", iteration_holding_requirement.to_string());
+      print("user ", claimant, " has ", total_option_balance.to_string(), " which is less than the holding requirement of ", iteration_holding_requirement.to_string());
       #endif
       
       return false;

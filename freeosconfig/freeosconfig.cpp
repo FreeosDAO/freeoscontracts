@@ -16,14 +16,15 @@ using namespace eosio;
 // 105 - additeration action added - creates a new iteration following on from the last for x number of hours duration
 // 106 - additeration action changed to remove the price parameter
 // 107 - added checks when setting current and target exchange rates that values must be positive
+// 108 - added transferers table and actions transfadd and transferase for maintaining the table
 
 
-const std::string VERSION = "0.107";
+const std::string VERSION = "0.108";
 
 #ifdef TEST_BUILD
 [[eosio::action]]
 void freeosconfig::version() {
-  print("Version = ", VERSION);
+  check(false, VERSION);
 }
 #endif
 
@@ -219,11 +220,37 @@ void freeosconfig::stakeerase (uint64_t threshold) {
     stakereq_index stakereqs(get_self(), get_self().value);
     auto iterator = stakereqs.find(threshold);
 
-    // check if the parameter is in the table or not
+    // check if the parameter is in the table
     check(iterator != stakereqs.end(), "stake requirement record does not exist");
 
     // the parameter is in the table, so delete
     stakereqs.erase(iterator);
+}
+
+
+// add an account to the whitelist transferers table
+[[eosio::action]]
+void freeosconfig::transfadd(name account) {
+  require_auth(_self);
+
+  transferer_index transferers_table(get_self(), get_self().value);
+  transferers_table.emplace(_self, [&](auto & t) {
+    t.account = account;
+  });
+}
+
+// erase an account from the transferers table
+void freeosconfig::transferase(name account) {
+  require_auth(_self);
+
+  transferer_index transferers_table(get_self(), get_self().value);
+  auto iterator = transferers_table.find(account.value);
+
+    // check if the account is in the table
+    check(iterator != transferers_table.end(), "account is not in the transferers table");
+
+    // the account is in the table, so delete
+    transferers_table.erase(iterator);
 }
 
 

@@ -14,26 +14,34 @@
             ]
         },
         {
+            "name": "allocate",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "to",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
             "name": "claim",
             "base": "",
             "fields": [
                 {
                     "name": "user",
                     "type": "name"
-                }
-            ]
-        },
-        {
-            "name": "claimevent",
-            "base": "",
-            "fields": [
-                {
-                    "name": "iteration_number",
-                    "type": "uint64"
-                },
-                {
-                    "name": "claim_time",
-                    "type": "uint32"
                 }
             ]
         },
@@ -48,6 +56,20 @@
                 {
                     "name": "symbol",
                     "type": "symbol"
+                }
+            ]
+        },
+        {
+            "name": "convert",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
                 }
             ]
         },
@@ -264,7 +286,7 @@
             "base": "",
             "fields": [
                 {
-                    "name": "from",
+                    "name": "owner",
                     "type": "name"
                 },
                 {
@@ -278,6 +300,16 @@
                 {
                     "name": "memo",
                     "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "transferer",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
                 }
             ]
         },
@@ -364,10 +396,6 @@
                 {
                     "name": "iteration_number",
                     "type": "uint64"
-                },
-                {
-                    "name": "unvest_time",
-                    "type": "uint32"
                 }
             ]
         },
@@ -463,6 +491,11 @@
     ],
     "actions": [
         {
+            "name": "allocate",
+            "type": "allocate",
+            "ricardian_contract": ""
+        },
+        {
             "name": "claim",
             "type": "claim",
             "ricardian_contract": ""
@@ -470,6 +503,11 @@
         {
             "name": "close",
             "type": "close",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "convert",
+            "type": "convert",
             "ricardian_contract": ""
         },
         {
@@ -562,13 +600,6 @@
             "key_types": []
         },
         {
-            "name": "claims",
-            "type": "claimevent",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
             "name": "deposits",
             "type": "deposit",
             "index_type": "i64",
@@ -585,6 +616,13 @@
         {
             "name": "statistics",
             "type": "statistic",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "transferers",
+            "type": "transferer",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

@@ -190,6 +190,31 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
     [[eosio::action]]
     void rateerase();
 
+    /**
+     * transfadd action.
+     *
+     * @details This action adds an account to the transferers table, a whitelist of who can call the OPTION transfer function.
+     *
+     * @param account - the name of the account to be added
+     *
+     * @pre requires permission of the contract account
+     */
+    [[eosio::action]]
+    void transfadd(name account);
+
+    /**
+     * transferase action.
+     *
+     * @details This action deletes an account to the transferers table, a whitelist of who can call the OPTION transfer function.
+     *
+     * @param account - the name of the account to be deleted
+     *
+     * @pre requires permission of the contract account
+     */
+    [[eosio::action]]
+    void transferase(name account);
+
+
 #ifdef TEST_BUILD
     /**
      * getstakes action.
@@ -339,6 +364,16 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
 		};
 
     typedef eosio::multi_index< "usersinfo"_n, userinfo > usersinfo;
+
+
+    // Transferer table - a whitelist to determine who can call the transfer function
+    struct [[eosio::table]] transferer {
+      name    account;
+
+      uint64_t primary_key() const { return account.value; }
+    };
+
+    using transferer_index = eosio::multi_index<"transferers"_n, transferer>;
 
 
     // ************************************
