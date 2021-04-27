@@ -383,7 +383,7 @@ enum registration_status{ registered_already,
          };
 
          typedef eosio::multi_index< "accounts"_n, account > accounts;
-         typedef eosio::multi_index< "vestaccounts"_n, account > vestaccounts;
+         typedef eosio::multi_index< "vestaccounts"_n, account > vestaccounts_index;
 
 
          struct [[eosio::table]] currency_stats {
@@ -413,7 +413,7 @@ enum registration_status{ registered_already,
            uint64_t primary_key() const {return stake.symbol.code().raw();}
          };
 
-         using user_index = eosio::multi_index<"users"_n, user>;
+         using users_index = eosio::multi_index<"users"_n, user>;
 
 
 
@@ -454,7 +454,7 @@ enum registration_status{ registered_already,
            uint64_t get_secondary_1() const {return virtualtable.value;}
          };
 
-         using parameter_index = eosio::multi_index<"parameters"_n, parameter,
+         using parameters_index = eosio::multi_index<"parameters"_n, parameter,
          indexed_by<"virtualtable"_n, const_mem_fun<parameter, uint64_t, &parameter::get_secondary_1>>
          >;
 
@@ -495,7 +495,7 @@ enum registration_status{ registered_already,
 
          // using iteration_index = eosio::multi_index<"iterations"_n, iteration>;
 
-         using iteration_index = eosio::multi_index<"iterations"_n, iteration,
+         using iterations_index = eosio::multi_index<"iterations"_n, iteration,
          indexed_by<"start"_n, const_mem_fun<iteration, uint64_t, &iteration::get_secondary>>
          >;
 
@@ -555,7 +555,7 @@ enum registration_status{ registered_already,
 
          };
 
-         using deposit_index = eosio::multi_index<"deposits"_n, deposit>;
+         using deposits_index = eosio::multi_index<"deposits"_n, deposit>;
 
 
          // unstake requests queue (replaces unstakes table)
@@ -586,12 +586,12 @@ enum registration_status{ registered_already,
          bool checkmasterswitch();
          uint32_t get_cached_iteration();
          bool checkschedulelogging();
-         uint64_t getthreshold(uint32_t numusers);
+         uint64_t get_threshold(uint32_t numusers);
          uint32_t get_stake_requirement(char account_type);
-         iteration getclaimiteration();
+         iteration get_claim_iteration();
          bool eligible_to_claim(const name& claimant, iteration this_iteration);
-         uint32_t updateclaimeventcount();
-         uint16_t getfreedaomultiplier(uint32_t claimevents);
+         uint32_t update_claim_event_count();
+         uint16_t get_freedao_multiplier(uint32_t claimevents);
          float get_vested_proportion();
          void update_unvest_percentage();
          void record_deposit(uint64_t iteration_number, asset amount);

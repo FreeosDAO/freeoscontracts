@@ -57,8 +57,8 @@ using namespace eosio;
 //       Iterations table can now be accessed via secondary index (by start time)
 // 331 - Changed unvest action to not allow unvesting in iteration 0
 //       Corrected problem of advancing unvestperecentiteration more often than required
-// 332 - Improved performance of getclaimiteration function - it uses secondary index based on iteration start
-//       Improved performance of getthreshold function - it uses the primary index based on threshold
+// 332 - Improved performance of get_claim_iteration function - it uses secondary index based on iteration start
+//       Improved performance of get_threshold function - it uses the primary index based on threshold
 // 333 - User registration record now tracks the number of FREEOS issuances (claims) and the iteration of last issuance.
 //       User registration record no longer records staked_time. It now records the iteration in which the stake was made.
 //       Unstake requests are processed within the next iteration i.e. the 'stake hold time' is no longer used.
@@ -77,7 +77,7 @@ using namespace eosio;
 //       Removed tickers table
 //       Tick process called first on all 'user activity' actions (stake, unstake, claim, unvest)
 //       Tick process updated: Either it calls recalculate iteration statistics (on change of iteration) OR refund stakes
-//       getclaimiteration() called as part of tick process. Thereafter all code refers to get_cached_iteration which reads the iteration number from the statistics table
+//       get_claim_iteration() called as part of tick process. Thereafter all code refers to get_cached_iteration which reads the iteration number from the statistics table
 //       currentiter action removed
 //       removed print of stake amount from version action
 //       default 'unvestpercnt' parameter retired as not required
@@ -94,14 +94,15 @@ using namespace eosio;
 //       convert action enables the user to convert OPTION tokens to equivalent number of FREEOS tokens
 //       claims table has been removed - the claim eligibility check now uses the 'last_issuance' field in the user record
 //       unvest table only records the iteration number and not the date. Only one record per user to record iteration of last unvest
+//       Iteration holding requirement now considers total of liquid OPTIONs + vested OPTIONs + FREEOS
 
 
-const std::string VERSION = "0.342a";
+const std::string VERSION = "0.342";
 
 #ifdef TEST_BUILD
 [[eosio::action]]
 void freeos::version() {
-  iteration this_iteration = getclaimiteration();
+  iteration this_iteration = get_claim_iteration();
 
   std::string version_message = "Version = " + VERSION + " - iteration " + std::to_string(this_iteration.iteration_number);
   check(false, version_message);
@@ -113,38 +114,38 @@ void freeos::version() {
 void freeos::tick() {
 
   // what iteration are we in? ! Important that we use the uncached iteration function
-  iteration this_iteration = getclaimiteration();
+  iteration this_iteration = get_claim_iteration();
 
   // what iteration is in the statistics table?
-  statistic_index statistics(get_self(), get_self().value);
-  auto stat = statistics.begin();
-  check(stat != statistics.end(), "statistics record is not found");
+  statistic_index statistic_table(get_self(), get_self().value);
+  auto statistic = statistic_table.begin();
+  check(statistic != statistic_table.end(), "statistics record is not found");
 
-  if (this_iteration.iteration_number != stat->iteration) {
+  if (this_iteration.iteration_number != statistic->iteration) {
     // update iteration in statistics table
-    if (stat != statistics.end()) {
-      statistics.modify(stat, _self, [&](auto& s) {
-          s.iteration = this_iteration.iteration_number;
+    if (statistic != statistic_table.end()) {
+      statistic_table.modify(statistic, _self, [&](auto& stat) {
+          stat.iteration = this_iteration.iteration_number;
       });
     }
 
     // update unvest percent if we are in a valid iteration
-    if (stat->iteration > 0) update_unvest_percentage();
+    if (statistic->iteration > 0) update_unvest_percentage();
   } else {
     // do some unstaking if we are in a valid iteration
-    if (stat->iteration > 0) refund_stakes();
+    if (statistic->iteration > 0) refund_stakes();
   }
 
 }
 
 
 uint32_t freeos::get_cached_iteration() {
-  statistic_index statistics(get_self(), get_self().value);
-  auto iterator = statistics.begin();
+  statistic_index statistic_table(get_self(), get_self().value);
+  auto statistic = statistic_table.begin();
 
-  check(iterator != statistics.end(), "statistics record is not found");
+  check(statistic != statistic_table.end(), "statistics record is not found");
 
-  return iterator->iteration;
+  return statistic->iteration;
 }
 
 
@@ -163,9 +164,9 @@ void freeos::update_unvest_percentage() {
   uint32_t new_unvest_percentage;
 
   // get the statistics record
-  statistic_index statistics(get_self(), get_self().value);
-  auto stat = statistics.begin();
-  check(stat != statistics.end(), "statistics record is not found");
+  statistic_index statistic_table(get_self(), get_self().value);
+  auto statistic = statistic_table.begin();
+  check(statistic != statistic_table.end(), "statistics record is not found");
 
   // find the current vested proportion. If 0.0f it means that the exchange rate is favourable
   float vested_proportion = get_vested_proportion();
@@ -177,7 +178,7 @@ void freeos::update_unvest_percentage() {
     // GOOD TIMES
 
     // favourable exchange rate, so implement the 'good times' strategy - calculate the new unvest_percentage
-    current_unvest_percentage = stat->unvestpercent;
+    current_unvest_percentage = statistic->unvestpercent;
 
     // move the unvest_percentage on to next level if we have reached a new 'good times' iteration
     switch (current_unvest_percentage) {
@@ -200,10 +201,10 @@ void freeos::update_unvest_percentage() {
       }
 
       // modify the statistics table with the new percentage. Also ensure the failsafe counter is set to 0.
-      statistics.modify(stat, _self, [&](auto& s) {
-          s.unvestpercent = new_unvest_percentage;
-          s.unvestpercentiteration = get_cached_iteration();
-          s.failsafecounter = 0;
+      statistic_table.modify(statistic, _self, [&](auto& stat) {
+          stat.unvestpercent = new_unvest_percentage;
+          stat.unvestpercentiteration = get_cached_iteration();
+          stat.failsafecounter = 0;
       });
 
   } else {
@@ -217,22 +218,22 @@ void freeos::update_unvest_percentage() {
     uint8_t failsafe_frequency = 24;
 
     // read the frequency from the freeosconfig 'parameters' table
-    parameter_index parameters(name(freeosconfig_acct), name(freeosconfig_acct).value);
-    auto p_iterator = parameters.find(name("failsafefreq").value);
+    parameters_index parameters_table(name(freeosconfig_acct), name(freeosconfig_acct).value);
+    auto parameter = parameters_table.find(name("failsafefreq").value);
 
-    if (p_iterator != parameters.end()) {
-      failsafe_frequency = stoi(p_iterator->value);
+    if (parameter != parameters_table.end()) {
+      failsafe_frequency = stoi(parameter->value);
     }
 
-    // increment the failsafecounter
-    uint32_t failsafecounter = stat->failsafecounter;
-    failsafecounter++;
+    // increment the failsafe_counter
+    uint32_t failsafe_counter = statistic->failsafecounter;
+    failsafe_counter++;
 
     // Store the new failsafecounter and unvestpercent
-    statistics.modify(stat, _self, [&](auto& s) {
-        s.failsafecounter = failsafecounter % failsafe_frequency;
-        s.unvestpercent = (failsafecounter == failsafe_frequency ? 15 : 0);
-        s.unvestpercentiteration = get_cached_iteration();
+    statistic_table.modify(statistic, _self, [&](auto& stat) {
+        stat.failsafecounter = failsafe_counter % failsafe_frequency;
+        stat.unvestpercent = (failsafe_counter == failsafe_frequency ? 15 : 0);
+        stat.unvestpercentiteration = get_cached_iteration();
     });
   }
 
@@ -247,7 +248,7 @@ void freeos::reguser(const name& user) {
   check(checkmasterswitch(), msg_freeos_system_not_available);
 
   // get the current iteration
-  iteration current_iteration = getclaimiteration();
+  iteration current_iteration = get_claim_iteration();
 
   // nothing is allowed when not in a valid claim period (when iteration is 0)
   check(current_iteration.iteration_number != 0, "freeos is not in a claim period");
@@ -277,10 +278,10 @@ registration_status freeos::register_user(const name& user) {
 
   // is the user already registered?
   // find the account in the user table
-  user_index usertable( get_self(), user.value );
-  auto u = usertable.find( symbol_code(SYSTEM_CURRENCY_CODE).raw() );
+  users_index users_table( get_self(), user.value );
+  auto user_record = users_table.find( symbol_code(SYSTEM_CURRENCY_CODE).raw() );
 
-  if( u != usertable.end() ) {
+  if( user_record != users_table.end() ) {
     return registered_already;
   }
 
@@ -288,25 +289,25 @@ registration_status freeos::register_user(const name& user) {
   char account_type = get_account_type(user);
 
   // update the user count in the 'counters' record
-  uint32_t numusers;
+  uint32_t number_of_users;
 
-  statistic_index statistics(get_self(), get_self().value);
-  auto iterator = statistics.begin();
-  if (iterator == statistics.end())  {
+  statistic_index statistic_table(get_self(), get_self().value);
+  auto statistic = statistic_table.begin();
+  if (statistic == statistic_table.end())  {
     // emplace
-    statistics.emplace( get_self(), [&]( auto& s ) {
-      s.usercount = numusers = 1;
+    statistic_table.emplace( get_self(), [&]( auto& stat ) {
+      stat.usercount = number_of_users = 1;
       });
 
   } else {
     // modify
-    statistics.modify(iterator, _self, [&](auto& s) {
-        s.usercount = numusers = s.usercount + 1;
+    statistic_table.modify(statistic, _self, [&](auto& stat) {
+        stat.usercount = number_of_users = stat.usercount + 1;
     });
   }
 
   // get the current iteration
-  iteration current_iteration = getclaimiteration();
+  iteration current_iteration = get_claim_iteration();
 
   // examine the staking requirement for the user - if their staking requirement is 0 then we will consider them to have already staked
   int64_t stake_requirement_amount = get_stake_requirement(account_type);
@@ -315,19 +316,19 @@ registration_status freeos::register_user(const name& user) {
   // register the user
   time_point_sec now = time_point_sec(current_time_point().sec_since_epoch());
 
-  usertable.emplace( get_self(), [&]( auto& u ) {
-    u.stake = asset(0, symbol(SYSTEM_CURRENCY_CODE, 4));
-    u.account_type = account_type;
-    u.registered_time = now;
-    u.staked_iteration = stake_requirement.amount == 0 ? current_iteration.iteration_number : 0;
+  users_table.emplace( get_self(), [&]( auto& user ) {
+    user.stake = asset(0, symbol(SYSTEM_CURRENCY_CODE, 4));
+    user.account_type = account_type;
+    user.registered_time = now;
+    user.staked_iteration = stake_requirement.amount == 0 ? current_iteration.iteration_number : 0;
     });
 
    // add the user to the vested accounts table
-   vestaccounts v_accounts( get_self(), user.value );
-   auto usr = v_accounts.find( symbol_code(NON_EXCHANGEABLE_CURRENCY_CODE).raw() );
-   if( usr == v_accounts.end() ) {
-      v_accounts.emplace(get_self(), [&]( auto& a ){
-        a.balance = asset(0, symbol(NON_EXCHANGEABLE_CURRENCY_CODE,4));
+   vestaccounts_index vestaccounts_table( get_self(), user.value );
+   auto user_account = vestaccounts_table.find( symbol_code(NON_EXCHANGEABLE_CURRENCY_CODE).raw() );
+   if( user_account == vestaccounts_table.end() ) {
+      vestaccounts_table.emplace(get_self(), [&]( auto& account ){
+        account.balance = asset(0, symbol(NON_EXCHANGEABLE_CURRENCY_CODE,4));
       });
    }
 
@@ -341,17 +342,17 @@ void freeos::reverify(name user) {
   require_auth(user);
 
   // get the current iteration
-  iteration current_iteration = getclaimiteration();
+  iteration current_iteration = get_claim_iteration();
 
   // nothing is allowed when not in a valid claim period (when iteration is 0)
   check(current_iteration.iteration_number != 0, "freeos is not in a claim period");
 
   // set the account type
-  user_index users(get_self(), user.value);
-  auto iterator = users.begin();
+  users_index users_table(get_self(), user.value);
+  auto user_record = users_table.begin();
 
   // check if the user has a user registration record
-  check (iterator != users.end(), "user is not registered with freeos");
+  check (user_record != users_table.end(), "user is not registered with freeos");
 
   // get the account type
   char account_type = get_account_type(user);
@@ -361,7 +362,7 @@ void freeos::reverify(name user) {
   asset stake_requirement = asset(stake_requirement_amount, symbol(SYSTEM_CURRENCY_CODE, 4));
 
   // set the user account type
-  users.modify(iterator, _self, [&]( auto& u) {
+  users_table.modify(user_record, _self, [&]( auto& u) {
     u.account_type = account_type;
 
     // if user not already staked and stake requirement is 0, then consider the user to have staked
@@ -381,30 +382,30 @@ char freeos::get_account_type(name user) {
   // first determine which contract we consult - if we have set an alternative contract then use that one
   name verification_contract;
 
-  parameter_index parameters(name(freeosconfig_acct), name(freeosconfig_acct).value);
-  auto p_iterator = parameters.find(name("altverifyacc").value);
+  parameters_index parameters_table(name(freeosconfig_acct), name(freeosconfig_acct).value);
+  auto parameter = parameters_table.find(name("altverifyacc").value);
 
-  if (p_iterator == parameters.end()) {
+  if (parameter == parameters_table.end()) {
     verification_contract = name(verification_contract);  // no alternative contract configured, so use the 'production' contract (for Proton mainnet)
   } else {
-    verification_contract = name(p_iterator->value);  // alternative contract is configured, so use that contract instead (for Proton testnet)
+    verification_contract = name(parameter->value);       // alternative contract is configured, so use that contract instead (for Proton testnet)
   }
 
   // access the verification table
-  usersinfo verify_table(name(verification_contract), name(verification_contract).value);
-  auto v_iterator = verify_table.find(user.value);
+  usersinfo verification_table(name(verification_contract), name(verification_contract).value);
+  auto verification = verification_table.find(user.value);
 
-  if (v_iterator != verify_table.end()) {
+  if (verification != verification_table.end()) {
     // record found, so default account_type is 'd', unless we find a verification
     user_account_type = 'd';
 
-    auto kyc_prov = v_iterator->kyc;
+    auto kyc_prov = verification->kyc;
 
     for (int i = 0; i < kyc_prov.size(); i++) {
       size_t fn_pos = kyc_prov[0].kyc_level.find("firstname");
       size_t ln_pos = kyc_prov[0].kyc_level.find("lastname");
 
-      if (v_iterator->verified == true && fn_pos != std::string::npos && ln_pos != std::string::npos) {
+      if (verification->verified == true && fn_pos != std::string::npos && ln_pos != std::string::npos) {
         user_account_type = 'v';
         break;
       }
@@ -421,22 +422,22 @@ char freeos::get_account_type(name user) {
 void freeos::dereg(const name& user) {
   require_auth( get_self() );
 
-  user_index usertable( get_self(), user.value );
-  auto u = usertable.find( symbol_code(SYSTEM_CURRENCY_CODE).raw() );
+  users_index users_table( get_self(), user.value );
+  auto user_record = users_table.find( symbol_code(SYSTEM_CURRENCY_CODE).raw() );
 
-  check(u != usertable.end(), "user is not registered with freeos");
-  check(u->stake.amount == 0, "user has staked and cannot be deregistered");
+  check(user_record != users_table.end(), "user is not registered with freeos");
+  check(user_record->stake.amount == 0, "user has staked and cannot be deregistered");
 
   // erase the user record
-  usertable.erase(u);
+  users_table.erase(user_record);
 
   // decrement number of users in the statistics table
-  statistic_index statistics(get_self(), get_self().value);
-  auto iterator = statistics.begin();
+  statistic_index statistic_table(get_self(), get_self().value);
+  auto statistic = statistic_table.begin();
 
   // decrement user count
-  statistics.modify( iterator, _self, [&]( auto& s ) {
-    s.usercount = s.usercount - 1;
+  statistic_table.modify(statistic, _self, [&]( auto& stat ) {
+    stat.usercount = stat.usercount - 1;
     });
 
   #ifdef TEST_BUILD
@@ -477,24 +478,24 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
 
     // get the user record - the amount of the stake requirement and the amount staked
     // find the account in the user table
-    user_index usertable( get_self(), user.value );
-    auto u = usertable.begin();
+    users_index users_table( get_self(), user.value );
+    auto user_record = users_table.begin();
 
     // check if the user is registered
-    check(u != usertable.end(), "user is not registered");
+    check(user_record != users_table.end(), "user is not registered");
 
     // check that user isn't already staked
-    check(u->staked_iteration == 0, "the account is already staked");
+    check(user_record->staked_iteration == 0, "the account is already staked");
 
 
-    uint32_t stake_requirement_amount = get_stake_requirement(u->account_type);
+    uint32_t stake_requirement_amount = get_stake_requirement(user_record->account_type);
     asset stake_requirement = asset(stake_requirement_amount * 10000, symbol(SYSTEM_CURRENCY_CODE, 4));
     check(stake_requirement == quantity, "the stake amount is not what is required");
 
     // update the user record
-    usertable.modify(u, _self, [&](auto& row) {
-      row.stake = quantity;
-      row.staked_iteration = current_iteration;
+    users_table.modify(user_record, _self, [&](auto& usr) {
+      usr.stake = quantity;
+      usr.staked_iteration = current_iteration;
     });
 
     #ifdef TEST_BUILD
@@ -511,22 +512,22 @@ uint32_t freeos::get_stake_requirement(char account_type) {
   uint32_t stake_requirement = 0;
 
   // get the number of users
-  statistic_index statistics(get_self(), get_self().value);
-   auto stat = statistics.begin();
-   check(stat != statistics.end(), "the statistics record is not found");
-   uint32_t numusers = stat->usercount;
+  statistic_index statistic_table(get_self(), get_self().value);
+   auto statistic = statistic_table.begin();
+   check(statistic != statistic_table.end(), "the statistics record is not found");
+   uint32_t number_of_users = statistic->usercount;
 
   // look up the freeosconfig stakereqs table
-  stakereq_index stakereqs(name(freeosconfig_acct), name(freeosconfig_acct).value);
-  auto sr = stakereqs.upper_bound(numusers);
-  sr--;
+  stakereq_index stakereqs_table(name(freeosconfig_acct), name(freeosconfig_acct).value);
+  auto sr_record = stakereqs_table.upper_bound(number_of_users);
+  sr_record--;
 
   if (account_type == 'v') {
-    stake_requirement = sr->requirement_v;
+    stake_requirement = sr_record->requirement_v;
   } else if (account_type == 'd') {
-    stake_requirement = sr->requirement_d;
+    stake_requirement = sr_record->requirement_d;
   } else {
-    stake_requirement = sr->requirement_e;
+    stake_requirement = sr_record->requirement_e;
   }
 
   return stake_requirement;
@@ -548,20 +549,20 @@ void freeos::unstake(const name& user) {
   check(current_iteration != 0, "Unstaking is not allowed in iteration 0");
 
   // find user record
-  user_index usertable( get_self(), user.value );
-  auto u = usertable.find( symbol_code(SYSTEM_CURRENCY_CODE).raw() );
+  users_index users_table( get_self(), user.value );
+  auto user_record = users_table.find( symbol_code(SYSTEM_CURRENCY_CODE).raw() );
 
   // check if the user is registered
-  check(u != usertable.end(), msg_account_not_registered);
+  check(user_record != users_table.end(), msg_account_not_registered);
 
   // check if there is already an unstake in progress
-  unstakerequest_index unstakes(get_self(), get_self().value);
-  auto iterator = unstakes.find(user.value);
+  unstakerequest_index unstakes_table(get_self(), get_self().value);
+  auto unstake_record = unstakes_table.find(user.value);
 
-  check(iterator == unstakes.end(), "user has already requested to unstake");
-  check(u->stake.amount > 0, "user does not have a staked amount");
+  check(unstake_record == unstakes_table.end(), "user has already requested to unstake");
+  check(user_record->stake.amount > 0, "user does not have a staked amount");
 
-  request_stake_refund(user, u->stake);
+  request_stake_refund(user, user_record->stake);
 
   #ifdef TEST_BUILD
   print("unstake requested");
@@ -577,11 +578,11 @@ void freeos::request_stake_refund(name user, asset amount) {
   uint32_t current_iteration = get_cached_iteration();
 
   // add to the unstake requests queue
-  unstakerequest_index unstakes(get_self(), get_self().value);
-  unstakes.emplace( get_self(), [&]( auto& u ) {
-     u.staker = user;
-     u.iteration = current_iteration;
-     u.amount = amount;
+  unstakerequest_index unstakes_table(get_self(), get_self().value);
+  unstakes_table.emplace( get_self(), [&]( auto& unstake ) {
+     unstake.staker = user;
+     unstake.iteration = current_iteration;
+     unstake.amount = amount;
   });
 }
 
@@ -590,25 +591,25 @@ void freeos::refund_stakes() {
 
   // read the number of unstakes to release - from the freeosconfig 'parameters' table
   uint16_t number_to_release = 3; // default (safe) value if parameter not set
-  parameter_index parameters(name(freeosconfig_acct), name(freeosconfig_acct).value);
-  auto p_iterator = parameters.find(name("unstakesnum").value);
+  parameters_index parameters_table(name(freeosconfig_acct), name(freeosconfig_acct).value);
+  auto parameter = parameters_table.find(name("unstakesnum").value);
 
-  if (p_iterator != parameters.end()) {
-    number_to_release = stoi(p_iterator->value);
+  if (parameter != parameters_table.end()) {
+    number_to_release = stoi(parameter->value);
   }
 
   uint32_t current_iteration = get_cached_iteration();
 
-  unstakerequest_index unstakes(get_self(), get_self().value);
-  auto idx = unstakes.get_index<"iteration"_n>();
-  auto iterator = idx.begin();
+  unstakerequest_index unstakes_table(get_self(), get_self().value);
+  auto iteration_index = unstakes_table.get_index<"iteration"_n>();
+  auto unstake_record = iteration_index.begin();
 
-  for (uint16_t i = 0; i < number_to_release && iterator != idx.end(); i++) {
+  for (uint16_t i = 0; i < number_to_release && unstake_record != iteration_index.end(); i++) {
 
-    if (iterator->iteration < current_iteration) {
+    if (unstake_record->iteration < current_iteration) {
       // process the unstake request
-      refund_stake(iterator->staker, iterator->amount);
-      iterator = idx.erase(iterator);
+      refund_stake(unstake_record->staker, unstake_record->amount);
+      unstake_record = iteration_index.erase(unstake_record);
     } else {
       // we've reached stakes to be released in the future
       break;
@@ -619,8 +620,8 @@ void freeos::refund_stakes() {
 // refund a stake
 void freeos::refund_stake(name user, asset amount) {
   // find user record
-  user_index usertable( get_self(), user.value );
-  auto u = usertable.find( symbol_code(SYSTEM_CURRENCY_CODE).raw() );
+  users_index users_table( get_self(), user.value );
+  auto user_record = users_table.find( symbol_code(SYSTEM_CURRENCY_CODE).raw() );
 
   // transfer stake from freeos to user account using the eosio.token contract
   action transfer = action(
@@ -633,9 +634,9 @@ void freeos::refund_stake(name user, asset amount) {
   transfer.send();
 
   // update the user record
-  usertable.modify(u, _self, [&](auto& row) {
-    row.stake = asset(0, symbol(SYSTEM_CURRENCY_CODE, 4));
-    row.staked_iteration = 0;
+  users_table.modify(user_record, _self, [&](auto& usr) {
+    usr.stake = asset(0, symbol(SYSTEM_CURRENCY_CODE, 4));
+    usr.staked_iteration = 0;
   });
 }
 
@@ -645,13 +646,13 @@ void freeos::unstakecncl(const name& user) {
 
   require_auth(user);
 
-  unstakerequest_index unstakes(get_self(), get_self().value);
-  auto iterator = unstakes.find(user.value);
+  unstakerequest_index unstakes_table(get_self(), get_self().value);
+  auto unstake_record = unstakes_table.find(user.value);
 
-  check(iterator != unstakes.end(), "user does not have an unstake request");
+  check(unstake_record != unstakes_table.end(), "user does not have an unstake request");
 
   // cancel the unstake - erase the unstake record
-  unstakes.erase(iterator);
+  unstakes_table.erase(unstake_record);
 
   #ifdef TEST_BUILD
   print("your unstake request has been cancelled");
@@ -664,11 +665,11 @@ void freeos::unstakecncl(const name& user) {
 [[eosio::action]]
 void freeos::getuser(const name& user) {
 
-  user_index usertable( get_self(), user.value );
-  auto u = usertable.begin();
+  users_index users_table( get_self(), user.value );
+  auto user_record = users_table.begin();
 
   // check if the user is registered
-  check(u != usertable.end(), "user is not registered");
+  check(user_record != users_table.end(), "user is not registered");
 
   // get the user's XPR balance
   asset xpr_balance = get_balance("eosio.token"_n, user, symbol("XPR",4));
@@ -678,10 +679,10 @@ void freeos::getuser(const name& user) {
 
   // get the user's vested OPTION balance
   asset vested_option_balance = asset(0, symbol(NON_EXCHANGEABLE_CURRENCY_CODE,4)); // default if account record not found
-  vestaccounts v_accounts(get_self(), user.value );
-  const auto& ac = v_accounts.find(symbol_code(NON_EXCHANGEABLE_CURRENCY_CODE).raw());
-  if (ac != v_accounts.end()) {
-    vested_option_balance = ac->balance;;
+  vestaccounts_index vestaccounts_table(get_self(), user.value );
+  const auto& account_record = vestaccounts_table.find(symbol_code(NON_EXCHANGEABLE_CURRENCY_CODE).raw());
+  if (account_record != vestaccounts_table.end()) {
+    vested_option_balance = account_record->balance;
   }
 
   // get the user's AIRKEY balance
@@ -693,13 +694,13 @@ void freeos::getuser(const name& user) {
 
   bool claimed_flag = false;
   // if the last issuance is for this iteration then the user has claimed
-  if (u->last_issuance == this_iteration) {
+  if (user_record->last_issuance == this_iteration) {
     claimed_flag = true;
   }
 
   // feedback
-  print("account: ", user, ", registered: ", u->registered_time.utc_seconds, ", type: ", u->account_type, ", stake: ", u->stake.to_string(),
-        ", staked-iteration: ", u->staked_iteration, ", XPR: ", xpr_balance.to_string(), ", liquid: ", liquid_option_balance.to_string(), ", vested: ", vested_option_balance.to_string(),
+  print("account: ", user, ", registered: ", user_record->registered_time.utc_seconds, ", type: ", user_record->account_type, ", stake: ", user_record->stake.to_string(),
+        ", staked-iteration: ", user_record->staked_iteration, ", XPR: ", xpr_balance.to_string(), ", liquid: ", liquid_option_balance.to_string(), ", vested: ", vested_option_balance.to_string(),
          ", airkey: ", airkey_balance.to_string(), ", iteration: ", this_iteration, ", claimed: ", claimed_flag);
 
 }
@@ -707,18 +708,16 @@ void freeos::getuser(const name& user) {
 
 
 bool freeos::checkmasterswitch() {
-  parameter_index parameters(name(freeosconfig_acct), name(freeosconfig_acct).value);
-  auto iterator = parameters.find("masterswitch"_n.value);
+  parameters_index parameters_table(name(freeosconfig_acct), name(freeosconfig_acct).value);
+  auto parameter = parameters_table.find("masterswitch"_n.value);
 
   // check if the parameter is in the table or not
-  if (iterator == parameters.end() ) {
+  if (parameter == parameters_table.end() ) {
       // the parameter is not in the table, or table not found, return false because it should be accessible (failsafe)
       return false;
   } else {
       // the parameter is in the table
-      const auto& parameter = *iterator;
-
-      if (parameter.value.compare("1") == 0) {
+      if (parameter->value.compare("1") == 0) {
         return true;
       } else {
         return false;
@@ -810,9 +809,9 @@ void freeos::allocate(const name&    from,
 {
   // check if the 'from' account is in the transferer whitelist
   transferer_index transferers_table(name(freeosconfig_acct), name(freeosconfig_acct).value);
-  auto iterator = transferers_table.find(from.value);
+  auto transferer = transferers_table.find(from.value);
 
-  check(iterator != transferers_table.end(), "the allocate action is protected");
+  check(transferer != transferers_table.end(), "the allocate action is protected");
 
   // if the 'from' user is in the transferers table then call the transfer action
   transfer(from, to, quantity, memo);
@@ -979,18 +978,17 @@ void freeos::claim( const name& user )
 
 
    // what iteration are we in?
-   iteration this_iteration = getclaimiteration();
+   iteration this_iteration = get_claim_iteration();
    check(this_iteration.iteration_number != 0, "freeos is not in a claim period");
 
    // check user eligibility to claim
    check(eligible_to_claim(user, this_iteration), "user is not eligible to claim in this iteration");
 
    // update the number of claimevents
-   uint32_t claim_event_count = updateclaimeventcount();
+   uint32_t claim_event_count = update_claim_event_count();
 
    // get freedao multiplier
-   uint16_t freedao_multiplier = getfreedaomultiplier(claim_event_count);
-
+   uint16_t freedao_multiplier = get_freedao_multiplier(claim_event_count);
 
    // calculate amounts to be transferred to user and FreeDAO
    // first get the proportion that is vested
@@ -1065,7 +1063,7 @@ void freeos::claim( const name& user )
 
    // update the user's vested OPTION balance
    if (vested_tokens > 0) {
-     vestaccounts to_acnts( get_self(), user.value );
+     vestaccounts_index to_acnts( get_self(), user.value );
      auto to = to_acnts.find( vested_amount.symbol.code().raw() );
      if( to == to_acnts.end() ) {
         to_acnts.emplace(get_self(), [&]( auto& a ){
@@ -1079,7 +1077,7 @@ void freeos::claim( const name& user )
    }
 
    // update the user's issuance stats in their registration record
-   user_index users(get_self(), user.value);
+   users_index users(get_self(), user.value);
    auto user_record = users.begin();
 
    if (user_record != users.end()) {
@@ -1098,20 +1096,20 @@ void freeos::claim( const name& user )
 
 // record a deposit to the freedao account
 void freeos::record_deposit(uint64_t iteration_number, asset amount) {
-  deposit_index deposits(get_self(), get_self().value);
+  deposits_index deposits_table(get_self(), get_self().value);
 
   // find the record for the iteration
-  auto iterator = deposits.find(iteration_number);
+  auto deposit_record = deposits_table.find(iteration_number);
 
-  if (iterator == deposits.end()) {
+  if (deposit_record == deposits_table.end()) {
     // insert record and initialise
-    deposits.emplace(get_self(), [&]( auto& d ){
+    deposits_table.emplace(get_self(), [&]( auto& d ){
       d.iteration = iteration_number;
       d.accrued = amount;
     });
   } else {
     // modify record
-    deposits.modify(iterator, _self, [&]( auto& d ) {
+    deposits_table.modify(deposit_record, _self, [&]( auto& d ) {
       d.accrued += amount;
     });
   }
@@ -1122,18 +1120,16 @@ void freeos::record_deposit(uint64_t iteration_number, asset amount) {
 void freeos::depositclear(uint64_t iteration_number) {
   require_auth(name(freedao_acct));
 
-  deposit_index deposits(get_self(), get_self().value);
+  deposits_index deposits_table(get_self(), get_self().value);
 
   // find the record for the iteration
-  auto iterator = deposits.find(iteration_number);
+  auto deposit_record = deposits_table.find(iteration_number);
 
-  check(iterator != deposits.end(), "a deposit record for the requested iteration does not exist");
+  check(deposit_record != deposits_table.end(), "a deposit record for the requested iteration does not exist");
 
-  deposits.erase(iterator);
+  deposits_table.erase(deposit_record);
 
 }
-
-
 
 
 void freeos::unvest(const name& user)
@@ -1154,28 +1150,28 @@ void freeos::unvest(const name& user)
    check(this_iteration > 0, "Not in a valid iteration");
 
    // calculate the amount to be unvested - get the percentage for the iteration
-   statistic_index statistics(get_self(), get_self().value);
-   auto iter = statistics.begin();
-   check(iter != statistics.end(), "statistics record is not found");
-   uint32_t unvest_percent = iter->unvestpercent; 
+   statistic_index statistic_table(get_self(), get_self().value);
+   auto statistic = statistic_table.begin();
+   check(statistic != statistic_table.end(), "statistics record is not found");
+   uint32_t unvest_percent = statistic->unvestpercent;
    
    // check that the unvest percentage is within limits
    check(unvest_percent > 0 && unvest_percent <= 100, "vested OPTIONs cannot be unvested in this claim period. Please try during next claim period.");
 
-   // has the user unvested this iteration? - consult the unvests history table
-   unvest_index unvests(get_self(), user.value);
-   auto iterator = unvests.find(this_iteration);
+   // has the user unvested this iteration? - consult the unvest history table
+   unvest_index unvest_table(get_self(), user.value);
+   auto unvest_record = unvest_table.find(this_iteration);
    // if the unvest record exists for the iteration then the user has unvested, so is not eligible to unvest again
-   check(iterator == unvests.end(), "user has already unvested in this iteration");
+   check(unvest_record == unvest_table.end(), "user has already unvested in this iteration");
 
    // do the unvesting
    // get the user's unvested OPTION balance
    asset user_vbalance = asset(0, symbol(NON_EXCHANGEABLE_CURRENCY_CODE,4));
-   vestaccounts v_accounts(get_self(), user.value);
-   auto v_it = v_accounts.begin();
+   vestaccounts_index vestaccounts_table(get_self(), user.value);
+   auto vestaccount_record = vestaccounts_table.begin();
 
-   if (v_it != v_accounts.end()) {
-     user_vbalance = v_it->balance;
+   if (vestaccount_record != vestaccounts_table.end()) {
+     user_vbalance = vestaccount_record->balance;
    }
 
    // if user's vested balance is 0 then nothing to do, so return
@@ -1191,11 +1187,11 @@ void freeos::unvest(const name& user)
    // calculate the amount of vested OPTIONs to convert to liquid OPTIONs
    // Warning: these calculations use mixed-type arithmetic. Any changes need to be thoroughly tested.
 
-   uint64_t vestedunits = user_vbalance.amount;   // in currency units (i.e. number of 0.0001 OPTION)
+   uint64_t vested_units = user_vbalance.amount;   // in currency units (i.e. number of 0.0001 OPTION)
    double percentage = unvest_percent / 100.0;    // required to be a double
-   uint64_t convertedunits = vestedunits * percentage;  // in currency units (i.e. number of 0.0001 OPTION)
-   uint32_t roundedupoptions = (uint32_t) ceil(convertedunits / 10000.0);  // ceil rounds up to the next whole number of OPTION
-   asset convertedoptions = asset(roundedupoptions * 10000, symbol(NON_EXCHANGEABLE_CURRENCY_CODE, 4)); // express the roundedupoptions as an asset
+   uint64_t converted_units = vested_units * percentage;  // in currency units (i.e. number of 0.0001 OPTION)
+   uint32_t rounded_up_options = (uint32_t) ceil(converted_units / 10000.0);  // ceil rounds up to the next whole number of OPTION
+   asset converted_options = asset(rounded_up_options * 10000, symbol(NON_EXCHANGEABLE_CURRENCY_CODE, 4)); // express the roundedupoptions as an asset
 
 
    // conditionally limited supply - increment the conditional_supply by total amount of issue
@@ -1206,7 +1202,7 @@ void freeos::unvest(const name& user)
    const auto& st = *currency_record;
 
    statstable.modify( st, same_payer, [&]( auto& s ) {
-      s.conditional_supply += convertedoptions;
+      s.conditional_supply += converted_options;
    });
 
    std::string memo = std::string("unvesting OPTIONs by ");
@@ -1217,7 +1213,7 @@ void freeos::unvest(const name& user)
      permission_level{get_self(),"active"_n},
      name(freeos_acct),
      "issue"_n,
-     std::make_tuple(get_self(), convertedoptions, memo)
+     std::make_tuple(get_self(), converted_options, memo)
    );
 
    issue_action.send();
@@ -1227,63 +1223,62 @@ void freeos::unvest(const name& user)
      permission_level{get_self(),"active"_n},
      name(freeos_acct),
      "allocate"_n,
-     std::make_tuple(get_self(), user, convertedoptions, memo)
+     std::make_tuple(get_self(), user, converted_options, memo)
    );
 
    user_transfer.send();
 
    // subtract the amount transferred from the unvested record
-   v_accounts.modify( v_it, _self, [&]( auto& v ) {
-     v.balance -= convertedoptions;
+   vestaccounts_table.modify(vestaccount_record, _self, [&]( auto& v ) {
+     v.balance -= converted_options;
    });
 
 
-   // write the unvest event to the unvests history table
-   iterator = unvests.find(this_iteration);
-   if (iterator == unvests.end()) {
-     unvests.emplace( get_self(), [&]( auto& unvest ) {
+   // write the unvest event to the unvest history table
+   unvest_record = unvest_table.find(this_iteration);
+   if (unvest_record == unvest_table.end()) {
+     unvest_table.emplace( get_self(), [&]( auto& unvest ) {
        unvest.iteration_number = this_iteration;
      });
    } else {
-     unvests.modify(iterator, same_payer, [&]( auto& unvest ) {
+     unvest_table.modify(unvest_record, same_payer, [&]( auto& unvest ) {
       unvest.iteration_number = this_iteration;
     });
    }
 
    #ifdef TEST_BUILD
-   print("Unvesting successful. You have gained another ", convertedoptions.to_string());
+   print("Unvesting successful. You have gained another ", converted_options.to_string());
    #endif
 
 }
-
 
 
 float freeos::get_vested_proportion() {
   // default rate if exchange rate record not found, or if current price >= target price (so no need to vest)
   float proportion = 0.0f;
 
-  exchange_index exchangerate(name(freeosconfig_acct), name(freeosconfig_acct).value);
+  exchange_index exchangerate_table(name(freeosconfig_acct), name(freeosconfig_acct).value);
 
   // there is a single record
-  auto iterator = exchangerate.begin();
+  auto exchangerate_record = exchangerate_table.begin();
 
   // if the exchange rate exists in the table
-  if (iterator != exchangerate.end() ) {
+  if (exchangerate_record != exchangerate_table.end() ) {
       // get current and target rates
-      double currentprice = iterator->currentprice;
-      double targetprice = iterator->targetprice;
+      double currentprice = exchangerate_record->currentprice;
+      double targetprice = exchangerate_record->targetprice;
 
       if (targetprice > 0 && currentprice < targetprice) {
         proportion = 1.0f - (currentprice / targetprice);
       }
   } else {
     // use the default proportion specified in the 'vestpercent' parameter
-    parameter_index parameters(name(freeosconfig_acct), name(freeosconfig_acct).value);
-    auto p_iterator = parameters.find(name("vestpercent").value);
+    parameters_index parameters_table(name(freeosconfig_acct), name(freeosconfig_acct).value);
+    auto parameter_record = parameters_table.find(name("vestpercent").value);
 
-    if (p_iterator != parameters.end()) {
-      uint8_t intpercent = stoi(p_iterator->value);
-      proportion = ((float) intpercent) / 100.0f;
+    if (parameter_record != parameters_table.end()) {
+      uint8_t int_percent = stoi(parameter_record->value);
+      proportion = ((float) int_percent) / 100.0f;
     }
   }
 
@@ -1297,19 +1292,19 @@ float freeos::get_vested_proportion() {
 
 
 // look up the required threshold for the number of users
-uint64_t freeos::getthreshold(uint32_t numusers) {
+uint64_t freeos::get_threshold(uint32_t number_of_users) {
 
   // look up the config stakereqs table
-  stakereq_index stakereqs(name(freeosconfig_acct), name(freeosconfig_acct).value);
-  auto iterator = stakereqs.upper_bound(numusers);
-  iterator--; 
+  stakereq_index stakereqs_table(name(freeosconfig_acct), name(freeosconfig_acct).value);
+  auto stakereqs_record = stakereqs_table.upper_bound(number_of_users);
+  stakereqs_record--; 
 
-  return iterator->threshold;
+  return stakereqs_record->threshold;
 }
 
 
 // return the current iteration record
-freeos::iteration freeos::getclaimiteration() {
+freeos::iteration freeos::get_claim_iteration() {
 
   freeos::iteration this_iteration = iteration {0, 0, "", 0, "", 0, 0};    // default null iteration value if outside of a claim period
 
@@ -1317,17 +1312,17 @@ freeos::iteration freeos::getclaimiteration() {
   uint32_t now = current_time_point().sec_since_epoch();
 
   // iterate through iteration records and find one that matches current time
-  iteration_index iterations(name(freeosconfig_acct), name(freeosconfig_acct).value);
-  auto idx = iterations.get_index<"start"_n>();
-  auto iterator = idx.upper_bound(now);
+  iterations_index iterations_table(name(freeosconfig_acct), name(freeosconfig_acct).value);
+  auto start_index = iterations_table.get_index<"start"_n>();
+  auto iteration_record = start_index.upper_bound(now);
 
-  if (iterator != idx.begin()) {
-    iterator--;
+  if (iteration_record != start_index.begin()) {
+    iteration_record--;
   }
 
   // check we are within the period of the iteration
-  if (iterator != idx.end() && now >= iterator->start && now <= iterator->end) {
-    this_iteration = *iterator;
+  if (iteration_record != start_index.end() && now >= iteration_record->start && now <= iteration_record->end) {
+    this_iteration = *iteration_record;
   }  
   
   return this_iteration;
@@ -1338,10 +1333,10 @@ freeos::iteration freeos::getclaimiteration() {
 bool freeos::eligible_to_claim(const name& claimant, iteration this_iteration) {
 
   // get the user record - if there is no record then user is not registered
-  user_index users(get_self(), claimant.value);
-  auto user_record = users.begin();
+  users_index users_table(get_self(), claimant.value);
+  auto user_record = users_table.begin();
 
-  check(user_record != users.end(), "user is not registered in freeos");
+  check(user_record != users_table.end(), "user is not registered in freeos");
 
   // has the user claimed this iteration - consult the last_issuance field in the user record
   if (user_record->last_issuance == this_iteration.iteration_number) {
@@ -1377,33 +1372,41 @@ bool freeos::eligible_to_claim(const name& claimant, iteration this_iteration) {
     }
 
     // check that the user has the required balance of OPTION
-    asset liquid_option_balance = asset(0, symbol(NON_EXCHANGEABLE_CURRENCY_CODE,4));  // default holding = 0 OPTION
+    int64_t liquid_option_balance_amount = 0;
 
-    symbol_code option = symbol_code(NON_EXCHANGEABLE_CURRENCY_CODE);
-    auto user_option_account = user_accounts.find(option.raw());
-
+    auto user_option_account = user_accounts.find(symbol_code(NON_EXCHANGEABLE_CURRENCY_CODE).raw());
     if (user_option_account != user_accounts.end()) {
-      liquid_option_balance = user_option_account->balance;
+      liquid_option_balance_amount = user_option_account->balance.amount;
     }
 
     // check the user's vested OPTION balance
-    asset vested_option_balance = asset(0, symbol(NON_EXCHANGEABLE_CURRENCY_CODE,4)); // default if account record not found
-    vestaccounts v_accounts(get_self(), claimant.value );
-    const auto& ac = v_accounts.find(symbol_code(NON_EXCHANGEABLE_CURRENCY_CODE).raw());
-    if (ac != v_accounts.end()) {
-      vested_option_balance = ac->balance;;
+    int64_t vested_option_balance_amount = 0;
+
+    vestaccounts_index vestaccounts_table(get_self(), claimant.value);
+    const auto& vaccount_record = vestaccounts_table.find(symbol_code(NON_EXCHANGEABLE_CURRENCY_CODE).raw());
+    if (vaccount_record != vestaccounts_table.end()) {
+      vested_option_balance_amount = vaccount_record->balance.amount;
+    }
+
+    // check the user's exchangeable balance
+    int64_t exchangeable_balance_amount = 0;
+
+    accounts accounts_table(name(freeostokens_acct), claimant.value);
+    const auto& account_record = accounts_table.find(symbol_code(EXCHANGEABLE_CURRENCY_CODE).raw());
+    if (account_record != accounts_table.end()) {
+      exchangeable_balance_amount = account_record->balance.amount;
     }
 
     // user's total OPTION balance is liquid-OPTION plus vested-OPTION
-    asset total_option_balance = liquid_option_balance + vested_option_balance;
+    int64_t total_option_balance_amount = liquid_option_balance_amount + vested_option_balance_amount + exchangeable_balance_amount;
 
     // the 'holding' balance requirement for this iteration's claim
-    asset iteration_holding_requirement = asset(this_iteration.tokens_required * 10000, symbol(NON_EXCHANGEABLE_CURRENCY_CODE,4));
+    int64_t iteration_holding_requirement = this_iteration.tokens_required * 10000;
     
-    if (total_option_balance < iteration_holding_requirement) {
+    if (total_option_balance_amount < iteration_holding_requirement) {
 
       #ifdef TEST_BUILD
-      print("user ", claimant, " has ", total_option_balance.to_string(), " which is less than the holding requirement of ", iteration_holding_requirement.to_string());
+      print("user ", claimant, " has less than the holding requirement of ", this_iteration.tokens_required);
       #endif
       
       return false;
@@ -1415,22 +1418,23 @@ bool freeos::eligible_to_claim(const name& claimant, iteration this_iteration) {
 }
 
 
-uint32_t freeos::updateclaimeventcount() {
+uint32_t freeos::update_claim_event_count() {
 
   uint32_t claimevents;
 
-  statistic_index statistics(get_self(), get_self().value);
-  auto iterator = statistics.begin();
+  statistic_index statistic_table(get_self(), get_self().value);
+  auto statistic_record = statistic_table.begin();
 
   // modify
-  statistics.modify(iterator, _self, [&](auto& s) {
+  statistic_table.modify(statistic_record, _self, [&](auto& s) {
         s.claimevents = claimevents = s.claimevents + 1;
   });
 
   return claimevents;
 }
 
-uint16_t freeos::getfreedaomultiplier(uint32_t claimevents) {
+
+uint16_t freeos::get_freedao_multiplier(uint32_t claimevents) {
 
 #ifdef TEST_BUILD
   if (claimevents <= 5) {
@@ -1478,9 +1482,6 @@ uint16_t freeos::getfreedaomultiplier(uint32_t claimevents) {
     } else {
       return 1;
     } */
-#endif
-
-    // FOR TEST PURPOSES
-    
+#endif    
 
 }
