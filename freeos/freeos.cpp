@@ -104,7 +104,7 @@ const std::string VERSION = "0.342";
 void freeos::version() {
   iteration this_iteration = get_claim_iteration();
 
-  std::string version_message = "Version = " + VERSION + " - iteration " + std::to_string(this_iteration.iteration_number);
+  std::string version_message = freeos_acct + "/" + freeosconfig_acct + "/" + freeostokens_acct + "/" + freedao_acct + " version = " + VERSION + " - iteration " + std::to_string(this_iteration.iteration_number);
   check(false, version_message);
 }
 #endif

@@ -1,11 +1,14 @@
 #include <eosio/eosio.hpp>
 #include <string>
 
-// account names
-const std::string freeos_acct = "freeos";
-const std::string freeostokens_acct = "freeostokens";
-const std::string freeosconfig_acct = "freeosconfig";
-const std::string freedao_acct = "dividendfree";
+#define _STRINGIZE(x) #x
+#define STRINGIZE(x) _STRINGIZE(x)
+
+string freeos_acct = STRINGIZE(FREEOS);
+string freeosconfig_acct = STRINGIZE(FREEOSCONFIG);
+string freeostokens_acct = STRINGIZE(FREEOSTOKENS);
+string freedao_acct = STRINGIZE(DIVIDEND);
+
 const std::string verification_contract = "eosio.proton";   // contains the usersinfo table
 
 // currency symbol for network
