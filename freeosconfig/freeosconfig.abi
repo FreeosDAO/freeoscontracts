@@ -4,24 +4,6 @@
     "types": [],
     "structs": [
         {
-            "name": "additeration",
-            "base": "",
-            "fields": [
-                {
-                    "name": "hours",
-                    "type": "uint8"
-                },
-                {
-                    "name": "claim_amount",
-                    "type": "uint16"
-                },
-                {
-                    "name": "tokens_required",
-                    "type": "uint16"
-                }
-            ]
-        },
-        {
             "name": "addkyc",
             "base": "",
             "fields": [
@@ -50,16 +32,6 @@
                 {
                     "name": "price",
                     "type": "float64"
-                }
-            ]
-        },
-        {
-            "name": "getiter",
-            "base": "",
-            "fields": [
-                {
-                    "name": "iteration_number",
-                    "type": "uint64"
                 }
             ]
         },
@@ -93,23 +65,15 @@
             "fields": [
                 {
                     "name": "iteration_number",
-                    "type": "uint64"
+                    "type": "uint32"
                 },
                 {
                     "name": "start",
-                    "type": "uint32"
-                },
-                {
-                    "name": "start_date",
-                    "type": "string"
+                    "type": "time_point"
                 },
                 {
                     "name": "end",
-                    "type": "uint32"
-                },
-                {
-                    "name": "end_date",
-                    "type": "string"
+                    "type": "time_point"
                 },
                 {
                     "name": "claim_amount",
@@ -137,15 +101,15 @@
             "fields": [
                 {
                     "name": "iteration_number",
-                    "type": "uint64"
+                    "type": "uint32"
                 },
                 {
                     "name": "start",
-                    "type": "string"
+                    "type": "time_point"
                 },
                 {
                     "name": "end",
-                    "type": "string"
+                    "type": "time_point"
                 },
                 {
                     "name": "claim_amount",
@@ -494,11 +458,6 @@
     ],
     "actions": [
         {
-            "name": "additeration",
-            "type": "additeration",
-            "ricardian_contract": ""
-        },
-        {
             "name": "addkyc",
             "type": "addkyc",
             "ricardian_contract": ""
@@ -506,11 +465,6 @@
         {
             "name": "currentrate",
             "type": "currentrate",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "getiter",
-            "type": "getiter",
             "ricardian_contract": ""
         },
         {

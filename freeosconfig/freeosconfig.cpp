@@ -17,9 +17,10 @@ using namespace eosio;
 // 106 - additeration action changed to remove the price parameter
 // 107 - added checks when setting current and target exchange rates that values must be positive
 // 108 - added transferers table and actions transfadd and transferase for maintaining the table
+// 109 - iterupsert changed to accept uint32_t iteration number
 
 
-const std::string VERSION = "0.108";
+const std::string VERSION = "0.109";
 
 #ifdef TEST_BUILD
 [[eosio::action]]
@@ -256,32 +257,11 @@ void freeosconfig::transferase(name account) {
 
 // upsert an iteration into the iterations table
 [[eosio::action]]
-void freeosconfig::iterupsert(uint64_t iteration_number, std::string start, std::string end, uint16_t claim_amount, uint16_t tokens_required) {
+void freeosconfig::iterupsert(uint32_t iteration_number, time_point start, time_point end, uint16_t claim_amount, uint16_t tokens_required) {
 
   require_auth(_self);
 
   check(iteration_number != 0, "iteration number must not be 0");
-
-  // parse the iteration start and end strings
-  uint32_t nstart = parsetime(start);
-  if (nstart == 0) {
-
-    #ifdef TEST_BUILD
-    print("start date ", start, " cannot be parsed; must be in YYYY-MM-DD HH:MM:SS format");
-    #endif
-
-    return;
-  }
-
-  uint32_t nend = parsetime(end);
-  if (nend == 0) {
-
-    #ifdef TEST_BUILD
-    print("end date ", end, " cannot be parsed; must be in YYYY-MM-DD HH:MM:SS format");
-    #endif
-
-    return;
-  }
 
   iteration_index iterations(get_self(), get_self().value);
   auto iterator = iterations.find(iteration_number);
@@ -291,33 +271,20 @@ void freeosconfig::iterupsert(uint64_t iteration_number, std::string start, std:
       // the iteration is not in the table, so insert
       iterations.emplace(_self, [&](auto & row) {
          row.iteration_number = iteration_number;
-         row.start = nstart;
-         row.start_date = start;
-         row.end = nend;
-         row.end_date = end;
+         row.start = start;
+         row.end = end;
          row.claim_amount = claim_amount;
          row.tokens_required = tokens_required;
       });
-
-      #ifdef TEST_BUILD
-      print("iteration: ", iteration_number, " start: ", start, ", end: ", end, ", claim amount: ", claim_amount, ", tokens_required: ", tokens_required, " added to the iterations table");
-      #endif
-
   } else {
       // the iteration is in the table, so update
       iterations.modify(iterator, _self, [&](auto& row) {
         row.iteration_number = iteration_number;
-        row.start = nstart;
-        row.start_date = start;
-        row.end = nend;
-        row.end_date = end;
+        row.start = start;
+        row.end = end;
         row.claim_amount = claim_amount;
         row.tokens_required = tokens_required;
       });
-
-      #ifdef TEST_BUILD
-      print("iteration: ", iteration_number, " start: ", start, ", end: ", end, ", claim amount: ", claim_amount, ", tokens_required: ", tokens_required, ", modified in the iterations table");
-      #endif
   }
 }
 
@@ -340,51 +307,6 @@ void freeosconfig::itererase(uint64_t iteration_number) {
   #endif
 
 }
-
-#ifdef TEST_BUILD
-// for testing - get an iteration from the iterations table
-[[eosio::action]]
-void freeosconfig::getiter(uint64_t iteration_number) {
-
-  iteration_index iterations(get_self(), get_self().value);
-  auto iterator = iterations.find(iteration_number);
-
-  // check if the iteration is in the table or not
-  if (iterator == iterations.end() ) {
-    print("a record for iteration ", iteration_number, " does not exist in the iterations table" );
-  } else {
-    print("iteration ", iteration_number, " start: ", iterator->start_date, " (", iterator->start, "), end: ", iterator->end_date,
-    " (", iterator->end, "), claim amount: ", iterator->claim_amount, ", tokens required: ", iterator->tokens_required);
-  }
-}
-#endif
-
-
-#ifdef TEST_BUILD
-[[eosio::action]]
-void freeosconfig::additeration(uint8_t hours, uint16_t  claim_amount, uint16_t  tokens_required) {
-  // get the last iteration record
-  iteration_index iterations(get_self(), get_self().value);
-  auto iterator = iterations.rbegin();
-
-  uint64_t new_iteration = iterator->iteration_number + 1;
-  uint32_t new_start = iterator->end + 1; // 1 second after previous end
-  uint32_t new_end = iterator->end + (hours * 3600);
-
-  // add the new iteration record
-  iterations.emplace(_self, [&](auto & row) {
-         row.iteration_number = new_iteration;
-         row.start = new_start;
-         row.start_date = "";
-         row.end = new_end;
-         row.end_date = "";
-         row.claim_amount = claim_amount;
-         row.tokens_required = tokens_required;
-      });
-
-  print("Iteration ", new_iteration, " created");
-}
-#endif
 
 
 #ifdef TEST_BUILD
@@ -536,89 +458,3 @@ void freeosconfig::addkyc( name acc, name kyc_provider, std::string kyc_level, u
 // ************************************************************************************
 // ************************************************************************************
 // ************************************************************************************
-
-// helper functions
-
-uint32_t freeosconfig::parsetime(const std::string sdatetime) {
-
-      // create a character array for the date string
-      char date[sdatetime.length() + 1];
-      strcpy(date, sdatetime.c_str());
-
-      // define a tm structure to contain the parsed string values
-      // tm *ltm = new tm;
-      tm ltm;
-      char delims[] = " ,.-:/";
-
-      char* pchar;
-      pchar = strtok(date, delims);
-      ltm.tm_year = atoi(pchar);                 // year
-      ltm.tm_mon = atoi(strtok(NULL, delims));   // month
-      ltm.tm_mday = atoi(strtok(NULL, delims));  // day
-      ltm.tm_hour = atoi(strtok(NULL, delims));  // hour
-      ltm.tm_min = atoi(strtok(NULL, delims));   // minute
-      ltm.tm_sec = atoi(strtok(NULL, delims));   // seconds
-
-      if (ltm.tm_year < 2020) return 0;
-      if (ltm.tm_mon < 1 || ltm.tm_mon > 12) return 0;
-      if (ltm.tm_mday < 1 || ltm.tm_mday > 31) return 0;
-      if (ltm.tm_hour < 0 || ltm.tm_hour > 23) return 0;
-      if (ltm.tm_min < 0 || ltm.tm_min > 59) return 0;
-      if (ltm.tm_sec < 0 || ltm.tm_sec > 59) return 0;
-
-      uint32_t epoch_seconds = GetTimeStamp(ltm.tm_year, ltm.tm_mon, ltm.tm_mday, ltm.tm_hour, ltm.tm_min, ltm.tm_sec);
-
-      return epoch_seconds;
-
-}
-
-bool IsLeapYear(int year)
-{
-    if ((year % 4) != 0)
-        return false;
-
-    if ((year % 100) == 0)
-        return ((year % 400) == 0);
-
-    return true;
-}
-
-uint32_t DateToSeconds(int year, int month, int day)
-{
-  int DaysToMonth365[] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
-  int DaysToMonth366[] = { 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 };
-
-    if (((year >= 1) && (year <= 9999)) && ((month >= 1) && (month <= 12)))
-    {
-        int *daysToMonth = IsLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
-        if ((day >= 1) && (day <= (daysToMonth[month] - daysToMonth[month - 1])))
-        {
-            int previousYear = year - 1;
-            int daysInPreviousYears = ((((previousYear * 365) + (previousYear / 4)) - (previousYear / 100)) + (previousYear / 400));
-
-            int totalDays = ((daysInPreviousYears + daysToMonth[month - 1]) + day) - 1;
-            return (totalDays * 86400);
-        }
-    }
-    return 0;
-}
-
-
-uint32_t TimeToSeconds(int hour, int minute, int second)
-{
-    long totalSeconds = ((hour * 3600) + (minute * 60)) + second;
-
-    return (totalSeconds);
-}
-
-
-uint32_t freeosconfig::GetTimeStamp(int year, int month, int day,
-                        int hour, int minute, int second)
-{
-    const uint32_t start_of_epoch = 2006054656;   // seconds elapsed to 1st Jan 1970
-
-    uint32_t timestamp = DateToSeconds(year, month, day)
-        + TimeToSeconds(hour, minute, second);
-
-    return timestamp - start_of_epoch;
-}

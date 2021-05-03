@@ -363,7 +363,8 @@ enum registration_status{ registered_already,
                         const asset&   quantity,
                         const string&  memo);
 
-
+          [[eosio::action]]
+          void gettime(time_point t);
 
          using create_action = eosio::action_wrapper<"create"_n, &freeos::create>;
          using issue_action = eosio::action_wrapper<"issue"_n, &freeos::issue>;
@@ -402,13 +403,13 @@ enum registration_status{ registered_already,
 
          // the registered user table
          struct [[eosio::table]] user {
-           asset          stake;            // how many XPR tokens staked
-           char           account_type;     // user's verification level
-           time_point_sec registered_time;  // when the user was registered
-           uint16_t       staked_iteration; // the iteration in which the user staked their tokens
-           uint16_t       votes;            // how many votes the user has made
-           uint16_t       issuances;        // total number of times the user has been issued with OPTIONs
-           uint16_t       last_issuance;    // the last iteration in which the user was issued with OPTIONs
+           asset          stake;                // how many XPR tokens staked
+           char           account_type;         // user's verification level
+           uint32_t       registered_iteration; // when the user was registered
+           uint32_t       staked_iteration;     // the iteration in which the user staked their tokens
+           uint32_t       votes;                // how many votes the user has made
+           uint32_t       issuances;            // total number of times the user has been issued with OPTIONs
+           uint32_t       last_issuance;        // the last iteration in which the user was issued with OPTIONs
 
            uint64_t primary_key() const {return stake.symbol.code().raw();}
          };
@@ -480,24 +481,22 @@ enum registration_status{ registered_already,
 
 
          // freeos airclaim iteration calendar - code: freeosconfig, scope: freeosconfig
-         struct iteration {
-           uint64_t    iteration_number;
-           uint32_t    start;
-           std::string start_date;
-           uint32_t    end;
-           std::string end_date;
-           uint16_t    claim_amount;
-           uint16_t    tokens_required;
+        struct [[eosio::table]] iteration {
+          uint32_t    iteration_number;
+          time_point  start;
+          time_point  end;
+          uint16_t    claim_amount;
+          uint16_t    tokens_required;
 
-           uint64_t primary_key() const { return iteration_number; }
-           uint64_t get_secondary() const {return start;}
-         };
+          uint64_t primary_key() const { return iteration_number; }
+          uint64_t get_secondary() const {return start.time_since_epoch()._count;}
+        };
 
-         // using iteration_index = eosio::multi_index<"iterations"_n, iteration>;
+        // using iteration_index = eosio::multi_index<"iterations"_n, iteration>;
 
-         using iterations_index = eosio::multi_index<"iterations"_n, iteration,
-         indexed_by<"start"_n, const_mem_fun<iteration, uint64_t, &iteration::get_secondary>>
-         >;
+        using iterations_index = eosio::multi_index<"iterations"_n, iteration,
+        indexed_by<"start"_n, const_mem_fun<iteration, uint64_t, &iteration::get_secondary>>
+        >;
 
         // Transferer table - a whitelist to determine who can call the transfer function - code: freeosconfig, scope: freeosconfig
         struct [[eosio::table]] transferer {

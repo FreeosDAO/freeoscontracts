@@ -149,6 +149,16 @@
             ]
         },
         {
+            "name": "gettime",
+            "base": "",
+            "fields": [
+                {
+                    "name": "t",
+                    "type": "time_point"
+                }
+            ]
+        },
+        {
             "name": "getuser",
             "base": "",
             "fields": [
@@ -173,6 +183,32 @@
                 {
                     "name": "memo",
                     "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "iteration",
+            "base": "",
+            "fields": [
+                {
+                    "name": "iteration_number",
+                    "type": "uint32"
+                },
+                {
+                    "name": "start",
+                    "type": "time_point"
+                },
+                {
+                    "name": "end",
+                    "type": "time_point"
+                },
+                {
+                    "name": "claim_amount",
+                    "type": "uint16"
+                },
+                {
+                    "name": "tokens_required",
+                    "type": "uint16"
                 }
             ]
         },
@@ -412,24 +448,24 @@
                     "type": "int8"
                 },
                 {
-                    "name": "registered_time",
-                    "type": "time_point_sec"
+                    "name": "registered_iteration",
+                    "type": "uint32"
                 },
                 {
                     "name": "staked_iteration",
-                    "type": "uint16"
+                    "type": "uint32"
                 },
                 {
                     "name": "votes",
-                    "type": "uint16"
+                    "type": "uint32"
                 },
                 {
                     "name": "issuances",
-                    "type": "uint16"
+                    "type": "uint32"
                 },
                 {
                     "name": "last_issuance",
-                    "type": "uint16"
+                    "type": "uint32"
                 }
             ]
         },
@@ -531,6 +567,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "gettime",
+            "type": "gettime",
+            "ricardian_contract": ""
+        },
+        {
             "name": "getuser",
             "type": "getuser",
             "ricardian_contract": ""
@@ -602,6 +643,13 @@
         {
             "name": "deposits",
             "type": "deposit",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "iterations",
+            "type": "iteration",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

@@ -5,6 +5,7 @@
 #include "freeos.hpp"
 #include <cmath>
 
+
 using namespace eosio;
 
 // versions
@@ -95,19 +96,33 @@ using namespace eosio;
 //       claims table has been removed - the claim eligibility check now uses the 'last_issuance' field in the user record
 //       unvest table only records the iteration number and not the date. Only one record per user to record iteration of last unvest
 //       Iteration holding requirement now considers total of liquid OPTIONs + vested OPTIONs + FREEOS
+// 343 - user record changed to record registered_iteration instead of registered_time
+//       Improved logic when updating unvest percentage. Going from iteration x to 0 and back to x no longer updates the percentage.
+//       get_claim_iteration now works with time_point (64-bit) times
 
 
-const std::string VERSION = "0.342";
+const std::string VERSION = "0.343";
 
 #ifdef TEST_BUILD
 [[eosio::action]]
 void freeos::version() {
   iteration this_iteration = get_claim_iteration();
-
+  
   std::string version_message = freeos_acct + "/" + freeosconfig_acct + "/" + freeostokens_acct + "/" + freedao_acct + " version = " + VERSION + " - iteration " + std::to_string(this_iteration.iteration_number);
+
   check(false, version_message);
 }
 #endif
+
+
+[[eosio::action]]
+void freeos::gettime(time_point t) {
+  //time_point t = current_time_point();
+  uint64_t c = t.time_since_epoch()._count;
+  std::string s = std::to_string(c);
+
+  check(false, s);
+}
 
 
 [[eosio::action]]
@@ -121,16 +136,16 @@ void freeos::tick() {
   auto statistic = statistic_table.begin();
   check(statistic != statistic_table.end(), "statistics record is not found");
 
-  if (this_iteration.iteration_number != statistic->iteration) {
-    // update iteration in statistics table
-    if (statistic != statistic_table.end()) {
-      statistic_table.modify(statistic, _self, [&](auto& stat) {
-          stat.iteration = this_iteration.iteration_number;
-      });
-    }
+  uint32_t old_iteration = statistic->iteration;
 
-    // update unvest percent if we are in a valid iteration
-    if (statistic->iteration > 0) update_unvest_percentage();
+  if (this_iteration.iteration_number != statistic->iteration) {
+    // update iteration in statistics table    
+    statistic_table.modify(statistic, _self, [&](auto& stat) {
+        stat.iteration = this_iteration.iteration_number;
+    });
+
+    // update unvest percent if we are in a valid iteration transition
+    if (old_iteration != 0 && this_iteration.iteration_number > old_iteration) update_unvest_percentage();
   } else {
     // do some unstaking if we are in a valid iteration
     if (statistic->iteration > 0) refund_stakes();
@@ -314,12 +329,10 @@ registration_status freeos::register_user(const name& user) {
   asset stake_requirement = asset(stake_requirement_amount, symbol(SYSTEM_CURRENCY_CODE, 4));
 
   // register the user
-  time_point_sec now = time_point_sec(current_time_point().sec_since_epoch());
-
   users_table.emplace( get_self(), [&]( auto& user ) {
     user.stake = asset(0, symbol(SYSTEM_CURRENCY_CODE, 4));
     user.account_type = account_type;
-    user.registered_time = now;
+    user.registered_iteration = current_iteration.iteration_number;
     user.staked_iteration = stake_requirement.amount == 0 ? current_iteration.iteration_number : 0;
     });
 
@@ -462,6 +475,11 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
     // check that system is operational (global masterswitch parameter set to "1")
     check(checkmasterswitch(), msg_freeos_system_not_available);
 
+    // which iteration are we in?
+    uint32_t current_iteration = get_cached_iteration();
+
+    check(current_iteration != 0, "Staking not allowed in iteration 0");
+
     //****************************************************
 
     // auto-register the user - if user is already registered then that is ok, the register_user function responds silently
@@ -470,11 +488,6 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
     check(result == registered_success || result == registered_already, "user registration did not succeed");
 
     //****************************************************
-
-    // which iteration are we in?
-    uint32_t current_iteration = get_cached_iteration();
-
-    check(current_iteration != 0, "Staking not allowed in iteration 0");
 
     // get the user record - the amount of the stake requirement and the amount staked
     // find the account in the user table
@@ -699,7 +712,7 @@ void freeos::getuser(const name& user) {
   }
 
   // feedback
-  print("account: ", user, ", registered: ", user_record->registered_time.utc_seconds, ", type: ", user_record->account_type, ", stake: ", user_record->stake.to_string(),
+  print("account: ", user, ", registered: ", user_record->registered_iteration, ", type: ", user_record->account_type, ", stake: ", user_record->stake.to_string(),
         ", staked-iteration: ", user_record->staked_iteration, ", XPR: ", xpr_balance.to_string(), ", liquid: ", liquid_option_balance.to_string(), ", vested: ", vested_option_balance.to_string(),
          ", airkey: ", airkey_balance.to_string(), ", iteration: ", this_iteration, ", claimed: ", claimed_flag);
 
@@ -973,13 +986,12 @@ void freeos::claim( const name& user )
    // is this a real account?
    check(is_account(user), "user does not have an account on the network");
 
-   // auto-register the user - if user is already registered then that is ok, the register_user function responds silently
-   registration_status result = register_user(user);
-
-
    // what iteration are we in?
    iteration this_iteration = get_claim_iteration();
    check(this_iteration.iteration_number != 0, "freeos is not in a claim period");
+
+   // auto-register the user - if user is already registered then that is ok, the register_user function responds silently
+   registration_status result = register_user(user);
 
    // check user eligibility to claim
    check(eligible_to_claim(user, this_iteration), "user is not eligible to claim in this iteration");
@@ -1306,10 +1318,12 @@ uint64_t freeos::get_threshold(uint32_t number_of_users) {
 // return the current iteration record
 freeos::iteration freeos::get_claim_iteration() {
 
-  freeos::iteration this_iteration = iteration {0, 0, "", 0, "", 0, 0};    // default null iteration value if outside of a claim period
+  freeos::iteration this_iteration = iteration {0, time_point(), time_point(), 0, 0};    // default null iteration value if outside of a claim period
 
   // current time in UTC seconds
-  uint32_t now = current_time_point().sec_since_epoch();
+  //uint32_t now = current_time_point().sec_since_epoch();
+
+  uint64_t now = current_time_point().time_since_epoch()._count;
 
   // iterate through iteration records and find one that matches current time
   iterations_index iterations_table(name(freeosconfig_acct), name(freeosconfig_acct).value);
@@ -1321,7 +1335,8 @@ freeos::iteration freeos::get_claim_iteration() {
   }
 
   // check we are within the period of the iteration
-  if (iteration_record != start_index.end() && now >= iteration_record->start && now <= iteration_record->end) {
+  if (iteration_record != start_index.end() && now >= iteration_record->start.time_since_epoch()._count
+      && now <= iteration_record->end.time_since_epoch()._count) {
     this_iteration = *iteration_record;
   }  
   

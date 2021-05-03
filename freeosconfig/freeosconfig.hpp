@@ -113,34 +113,19 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
      * @details This action creates a new entry, or modifies an existing entry, in the 'iterations' table.
      *
      * @param iteration_number - the airclaim iteration number
-     * @param start - string representing the start of iteration in YYYY-MM-DD HH:MM:SS format,
-     * @param end - string representing the end of iteration in YYYY-MM-DD HH:MM:SS format
+     * @param start - string representing the start of iteration in YYYY-MM-DDTHH:MM:SS format,
+     * @param end - string representing the end of iteration in YYYY-MM-DDTHH:MM:SS format
      * @param claim_amount - the amount of FREEOS a user can claim in the iteration
      * @param tokens_required - the amount of FREEOS a user must hold before claiming
      *
      * @pre requires permission of the contract account
      */
     [[eosio::action]]
-    void iterupsert(uint64_t iteration_number,
-    std::string start,
-    std::string end,
+    void iterupsert(uint32_t iteration_number,
+    time_point start,
+    time_point end,
     uint16_t  claim_amount,
     uint16_t  tokens_required);
-
-
-#ifdef TEST_BUILD
-    /**
-     * getiter action.
-     *
-     * @details For testing purposes. This action prints a record from the 'iterations' table.
-     *
-     * @param iteration_number - the iteration number
-     *
-     * @pre requires permission of the contract account
-     */
-    [[eosio::action]]
-    void getiter(uint64_t iteration_number);
-#endif
 
 
     /**
@@ -242,23 +227,6 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
     void getthreshold(uint64_t numusers, std::string account_type);
 #endif
 
-#ifdef TEST_BUILD
-    /**
-     * additeration action.
-     *
-     * @details This action creates a new iteration (for a number of hours duration) following on from 1 second after the last iteration ended.
-     *
-     * @param hours - the number of hours to run the iteration for
-     * @param claim_amount - the amount of FREEOS a user can claim in the iteration
-     * @param tokens_required - the amount of FREEOS a user must hold before claiming
-     * 
-     * @pre requires permission of the contract account
-     */
-    [[eosio::action]]
-    void additeration(uint8_t hours, uint16_t  claim_amount, uint16_t  tokens_required);
-#endif
-
-
     // ************************************************************************************
     // ************* eosio.proton actions for populating usersinfo table ******************
     // ************************************************************************************
@@ -312,16 +280,14 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
 
     // freeos airclaim iteration calendar - code: freeosconfig, scope: freeosconfig
     struct [[eosio::table]] iteration {
-      uint64_t    iteration_number;
-      uint32_t    start;
-      std::string start_date;
-      uint32_t    end;
-      std::string end_date;
+      uint32_t    iteration_number;
+      time_point  start;
+      time_point  end;
       uint16_t    claim_amount;
       uint16_t    tokens_required;
 
       uint64_t primary_key() const { return iteration_number; }
-      uint64_t get_secondary() const {return start;}
+      uint64_t get_secondary() const {return start.time_since_epoch()._count;}
     };
 
     // using iteration_index = eosio::multi_index<"iterations"_n, iteration>;
