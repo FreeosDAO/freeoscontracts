@@ -135,10 +135,23 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
      *
      * @param iteration_number - the iteration number
      *
-     * @pre requires permission of the contract account
+     * @pre requires permission of the freeosconfig contract account
      */
     [[eosio::action]]
-    void itererase(uint64_t iteration_number);
+    void itererase(uint32_t iteration_number);
+
+
+    /**
+     * iterclear action.
+     *
+     * @details This action deletes a record from the 'iterations' table.
+     *
+     * @param iteration_number - the iteration number
+     *
+     * @pre requires permission of the freeos contract account
+     */
+    [[eosio::action]]
+    void iterclear(uint32_t iteration_number);
 
 
     /**
@@ -348,6 +361,7 @@ class [[eosio::contract("freeosconfig")]] freeosconfig : public eosio::contract 
     uint32_t parsetime(std::string datetime);
     uint32_t GetTimeStamp(  int year, int month, int day,
                             int hour, int minute, int second);
+    void iter_delete(uint32_t iteration_number);
 
 
 };

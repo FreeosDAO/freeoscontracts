@@ -99,6 +99,7 @@ using namespace eosio;
 // 343 - user record changed to record registered_iteration instead of registered_time
 //       Improved logic when updating unvest percentage. Going from iteration x to 0 and back to x no longer updates the percentage.
 //       get_claim_iteration now works with time_point (64-bit) times
+//       When tick detects a new iteration, it deletes the expired iteration record to save RAM
 
 
 const std::string VERSION = "0.343";
@@ -145,7 +146,20 @@ void freeos::tick() {
     });
 
     // update unvest percent if we are in a valid iteration transition
-    if (old_iteration != 0 && this_iteration.iteration_number > old_iteration) update_unvest_percentage();
+    if (old_iteration != 0 && this_iteration.iteration_number > old_iteration) {
+      update_unvest_percentage();
+
+      // delete the expired iteration record
+      action delete_action = action(
+      permission_level{get_self(),"active"_n},
+      name(freeosconfig_acct),
+      "iterclear"_n,
+      std::make_tuple(old_iteration)
+    );
+
+    delete_action.send();
+    }
+
   } else {
     // do some unstaking if we are in a valid iteration
     if (statistic->iteration > 0) refund_stakes();

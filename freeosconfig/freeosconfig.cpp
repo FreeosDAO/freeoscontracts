@@ -18,6 +18,7 @@ using namespace eosio;
 // 107 - added checks when setting current and target exchange rates that values must be positive
 // 108 - added transferers table and actions transfadd and transferase for maintaining the table
 // 109 - iterupsert changed to accept uint32_t iteration number
+//       new iterclear action - called by freeos contract to delete expired iteration record
 
 
 const std::string VERSION = "0.109";
@@ -288,24 +289,30 @@ void freeosconfig::iterupsert(uint32_t iteration_number, time_point start, time_
   }
 }
 
-// erase an iteration record from the iterations table
+// erase an iteration record from the iterations table - contract action
 [[eosio::action]]
-void freeosconfig::itererase(uint64_t iteration_number) {
+void freeosconfig::itererase(uint32_t iteration_number) {
   require_auth(_self);
 
+  iter_delete(iteration_number);
+}
+
+// erase an iteration record from the iterations table - called by freeos contract
+[[eosio::action]]
+void freeosconfig::iterclear(uint32_t iteration_number) {
+  require_auth(name(freeos_acct));
+
+  iter_delete(iteration_number);
+}
+
+// function to delete an iteration record
+void freeosconfig::iter_delete(uint32_t iteration_number) {
   iteration_index iterations(get_self(), get_self().value);
   auto iterator = iterations.find(iteration_number);
 
-  // check if the parameter is in the table or not
-  check(iterator != iterations.end(), "iteration record does not exist in the iterations table");
-
-  // the iteration is in the table, so delete
-  iterations.erase(iterator);
-
-  #ifdef TEST_BUILD
-  print("record for iteration ", iteration_number, " deleted from iterations table");
-  #endif
-
+  if (iterator != iterations.end()) {
+    iterations.erase(iterator);
+  }
 }
 
 

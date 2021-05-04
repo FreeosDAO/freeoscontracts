@@ -86,12 +86,22 @@
             ]
         },
         {
+            "name": "iterclear",
+            "base": "",
+            "fields": [
+                {
+                    "name": "iteration_number",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
             "name": "itererase",
             "base": "",
             "fields": [
                 {
                     "name": "iteration_number",
-                    "type": "uint64"
+                    "type": "uint32"
                 }
             ]
         },
@@ -475,6 +485,11 @@
         {
             "name": "getthreshold",
             "type": "getthreshold",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "iterclear",
+            "type": "iterclear",
             "ricardian_contract": ""
         },
         {
