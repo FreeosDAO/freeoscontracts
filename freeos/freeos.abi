@@ -149,16 +149,6 @@
             ]
         },
         {
-            "name": "gettime",
-            "base": "",
-            "fields": [
-                {
-                    "name": "t",
-                    "type": "time_point"
-                }
-            ]
-        },
-        {
             "name": "getuser",
             "base": "",
             "fields": [
@@ -564,11 +554,6 @@
         {
             "name": "dereg",
             "type": "dereg",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "gettime",
-            "type": "gettime",
             "ricardian_contract": ""
         },
         {

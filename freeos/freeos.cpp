@@ -117,16 +117,6 @@ void freeos::version() {
 
 
 [[eosio::action]]
-void freeos::gettime(time_point t) {
-  //time_point t = current_time_point();
-  uint64_t c = t.time_since_epoch()._count;
-  std::string s = std::to_string(c);
-
-  check(false, s);
-}
-
-
-[[eosio::action]]
 void freeos::tick() {
 
   // what iteration are we in? ! Important that we use the uncached iteration function

@@ -363,8 +363,7 @@ enum registration_status{ registered_already,
                         const asset&   quantity,
                         const string&  memo);
 
-          [[eosio::action]]
-          void gettime(time_point t);
+
 
          using create_action = eosio::action_wrapper<"create"_n, &freeos::create>;
          using issue_action = eosio::action_wrapper<"issue"_n, &freeos::issue>;
