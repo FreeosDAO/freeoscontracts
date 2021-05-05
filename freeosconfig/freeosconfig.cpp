@@ -26,7 +26,9 @@ const std::string VERSION = "0.109";
 #ifdef TEST_BUILD
 [[eosio::action]]
 void freeosconfig::version() {
-  check(false, VERSION);
+  std::string version_message = freeos_acct + "/" + freeosconfig_acct + "/" + freeostokens_acct + "/" + freedao_acct + " version = " + VERSION;
+
+  check(false, version_message);
 }
 #endif
 

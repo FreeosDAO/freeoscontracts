@@ -479,7 +479,7 @@ enum registration_status{ registered_already,
          using stakereq_index = eosio::multi_index<"stakereqs"_n, stakerequire>;
 
 
-         // freeos airclaim iteration calendar - code: freeosconfig, scope: freeosconfig
+        // freeos airclaim iteration calendar - code: freeosconfig, scope: freeosconfig
         struct [[eosio::table]] iteration {
           uint32_t    iteration_number;
           time_point  start;
