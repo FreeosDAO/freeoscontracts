@@ -100,9 +100,10 @@ using namespace eosio;
 //       Improved logic when updating unvest percentage. Going from iteration x to 0 and back to x no longer updates the percentage.
 //       get_claim_iteration now works with time_point (64-bit) times
 //       When tick detects a new iteration, it deletes the expired iteration record to save RAM
+// 344 - Improved logic in tick() to advance unvestpercentage when necessary and delete previous record when in a new valid iteration
 
 
-const std::string VERSION = "0.343";
+const std::string VERSION = "0.344";
 
 #ifdef TEST_BUILD
 [[eosio::action]]
@@ -119,40 +120,46 @@ void freeos::version() {
 [[eosio::action]]
 void freeos::tick() {
 
-  // what iteration are we in? ! Important that we use the uncached iteration function
-  iteration this_iteration = get_claim_iteration();
-
   // what iteration is in the statistics table?
   statistic_index statistic_table(get_self(), get_self().value);
   auto statistic = statistic_table.begin();
   check(statistic != statistic_table.end(), "statistics record is not found");
 
   uint32_t old_iteration = statistic->iteration;
+  uint32_t new_iteration = get_claim_iteration().iteration_number;
+  uint32_t previous_unvest_iteration = statistic->unvestpercentiteration;
+  
 
-  if (this_iteration.iteration_number != statistic->iteration) {
+  if (new_iteration != old_iteration) {
+    // a change in iteration has occurred
+
     // update iteration in statistics table    
     statistic_table.modify(statistic, _self, [&](auto& stat) {
-        stat.iteration = this_iteration.iteration_number;
+        stat.iteration = new_iteration;
     });
 
-    // update unvest percent if we are in a valid iteration transition
-    if (old_iteration != 0 && this_iteration.iteration_number > old_iteration) {
+    // update unvest percent if required
+    if (new_iteration > previous_unvest_iteration) {
       update_unvest_percentage();
+    }
+
+    if (new_iteration != 0) {
+      uint32_t previous_iteration = new_iteration - 1;
 
       // delete the expired iteration record
       action delete_action = action(
       permission_level{get_self(),"active"_n},
       name(freeosconfig_acct),
       "iterclear"_n,
-      std::make_tuple(old_iteration)
+      std::make_tuple(previous_iteration)
     );
 
     delete_action.send();
     }
 
   } else {
-    // do some unstaking if we are in a valid iteration
-    if (statistic->iteration > 0) refund_stakes();
+    // no change to iteration - do some unstaking if we are in a valid iteration
+    if (new_iteration > 0) refund_stakes();
   }
 
 }
