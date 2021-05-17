@@ -36,30 +36,6 @@
             ]
         },
         {
-            "name": "getstakes",
-            "base": "",
-            "fields": [
-                {
-                    "name": "threshold",
-                    "type": "uint64"
-                }
-            ]
-        },
-        {
-            "name": "getthreshold",
-            "base": "",
-            "fields": [
-                {
-                    "name": "numusers",
-                    "type": "uint64"
-                },
-                {
-                    "name": "account_type",
-                    "type": "string"
-                }
-            ]
-        },
-        {
             "name": "iteration",
             "base": "",
             "fields": [
@@ -475,16 +451,6 @@
         {
             "name": "currentrate",
             "type": "currentrate",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "getstakes",
-            "type": "getstakes",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "getthreshold",
-            "type": "getthreshold",
             "ricardian_contract": ""
         },
         {

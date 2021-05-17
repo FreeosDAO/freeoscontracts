@@ -149,16 +149,6 @@
             ]
         },
         {
-            "name": "getuser",
-            "base": "",
-            "fields": [
-                {
-                    "name": "user",
-                    "type": "name"
-                }
-            ]
-        },
-        {
             "name": "issue",
             "base": "",
             "fields": [
@@ -554,11 +544,6 @@
         {
             "name": "dereg",
             "type": "dereg",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "getuser",
-            "type": "getuser",
             "ricardian_contract": ""
         },
         {
