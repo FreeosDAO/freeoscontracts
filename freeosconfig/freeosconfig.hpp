@@ -1,6 +1,5 @@
 #pragma once
 
-#include "eosio.proton.hpp"
 #include <eosio/eosio.hpp>
 
 namespace freedao {
@@ -75,8 +74,7 @@ public:
    * @param value_b - the amount of EOS stake required for a 'type b' user,
    * @param value_c - the amount of EOS stake required for a 'type c' user,
    * @param value_d - the amount of EOS stake required for a 'type d' user,
-   * @param value_e - the amount of EOS stake required for an 'type e' user -
-   * EOS wallet,
+   * @param value_e - the amount of EOS stake required for a 'type e' user,
    * @param value_u - the amount of EOS stake required for a 'type u' user,
    * @param value_v - the amount of EOS stake required for a 'type v' user,
    * @param value_w - the amount of EOS stake required for a 'type w' user,
@@ -204,126 +202,65 @@ public:
    */
   [[eosio::action]] void transferase(name account);
 
-  // ************************************************************************************
-  // ************* eosio.proton actions for populating usersinfo table
-  // ******************
-  // ************************************************************************************
+  /**
+   * minteradd action.
+   *
+   * @details This action adds an account to the minters table, a whitelist
+   * of who can call the OPTION issue function.
+   *
+   * @param account - the name of the account to be added
+   *
+   * @pre requires permission of the contract account
+   */
+  [[eosio::action]] void minteradd(name account);
+
+  /**
+   * mintererase action.
+   *
+   * @details This action deletes an account to the minters table, a
+   * whitelist of who can call the OPTION issue function.
+   *
+   * @param account - the name of the account to be deleted
+   *
+   * @pre requires permission of the contract account
+   */
+  [[eosio::action]] void mintererase(name account);
+
+  /**
+   * burneradd action.
+   *
+   * @details This action adds an account to the burners table, a whitelist
+   * of who can call the OPTION retire function.
+   *
+   * @param account - the name of the account to be added
+   *
+   * @pre requires permission of the contract account
+   */
+  [[eosio::action]] void burneradd(name account);
+
+  /**
+   * burnererase action.
+   *
+   * @details This action deletes an account to the issuerers table, a
+   * whitelist of who can call the OPTION retire function.
+   *
+   * @param account - the name of the account to be deleted
+   *
+   * @pre requires permission of the contract account
+   */
+  [[eosio::action]] void burnererase(name account);
+
+  // ********* simulated eosio.proton actions for populating usersinfo table
+  // ***********
   [[eosio::action]] void userverify(name acc, name verifier, bool verified);
 
   [[eosio::action]] void addkyc(name acc, name kyc_provider,
                                 std::string kyc_level, uint64_t kyc_date);
 
-  // ************************************************************************************
+  // ***********************************************************************************
 
 private:
-  // ************************************
-  // parameter table
-
-  struct[[eosio::table]] parameter {
-    name virtualtable;
-    name paramname;
-    std::string value;
-
-    uint64_t primary_key() const { return paramname.value; }
-    uint64_t get_secondary() const { return virtualtable.value; }
-  };
-
-  using parameter_index = eosio::multi_index<
-      "parameters"_n, parameter,
-      indexed_by<"virtualtable"_n, const_mem_fun<parameter, uint64_t,
-                                                 &parameter::get_secondary>>>;
-
-  // stake requirement table
-
-  struct[[eosio::table]] stakerequire {
-    uint64_t threshold;
-    uint32_t requirement_a;
-    uint32_t requirement_b;
-    uint32_t requirement_c;
-    uint32_t requirement_d;
-    uint32_t requirement_e;
-    uint32_t requirement_u;
-    uint32_t requirement_v;
-    uint32_t requirement_w;
-    uint32_t requirement_x;
-    uint32_t requirement_y;
-
-    uint64_t primary_key() const { return threshold; }
-  };
-
-  using stakereq_index = eosio::multi_index<"stakereqs"_n, stakerequire>;
-
-  // freeos airclaim iteration calendar - code: freeosconfig, scope:
-  // freeosconfig
-  struct[[eosio::table]] iteration {
-    uint32_t iteration_number;
-    time_point start;
-    time_point end;
-    uint16_t claim_amount;
-    uint16_t tokens_required;
-
-    uint64_t primary_key() const { return iteration_number; }
-    uint64_t get_secondary() const { return start.time_since_epoch()._count; }
-  };
-
-  // using iteration_index = eosio::multi_index<"iterations"_n, iteration>;
-
-  using iteration_index = eosio::multi_index<
-      "iterations"_n, iteration,
-      indexed_by<"start"_n, const_mem_fun<iteration, uint64_t,
-                                          &iteration::get_secondary>>>;
-
-  // FREEOS USD-price - code: freeosconfig, scope: freeosconfig
-  struct[[eosio::table]] price {
-    double currentprice;
-    double targetprice;
-
-    uint64_t primary_key() const {
-      return 0;
-    } // return a constant (0 in this case) to ensure a single-row table
-  };
-
-  using exchange_index = eosio::multi_index<"exchangerate"_n, price>;
-
-  // Verification table - a mockup of the verification table on Proton - so that
-  // we can test how to determine a user's account_type Taken from
-  // https://github.com/ProtonProtocol/proton.contracts/blob/master/contracts/eosio.proton/include/eosio.proton/eosio.proton.hpp
-  struct[[eosio::table]] userinfo {
-    name acc;
-    std::string name;
-    std::string avatar;
-    bool verified;
-    uint64_t date;
-    uint64_t verifiedon;
-    eosio::name verifier;
-
-    std::vector<eosio::name> raccs;
-    std::vector<std::tuple<eosio::name, eosio::name>> aacts;
-    std::vector<std::tuple<eosio::name, std::string>> ac;
-
-    std::vector<kyc_prov> kyc;
-
-    uint64_t primary_key() const { return acc.value; }
-  };
-
-  typedef eosio::multi_index<"usersinfo"_n, userinfo> usersinfo;
-
-  // Transferer table - a whitelist to determine who can call the transfer
-  // function
-  struct[[eosio::table]] transferer {
-    name account;
-
-    uint64_t primary_key() const { return account.value; }
-  };
-
-  using transferer_index = eosio::multi_index<"transferers"_n, transferer>;
-
-  // ************************************
-
   // helper functions
-  uint32_t parsetime(std::string datetime);
-  uint32_t GetTimeStamp(int year, int month, int day, int hour, int minute,
-                        int second);
   void iter_delete(uint32_t iteration_number);
 };
 /** @}*/ // end of @defgroup freeosconfig freeosconfig contract

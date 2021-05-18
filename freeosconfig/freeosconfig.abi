@@ -26,6 +26,36 @@
             ]
         },
         {
+            "name": "burner_whitelist",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "burneradd",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "burnererase",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                }
+            ]
+        },
+        {
             "name": "currentrate",
             "base": "",
             "fields": [
@@ -122,6 +152,36 @@
                 {
                     "name": "kyc_date",
                     "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "minter_whitelist",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "minteradd",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "mintererase",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
                 }
             ]
         },
@@ -321,7 +381,7 @@
             ]
         },
         {
-            "name": "transferase",
+            "name": "transfer_whitelist",
             "base": "",
             "fields": [
                 {
@@ -331,7 +391,7 @@
             ]
         },
         {
-            "name": "transferer",
+            "name": "transferase",
             "base": "",
             "fields": [
                 {
@@ -449,6 +509,16 @@
             "ricardian_contract": ""
         },
         {
+            "name": "burneradd",
+            "type": "burneradd",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "burnererase",
+            "type": "burnererase",
+            "ricardian_contract": ""
+        },
+        {
             "name": "currentrate",
             "type": "currentrate",
             "ricardian_contract": ""
@@ -466,6 +536,16 @@
         {
             "name": "iterupsert",
             "type": "iterupsert",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "minteradd",
+            "type": "minteradd",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "mintererase",
+            "type": "mintererase",
             "ricardian_contract": ""
         },
         {
@@ -521,6 +601,13 @@
     ],
     "tables": [
         {
+            "name": "burners",
+            "type": "burner_whitelist",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
             "name": "exchangerate",
             "type": "price",
             "index_type": "i64",
@@ -530,6 +617,13 @@
         {
             "name": "iterations",
             "type": "iteration",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "minters",
+            "type": "minter_whitelist",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
@@ -550,7 +644,7 @@
         },
         {
             "name": "transferers",
-            "type": "transferer",
+            "type": "transfer_whitelist",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

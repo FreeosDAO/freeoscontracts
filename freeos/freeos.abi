@@ -36,26 +36,30 @@
             ]
         },
         {
+            "name": "burn",
+            "base": "",
+            "fields": [
+                {
+                    "name": "burner",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
             "name": "claim",
             "base": "",
             "fields": [
                 {
                     "name": "user",
                     "type": "name"
-                }
-            ]
-        },
-        {
-            "name": "close",
-            "base": "",
-            "fields": [
-                {
-                    "name": "owner",
-                    "type": "name"
-                },
-                {
-                    "name": "symbol",
-                    "type": "symbol"
                 }
             ]
         },
@@ -139,19 +143,13 @@
             ]
         },
         {
-            "name": "dereg",
+            "name": "mint",
             "base": "",
             "fields": [
                 {
-                    "name": "user",
+                    "name": "minter",
                     "type": "name"
-                }
-            ]
-        },
-        {
-            "name": "issue",
-            "base": "",
-            "fields": [
+                },
                 {
                     "name": "to",
                     "type": "name"
@@ -167,88 +165,12 @@
             ]
         },
         {
-            "name": "iteration",
-            "base": "",
-            "fields": [
-                {
-                    "name": "iteration_number",
-                    "type": "uint32"
-                },
-                {
-                    "name": "start",
-                    "type": "time_point"
-                },
-                {
-                    "name": "end",
-                    "type": "time_point"
-                },
-                {
-                    "name": "claim_amount",
-                    "type": "uint16"
-                },
-                {
-                    "name": "tokens_required",
-                    "type": "uint16"
-                }
-            ]
-        },
-        {
-            "name": "kyc_prov",
-            "base": "",
-            "fields": [
-                {
-                    "name": "kyc_provider",
-                    "type": "name"
-                },
-                {
-                    "name": "kyc_level",
-                    "type": "string"
-                },
-                {
-                    "name": "kyc_date",
-                    "type": "uint64"
-                }
-            ]
-        },
-        {
-            "name": "open",
-            "base": "",
-            "fields": [
-                {
-                    "name": "owner",
-                    "type": "name"
-                },
-                {
-                    "name": "symbol",
-                    "type": "symbol"
-                },
-                {
-                    "name": "ram_payer",
-                    "type": "name"
-                }
-            ]
-        },
-        {
             "name": "reguser",
             "base": "",
             "fields": [
                 {
                     "name": "user",
                     "type": "name"
-                }
-            ]
-        },
-        {
-            "name": "retire",
-            "base": "",
-            "fields": [
-                {
-                    "name": "quantity",
-                    "type": "asset"
-                },
-                {
-                    "name": "memo",
-                    "type": "string"
                 }
             ]
         },
@@ -296,66 +218,6 @@
             "name": "tick",
             "base": "",
             "fields": []
-        },
-        {
-            "name": "transfer",
-            "base": "",
-            "fields": [
-                {
-                    "name": "owner",
-                    "type": "name"
-                },
-                {
-                    "name": "to",
-                    "type": "name"
-                },
-                {
-                    "name": "quantity",
-                    "type": "asset"
-                },
-                {
-                    "name": "memo",
-                    "type": "string"
-                }
-            ]
-        },
-        {
-            "name": "transferer",
-            "base": "",
-            "fields": [
-                {
-                    "name": "account",
-                    "type": "name"
-                }
-            ]
-        },
-        {
-            "name": "tuple_name_name",
-            "base": "",
-            "fields": [
-                {
-                    "name": "field_0",
-                    "type": "name"
-                },
-                {
-                    "name": "field_1",
-                    "type": "name"
-                }
-            ]
-        },
-        {
-            "name": "tuple_name_string",
-            "base": "",
-            "fields": [
-                {
-                    "name": "field_0",
-                    "type": "name"
-                },
-                {
-                    "name": "field_1",
-                    "type": "string"
-                }
-            ]
         },
         {
             "name": "unstake",
@@ -450,59 +312,19 @@
             ]
         },
         {
-            "name": "userinfo",
-            "base": "",
-            "fields": [
-                {
-                    "name": "acc",
-                    "type": "name"
-                },
-                {
-                    "name": "name",
-                    "type": "string"
-                },
-                {
-                    "name": "avatar",
-                    "type": "string"
-                },
-                {
-                    "name": "verified",
-                    "type": "bool"
-                },
-                {
-                    "name": "date",
-                    "type": "uint64"
-                },
-                {
-                    "name": "verifiedon",
-                    "type": "uint64"
-                },
-                {
-                    "name": "verifier",
-                    "type": "name"
-                },
-                {
-                    "name": "raccs",
-                    "type": "name[]"
-                },
-                {
-                    "name": "aacts",
-                    "type": "tuple_name_name[]"
-                },
-                {
-                    "name": "ac",
-                    "type": "tuple_name_string[]"
-                },
-                {
-                    "name": "kyc",
-                    "type": "kyc_prov[]"
-                }
-            ]
-        },
-        {
             "name": "version",
             "base": "",
             "fields": []
+        },
+        {
+            "name": "vestaccount",
+            "base": "",
+            "fields": [
+                {
+                    "name": "balance",
+                    "type": "asset"
+                }
+            ]
         }
     ],
     "actions": [
@@ -512,13 +334,13 @@
             "ricardian_contract": ""
         },
         {
-            "name": "claim",
-            "type": "claim",
+            "name": "burn",
+            "type": "burn",
             "ricardian_contract": ""
         },
         {
-            "name": "close",
-            "type": "close",
+            "name": "claim",
+            "type": "claim",
             "ricardian_contract": ""
         },
         {
@@ -542,28 +364,13 @@
             "ricardian_contract": ""
         },
         {
-            "name": "dereg",
-            "type": "dereg",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "issue",
-            "type": "issue",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "open",
-            "type": "open",
+            "name": "mint",
+            "type": "mint",
             "ricardian_contract": ""
         },
         {
             "name": "reguser",
             "type": "reguser",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "retire",
-            "type": "retire",
             "ricardian_contract": ""
         },
         {
@@ -574,11 +381,6 @@
         {
             "name": "tick",
             "type": "tick",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "transfer",
-            "type": "transfer",
             "ricardian_contract": ""
         },
         {
@@ -618,13 +420,6 @@
             "key_types": []
         },
         {
-            "name": "iterations",
-            "type": "iteration",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
             "name": "stat",
             "type": "currency_stats",
             "index_type": "i64",
@@ -634,13 +429,6 @@
         {
             "name": "statistics",
             "type": "statistic",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
-            "name": "transferers",
-            "type": "transferer",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
@@ -667,15 +455,8 @@
             "key_types": []
         },
         {
-            "name": "usersinfo",
-            "type": "userinfo",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
             "name": "vestaccounts",
-            "type": "account",
+            "type": "vestaccount",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

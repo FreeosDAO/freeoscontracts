@@ -1,4 +1,3 @@
-//#include <eosio/eosio.hpp>
 #include "freeosconfig.hpp"
 #include "../common/freeoscommon.hpp"
 
@@ -7,7 +6,8 @@ namespace freedao {
 
 const std::string VERSION = "0.110";
 
-[[eosio::action]] void freeosconfig::version() {
+// ACTION
+void freeosconfig::version() {
   std::string version_message = freeos_acct + "/" + freeosconfig_acct + "/" +
                                 freeostokens_acct + "/" + freedao_acct +
                                 " version = " + VERSION;
@@ -15,12 +15,12 @@ const std::string VERSION = "0.110";
   check(false, version_message);
 }
 
-[[eosio::action]] void freeosconfig::paramupsert(name virtualtable,
-                                                 name paramname,
-                                                 std::string value) {
+// ACTION
+void freeosconfig::paramupsert(name virtualtable, name paramname,
+                               std::string value) {
 
   require_auth(_self);
-  parameter_index parameters_table(get_self(), get_self().value);
+  parameters_index parameters_table(get_self(), get_self().value);
   auto parameter_iterator = parameters_table.find(paramname.value);
 
   // check if the parameter is in the table or not
@@ -42,10 +42,11 @@ const std::string VERSION = "0.110";
 }
 
 // erase parameter from the table
-[[eosio::action]] void freeosconfig::paramerase(name paramname) {
+// ACTION
+void freeosconfig::paramerase(name paramname) {
   require_auth(_self);
 
-  parameter_index parameters_table(get_self(), get_self().value);
+  parameters_index parameters_table(get_self(), get_self().value);
   auto parameter_iterator = parameters_table.find(paramname.value);
 
   // check if the parameter is in the table or not
@@ -56,7 +57,8 @@ const std::string VERSION = "0.110";
   parameters_table.erase(parameter_iterator);
 }
 
-[[eosio::action]] void freeosconfig::currentrate(double price) {
+// ACTION
+void freeosconfig::currentrate(double price) {
 
   require_auth(_self);
 
@@ -77,7 +79,8 @@ const std::string VERSION = "0.110";
   }
 }
 
-[[eosio::action]] void freeosconfig::targetrate(double exchangerate) {
+// ACTION
+void freeosconfig::targetrate(double exchangerate) {
 
   require_auth(_self);
 
@@ -108,7 +111,8 @@ const std::string VERSION = "0.110";
 }
 
 // erase rate from the table
-[[eosio::action]] void freeosconfig::rateerase() {
+// ACTION
+void freeosconfig::rateerase() {
   require_auth(_self);
 
   exchange_index rates_table(get_self(), get_self().value);
@@ -123,10 +127,13 @@ const std::string VERSION = "0.110";
 
 // stake requirements table actions
 
-[[eosio::action]] void freeosconfig::stakeupsert(
-    uint64_t threshold, uint32_t value_a, uint32_t value_b, uint32_t value_c,
-    uint32_t value_d, uint32_t value_e, uint32_t value_u, uint32_t value_v,
-    uint32_t value_w, uint32_t value_x, uint32_t value_y) {
+// ACTION
+void freeosconfig::stakeupsert(uint64_t threshold, uint32_t value_a,
+                               uint32_t value_b, uint32_t value_c,
+                               uint32_t value_d, uint32_t value_e,
+                               uint32_t value_u, uint32_t value_v,
+                               uint32_t value_w, uint32_t value_x,
+                               uint32_t value_y) {
 
   require_auth(_self);
   stakereq_index stakereqs_table(get_self(), get_self().value);
@@ -170,7 +177,8 @@ const std::string VERSION = "0.110";
 }
 
 // erase stake requirement from the table
-[[eosio::action]] void freeosconfig::stakeerase(uint64_t threshold) {
+// ACTION
+void freeosconfig::stakeerase(uint64_t threshold) {
   require_auth(_self);
 
   stakereq_index stakereqs_table(get_self(), get_self().value);
@@ -184,20 +192,22 @@ const std::string VERSION = "0.110";
   stakereqs_table.erase(stakereq_iterator);
 }
 
-// add an account to the whitelist transferers table
-[[eosio::action]] void freeosconfig::transfadd(name account) {
+// add an account to the transferers whitelist
+// ACTION
+void freeosconfig::transfadd(name account) {
   require_auth(_self);
 
-  transferer_index transferers_table(get_self(), get_self().value);
+  transferers_index transferers_table(get_self(), get_self().value);
   transferers_table.emplace(
       _self, [&](auto &transferer) { transferer.account = account; });
 }
 
-// erase an account from the transferers table
+// erase an account from the transferers whitelist
+// ACTION
 void freeosconfig::transferase(name account) {
   require_auth(_self);
 
-  transferer_index transferers_table(get_self(), get_self().value);
+  transferers_index transferers_table(get_self(), get_self().value);
   auto transferer_iterator = transferers_table.find(account.value);
 
   // check if the account is in the table
@@ -208,18 +218,67 @@ void freeosconfig::transferase(name account) {
   transferers_table.erase(transferer_iterator);
 }
 
+// add an account to the issuers whitelist
+// ACTION
+void freeosconfig::minteradd(name account) {
+  require_auth(_self);
+
+  minters_index minters_table(get_self(), get_self().value);
+  minters_table.emplace(_self, [&](auto &issuer) { issuer.account = account; });
+}
+
+// erase an account from the issuers whitelist
+// ACTION
+void freeosconfig::mintererase(name account) {
+  require_auth(_self);
+
+  minters_index minters_table(get_self(), get_self().value);
+  auto minter_iterator = minters_table.find(account.value);
+
+  // check if the account is in the table
+  check(minter_iterator != minters_table.end(),
+        "account is not in the minters table");
+
+  // the account is in the table, so delete
+  minters_table.erase(minter_iterator);
+}
+
+// add an account to the burners whitelist
+// ACTION
+void freeosconfig::burneradd(name account) {
+  require_auth(_self);
+
+  burners_index burners_table(get_self(), get_self().value);
+  burners_table.emplace(_self, [&](auto &burner) { burner.account = account; });
+}
+
+// erase an account from the burners whitelist
+// ACTION
+void freeosconfig::burnererase(name account) {
+  require_auth(_self);
+
+  burners_index burners_table(get_self(), get_self().value);
+  auto burner_iterator = burners_table.find(account.value);
+
+  // check if the account is in the table
+  check(burner_iterator != burners_table.end(),
+        "account is not in the burners table");
+
+  // the account is in the table, so delete
+  burners_table.erase(burner_iterator);
+}
+
 // upsert an iteration into the iterations table
-[[eosio::action]] void freeosconfig::iterupsert(uint32_t iteration_number,
-                                                time_point start,
-                                                time_point end,
-                                                uint16_t claim_amount,
-                                                uint16_t tokens_required) {
+// ACTION
+void freeosconfig::iterupsert(uint32_t iteration_number, time_point start,
+                              time_point end, uint16_t claim_amount,
+                              uint16_t tokens_required) {
 
   require_auth(_self);
 
   check(iteration_number != 0, "iteration number must not be 0");
 
-  iteration_index iterations_table(get_self(), get_self().value);
+  iterations_index iterations_table(get_self(), get_self().value);
   auto iteration_iterator = iterations_table.find(iteration_number);
 
   // check if the iteration is in the table or not
@@ -245,7 +304,8 @@ void freeosconfig::transferase(name account) {
 }
 
 // erase an iteration record from the iterations table - contract action
-[[eosio::action]] void freeosconfig::itererase(uint32_t iteration_number) {
+// ACTION
+void freeosconfig::itererase(uint32_t iteration_number) {
   require_auth(_self);
 
   iter_delete(iteration_number);
@@ -253,7 +313,8 @@ void freeosconfig::transferase(name account) {
 
 // erase an iteration record from the iterations table - called by freeos
 // contract
-[[eosio::action]] void freeosconfig::iterclear(uint32_t iteration_number) {
+// ACTION
+void freeosconfig::iterclear(uint32_t iteration_number) {
   require_auth(name(freeos_acct));
 
   iter_delete(iteration_number);
@@ -261,7 +322,7 @@ void freeosconfig::transferase(name account) {
 
 // function to delete an iteration record
 void freeosconfig::iter_delete(uint32_t iteration_number) {
-  iteration_index iterations_table(get_self(), get_self().value);
+  iterations_index iterations_table(get_self(), get_self().value);
   auto iteration_iterator = iterations_table.find(iteration_number);
 
   if (iteration_iterator != iterations_table.end()) {
@@ -269,11 +330,13 @@ void freeosconfig::iter_delete(uint32_t iteration_number) {
   }
 }
 
-// ************************************************************************************
-// ************* eosio.proton actions for populating usersinfo table
-// ******************
-// ************************************************************************************
+  // ************************************************************************************
+  // ************* eosio.proton actions for populating usersinfo table
+  // ******************
+  // ************************************************************************************
 
+#ifdef TEST_BUILD
+// ACTION
 void freeosconfig::userverify(name acc, name verifier, bool verified) {
 
   check(is_account(acc), "Account does not exist.");
@@ -313,7 +376,10 @@ void freeosconfig::userverify(name acc, name verifier, bool verified) {
   }
 
 } // end of userverify
+#endif
 
+#ifdef TEST_BUILD
+// ACTION
 void freeosconfig::addkyc(name acc, name kyc_provider, std::string kyc_level,
                           uint64_t kyc_date) {
 
@@ -337,6 +403,7 @@ void freeosconfig::addkyc(name acc, name kyc_provider, std::string kyc_level,
 
   usrinf.modify(itr_usrs, get_self(), [&](auto &p) { p.kyc.push_back(kyc); });
 }
+#endif
 
 // ************************************************************************************
 // ************************************************************************************

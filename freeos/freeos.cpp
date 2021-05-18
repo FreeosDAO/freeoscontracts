@@ -1,16 +1,16 @@
 #include "freeos.hpp"
-#include "../common/freeoscommon.hpp"
-#include "../freeosconfig/freeosconfig.hpp"
 #include <cmath>
-#include <eosio/eosio.hpp>
+#include <eosio/asset.hpp>
 #include <eosio/system.hpp>
 
 namespace freedao {
 
+using namespace eosio;
+
 const std::string VERSION = "0.345";
 
-#ifdef TEST_BUILD
-[[eosio::action]] void freeos::version() {
+// ACTION
+void freeos::version() {
   iteration this_iteration = get_claim_iteration();
 
   std::string version_message = freeos_acct + "/" + freeosconfig_acct + "/" +
@@ -20,9 +20,9 @@ const std::string VERSION = "0.345";
 
   check(false, version_message);
 }
-#endif
 
-[[eosio::action]] void freeos::tick() {
+// ACTION
+void freeos::tick() {
   // what iteration is in the statistics table?
   statistic_index statistic_table(get_self(), get_self().value);
   auto statistic_iterator = statistic_table.begin();
@@ -74,7 +74,8 @@ uint32_t freeos::get_cached_iteration() {
   return statistic_iterator->iteration;
 }
 
-[[eosio::action]] void freeos::cron() {
+// ACTION
+void freeos::cron() {
   require_auth("cron"_n);
 
   tick();
@@ -169,11 +170,12 @@ void freeos::update_unvest_percentage() {
   }
 }
 
-[[eosio::action]] void freeos::reguser(const name &user) {
+// ACTION
+void freeos::reguser(const name &user) {
   require_auth(user);
 
   // check that system is operational (global masterswitch parameter set to "1")
-  check(checkmasterswitch(), msg_freeos_system_not_available);
+  check(check_master_switch(), msg_freeos_system_not_available);
 
   // get the current iteration
   iteration current_iteration = get_claim_iteration();
@@ -255,7 +257,8 @@ registration_status freeos::register_user(const name &user) {
 }
 
 // action to allow user to reverify their account_type
-[[eosio::action]] void freeos::reverify(name user) {
+// ACTION
+void freeos::reverify(name user) {
   require_auth(user);
 
   // get the current iteration
@@ -346,32 +349,6 @@ char freeos::get_account_type(name user) {
   return user_account_type;
 }
 
-// for deregistering user
-[[eosio::action]] void freeos::dereg(const name &user) {
-  require_auth(get_self());
-
-  users_index users_table(get_self(), user.value);
-  auto user_iterator =
-      users_table.find(symbol_code(SYSTEM_CURRENCY_CODE).raw());
-
-  check(user_iterator != users_table.end(),
-        "user is not registered with freeos");
-  check(user_iterator->stake.amount == 0,
-        "user has staked and cannot be deregistered");
-
-  // erase the user record
-  users_table.erase(user_iterator);
-
-  // decrement number of users in the statistics table
-  statistic_index statistic_table(get_self(), get_self().value);
-  auto statistic_iterator = statistic_table.begin();
-
-  // decrement user count
-  statistic_table.modify(statistic_iterator, _self, [&](auto &stat) {
-    stat.usercount = stat.usercount - 1;
-  });
-}
-
 // stake confirmation
 [[eosio::on_notify("eosio.token::transfer")]] void
 freeos::stake(name user, name to, asset quantity, std::string memo) {
@@ -385,7 +362,7 @@ freeos::stake(name user, name to, asset quantity, std::string memo) {
 
     // check that system is operational (global masterswitch parameter set to
     // "1")
-    check(checkmasterswitch(), msg_freeos_system_not_available);
+    check(check_master_switch(), msg_freeos_system_not_available);
 
     // which iteration are we in?
     uint32_t current_iteration = get_cached_iteration();
@@ -461,14 +438,15 @@ uint32_t freeos::get_stake_requirement(char account_type) {
   return stake_requirement;
 }
 
-[[eosio::action]] void freeos::unstake(const name &user) {
+// ACTION
+void freeos::unstake(const name &user) {
   require_auth(user);
 
   // user-activity-driven background process
   tick();
 
   // check that system is operational (global masterswitch parameter set to "1")
-  check(checkmasterswitch(), msg_freeos_system_not_available);
+  check(check_master_switch(), msg_freeos_system_not_available);
 
   uint32_t current_iteration = get_cached_iteration();
   check(current_iteration != 0, "Unstaking is not allowed in iteration 0");
@@ -562,7 +540,8 @@ void freeos::refund_stake(name user, asset amount) {
   });
 }
 
-[[eosio::action]] void freeos::unstakecncl(const name &user) {
+// ACTION
+void freeos::unstakecncl(const name &user) {
   require_auth(user);
 
   unstakerequest_index unstakes_table(get_self(), get_self().value);
@@ -575,7 +554,7 @@ void freeos::refund_stake(name user, asset amount) {
   unstakes_table.erase(unstake_iterator);
 }
 
-bool freeos::checkmasterswitch() {
+bool freeos::check_master_switch() {
   parameters_index parameters_table(name(freeosconfig_acct),
                                     name(freeosconfig_acct).value);
   auto parameter_iterator = parameters_table.find("masterswitch"_n.value);
@@ -595,6 +574,7 @@ bool freeos::checkmasterswitch() {
   }
 }
 
+// ACTION
 void freeos::create(const name &issuer, const asset &maximum_supply) {
   require_auth(get_self());
 
@@ -627,7 +607,6 @@ void freeos::issue(const name &to, const asset &quantity, const string &memo) {
   const auto &st = *existing;
   check(to == st.issuer, "tokens can only be issued to issuer account");
 
-  require_auth(st.issuer);
   check(quantity.is_valid(), "invalid quantity");
   check(quantity.amount > 0, "must issue positive quantity");
 
@@ -650,7 +629,6 @@ void freeos::retire(const asset &quantity, const string &memo) {
   check(existing != statstable.end(), "token with symbol does not exist");
   const auto &st = *existing;
 
-  require_auth(st.issuer);
   check(quantity.is_valid(), "invalid quantity");
   check(quantity.amount > 0, "must retire positive quantity");
 
@@ -663,19 +641,54 @@ void freeos::retire(const asset &quantity, const string &memo) {
 
 // Replacement for the transfer action - 'allocate' enforces a whitelist of
 // those who can transfer
+// ACTION
 void freeos::allocate(const name &from, const name &to, const asset &quantity,
                       const string &memo) {
   // check if the 'from' account is in the transferer whitelist
-  transferer_index transferers_table(name(freeosconfig_acct),
-                                     name(freeosconfig_acct).value);
+  transferers_index transferers_table(name(freeosconfig_acct),
+                                      name(freeosconfig_acct).value);
   auto transferer_iterator = transferers_table.find(from.value);
 
   check(transferer_iterator != transferers_table.end(),
         "the allocate action is protected");
 
   // if the 'from' user is in the transferers table then call the transfer
-  // action
+  // function
   transfer(from, to, quantity, memo);
+}
+
+// Replacement for the issue action - 'mint' enforces a whitelist of who can
+// issue OPTIONs ACTION
+void freeos::mint(const name &minter, const name &to, const asset &quantity,
+                  const string &memo) {
+  // check if the 'to' account is in the minter whitelist
+  minters_index minters_table(name(freeosconfig_acct),
+                              name(freeosconfig_acct).value);
+  auto minter_iterator = minters_table.find(to.value);
+
+  check(minter_iterator != minters_table.end(), "the mint action is protected");
+
+  require_auth(minter);
+
+  // if the 'to' user is in the minters table then call the issue function
+  issue(to, quantity, memo);
+}
+
+// Replacement for the retire action - 'burn' enforces a whitelist of who can
+// retire OPTIONs ACTION
+void freeos::burn(const name &burner, const asset &quantity,
+                  const string &memo) {
+  // check if the 'burner' account is in the burner whitelist
+  burners_index burners_table(name(freeosconfig_acct),
+                              name(freeosconfig_acct).value);
+  auto burner_iterator = burners_table.find(burner.value);
+
+  check(burner_iterator != burners_table.end(), "the burn action is protected");
+
+  require_auth(burner);
+
+  // if the 'to' user is in the burners table then call the retire function
+  retire(quantity, memo);
 }
 
 void freeos::transfer(const name &from, const name &to, const asset &quantity,
@@ -707,6 +720,7 @@ void freeos::transfer(const name &from, const name &to, const asset &quantity,
 }
 
 // convert non-exchangeable currency for exchangeable currency
+// ACTION
 void freeos::convert(const name &owner, const asset &quantity) {
   require_auth(owner);
 
@@ -722,7 +736,10 @@ void freeos::convert(const name &owner, const asset &quantity) {
   check(quantity.is_valid(), "invalid quantity");
   check(quantity.amount > 0, "must convert positive quantity");
 
-  statstable.modify(st, same_payer, [&](auto &s) { s.supply -= quantity; });
+  statstable.modify(st, same_payer, [&](auto &s) {
+    s.supply -= quantity;
+    s.conditional_supply -= quantity;
+  });
 
   // decrease owner's balance of non-exchangeable tokens
   sub_balance(owner, quantity);
@@ -769,35 +786,7 @@ void freeos::add_balance(const name &owner, const asset &value,
   }
 }
 
-void freeos::open(const name &owner, const symbol &symbol,
-                  const name &ram_payer) {
-  require_auth(ram_payer);
-
-  check(is_account(owner), "owner account does not exist");
-
-  auto sym_code_raw = symbol.code().raw();
-  stats statstable(get_self(), sym_code_raw);
-  const auto &st = statstable.get(sym_code_raw, "symbol does not exist");
-  check(st.supply.symbol == symbol, "symbol precision mismatch");
-
-  accounts acnts(get_self(), owner.value);
-  auto it = acnts.find(sym_code_raw);
-  if (it == acnts.end()) {
-    acnts.emplace(ram_payer, [&](auto &a) { a.balance = asset{0, symbol}; });
-  }
-}
-
-void freeos::close(const name &owner, const symbol &symbol) {
-  require_auth(owner);
-  accounts acnts(get_self(), owner.value);
-  auto it = acnts.find(symbol.code().raw());
-  check(it != acnts.end(), "Balance row already deleted or never existed. "
-                           "Action won't have any effect.");
-  check(it->balance.amount == 0,
-        "Cannot close because the balance is not zero.");
-  acnts.erase(it);
-}
-
+// ACTION
 void freeos::claim(const name &user) {
   require_auth(user);
 
@@ -805,7 +794,7 @@ void freeos::claim(const name &user) {
   tick();
 
   // check that system is operational (global masterswitch parameter set to "1")
-  check(checkmasterswitch(), msg_freeos_system_not_available);
+  check(check_master_switch(), msg_freeos_system_not_available);
 
   // is this a real account?
   check(is_account(user), "user does not have an account on the network");
@@ -873,11 +862,11 @@ void freeos::claim(const name &user) {
                     [&](auto &s) { s.conditional_supply += minted_amount; });
 
   // Issue the required minted amount to the freeos account
-  action issue_action =
-      action(permission_level{get_self(), "active"_n}, name(freeos_acct),
-             "issue"_n, std::make_tuple(get_self(), minted_amount, memo));
+  action mint_action = action(
+      permission_level{get_self(), "active"_n}, name(freeos_acct), "mint"_n,
+      std::make_tuple(get_self(), get_self(), minted_amount, memo));
 
-  issue_action.send();
+  mint_action.send();
 
   // transfer liquid OPTION to user
   action user_transfer = action(
@@ -940,7 +929,8 @@ void freeos::record_deposit(uint64_t iteration_number, asset amount) {
 }
 
 // action to clear (remove) a deposit record from the deposit table
-[[eosio::action]] void freeos::depositclear(uint64_t iteration_number) {
+// ACTION
+void freeos::depositclear(uint64_t iteration_number) {
   require_auth(name(freedao_acct));
 
   deposits_index deposits_table(get_self(), get_self().value);
@@ -954,6 +944,7 @@ void freeos::record_deposit(uint64_t iteration_number, asset amount) {
   deposits_table.erase(deposit_iterator);
 }
 
+// ACTION
 void freeos::unvest(const name &user) {
   require_auth(user);
 
@@ -961,7 +952,7 @@ void freeos::unvest(const name &user) {
   tick();
 
   // check that system is operational (global masterswitch parameter set to "1")
-  check(checkmasterswitch(), msg_freeos_system_not_available);
+  check(check_master_switch(), msg_freeos_system_not_available);
 
   // check that the user exists
   check(is_account(user), "User does not have an account");
@@ -1047,11 +1038,11 @@ void freeos::unvest(const name &user) {
   memo.append(user.to_string());
 
   // Issue the required amount to the freeos account
-  action issue_action =
-      action(permission_level{get_self(), "active"_n}, name(freeos_acct),
-             "issue"_n, std::make_tuple(get_self(), converted_options, memo));
+  action mint_action = action(
+      permission_level{get_self(), "active"_n}, name(freeos_acct), "mint"_n,
+      std::make_tuple(get_self(), get_self(), converted_options, memo));
 
-  issue_action.send();
+  mint_action.send();
 
   // transfer liquid OPTIONs to user
   action user_transfer = action(
@@ -1065,7 +1056,7 @@ void freeos::unvest(const name &user) {
                             [&](auto &v) { v.balance -= converted_options; });
 
   // write the unvest event to the unvest history table
-  unvest_iterator = unvest_table.find(this_iteration);
+  unvest_iterator = unvest_table.begin();
   if (unvest_iterator == unvest_table.end()) {
     unvest_table.emplace(get_self(), [&](auto &unvest) {
       unvest.iteration_number = this_iteration;
@@ -1129,8 +1120,8 @@ uint64_t freeos::get_threshold(uint32_t number_of_users) {
 }
 
 // return the current iteration record
-freeos::iteration freeos::get_claim_iteration() {
-  freeos::iteration this_iteration =
+iteration freeos::get_claim_iteration() {
+  iteration this_iteration =
       iteration{0, time_point(), time_point(), 0,
                 0}; // default null iteration value if outside of a claim period
 

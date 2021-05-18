@@ -1,8 +1,7 @@
 #pragma once
 
-#include <eosio/asset.hpp>
+#include "../common/freeoscommon.hpp"
 #include <eosio/eosio.hpp>
-#include <eosio/singleton.hpp>
 
 namespace eosiosystem {
 class system_contract;
@@ -24,7 +23,7 @@ enum registration_status {
  * freeos contract
  *
  * @details freeos contract defines the structures and actions that allow users
- * to create, issue, and manage tokens on eosio based blockchains.
+ * to manage the OPTION currency and control the AirClaim.
  * @{
  */
 class[[eosio::contract("freeos")]] freeos : public contract {
@@ -36,9 +35,7 @@ public:
    *
    * @details Prints the version of this contract.
    */
-#ifdef TEST_BUILD
   [[eosio::action]] void version();
-#endif
 
   /**
    * tick action.
@@ -66,23 +63,6 @@ public:
    * the user account.
    */
   [[eosio::action]] void reguser(const name &user);
-
-  /**
-   * dereg action.
-   *
-   * @details Creates a record for the user in the 'stakereqs' table.
-   * @param user - the account to be registered,
-   * @param account_type - the type of account: "e" is EOS wallet user, "d" is
-   * Dapp Account user, "v" is Voice verified user.
-   *
-   * @pre Requires permission of the contract account
-   * @pre The user account must be previously registered
-   * @pre The account must not have any staked EOS recorded
-   *
-   * If validation is successful the record for the user account is deleted from
-   * the 'stakereqs' table.
-   */
-  [[eosio::action]] void dereg(const name &user);
 
   /**
    * stake action.
@@ -144,44 +124,21 @@ public:
    */
   [[eosio::action]] void create(const name &issuer,
                                 const asset &maximum_supply);
-  /**
-   * Issue action.
-   *
-   * @details This action issues to `to` account a `quantity` of tokens.
-   *
-   * @param to - the account to issue tokens to, it must be the same as the
-   * issuer,
-   * @param quntity - the amount of tokens to be issued,
-   * @memo - the memo string that accompanies the token issue transaction.
-   */
-  [[eosio::action]] void issue(const name &to, const asset &quantity,
-                               const string &memo);
 
   /**
-   * Retire action.
-   *
-   * @details The opposite for create action, if all validations succeed,
-   * it debits the statstable.supply amount.
-   *
-   * @param quantity - the quantity of tokens to retire,
-   * @param memo - the memo string to accompany the transaction.
-   */
-  [[eosio::action]] void retire(const asset &quantity, const string &memo);
-
-  /**
-   * Transfer action.
+   * Transfer function.
    *
    * @details Allows `from` account to transfer to `to` account the `quantity`
    * tokens. One account is debited and the other is credited with quantity
-   * tokens.
+   * tokens. Cannot be called by users because OPTIONs are not transferable.
    *
    * @param from - the account to transfer from,
    * @param to - the account to be transferred to,
    * @param quantity - the quantity of tokens to be transferred,
    * @param memo - the memo string to accompany the transaction.
    */
-  [[eosio::action]] void transfer(const name &owner, const name &to,
-                                  const asset &quantity, const string &memo);
+  void transfer(const name &owner, const name &to, const asset &quantity,
+                const string &memo);
 
   /**
    * Convert action.
@@ -194,38 +151,6 @@ public:
    * @param quantity - the quantity of tokens to be converted.
    */
   [[eosio::action]] void convert(const name &owner, const asset &quantity);
-
-  /**
-   * Open action.
-   *
-   * @details Allows `ram_payer` to create an account `owner` with zero balance
-   * for token `symbol` at the expense of `ram_payer`.
-   *
-   * @param owner - the account to be created,
-   * @param symbol - the token to be payed with by `ram_payer`,
-   * @param ram_payer - the account that supports the cost of this action.
-   *
-   * More information can be read
-   * [here](https://github.com/EOSIO/eosio.contracts/issues/62) and
-   * [here](https://github.com/EOSIO/eosio.contracts/issues/61).
-   */
-  [[eosio::action]] void open(const name &owner, const symbol &symbol,
-                              const name &ram_payer);
-
-  /**
-   * Close action.
-   *
-   * @details This action is the opposite for open, it closes the account
-   * `owner` for token `symbol`.
-   *
-   * @param owner - the owner account to execute the close action for,
-   * @param symbol - the symbol of the token to execute the close action for.
-   *
-   * @pre The pair of owner plus symbol has to exist otherwise no action is
-   * executed,
-   * @pre If the pair of owner plus symbol exists, the balance has to be zero.
-   */
-  [[eosio::action]] void close(const name &owner, const symbol &symbol);
 
   /**
    * claim action.
@@ -331,8 +256,8 @@ public:
   /**
    * allocate - an action wrapper for the transfer function
    *
-   * @details Checks that the 'from' user belongs to a whitelist and then calls
-   * the transfer function.
+   * @details Checks that the 'from' user belongs to the transferers whitelist
+   * and then calls the transfer function.
    *
    * @param from      - the account to be deducted
    * @param to        - the account to be incremented
@@ -343,222 +268,46 @@ public:
   [[eosio::action]] void allocate(const name &from, const name &to,
                                   const asset &quantity, const string &memo);
 
-  using create_action = eosio::action_wrapper<"create"_n, &freeos::create>;
-  using issue_action = eosio::action_wrapper<"issue"_n, &freeos::issue>;
-  using retire_action = eosio::action_wrapper<"retire"_n, &freeos::retire>;
-  // using transfer_action = eosio::action_wrapper<"transfer"_n,
-  // &freeos::transfer>;
-  using open_action = eosio::action_wrapper<"open"_n, &freeos::open>;
-  using close_action = eosio::action_wrapper<"close"_n, &freeos::close>;
+  /**
+   * mint - an action wrapper for the issue function
+   *
+   * @details Checks that the 'minter' user belongs to a whitelist and then
+   * calls the issue function.
+   *
+   * @param minter    - the account calling the mint action
+   * @param to        - the account to be incremented
+   * @param quantity  - the amount to be issued
+   * @param memo      - the memo accompanying the transaction
+   *
+   */
+  [[eosio::action]] void mint(const name &minter, const name &to,
+                              const asset &quantity, const string &memo);
+
+  /**
+   * burn - an action wrapper for the retire function
+   *
+   * @details Checks that the 'burner' user belongs to a whitelist and then
+   * calls the retire function.
+   *
+   * @param burner    - the account calling the burn action
+   * @param to        - the account to be incremented
+   * @param quantity  - the amount to be issued
+   * @param memo      - the memo accompanying the transaction
+   *
+   */
+  [[eosio::action]] void burn(const name &burner, const asset &quantity,
+                              const string &memo);
 
 private:
-  // asset ledger
-  struct[[eosio::table]] account {
-    asset balance;
-
-    uint64_t primary_key() const { return balance.symbol.code().raw(); }
-  };
-
-  typedef eosio::multi_index<"accounts"_n, account> accounts;
-  typedef eosio::multi_index<"vestaccounts"_n, account> vestaccounts_index;
-
-  struct[[eosio::table]] currency_stats {
-    asset supply;
-    asset max_supply;
-    asset conditional_supply;
-    name issuer;
-
-    uint64_t primary_key() const { return supply.symbol.code().raw(); }
-  };
-
-  typedef eosio::multi_index<"stat"_n, currency_stats> stats;
-
-  // ********************************
-  // using namespace eosio;
-
-  // the registered user table
-  struct[[eosio::table]] user {
-    asset stake;                   // how many XPR tokens staked
-    char account_type;             // user's verification level
-    uint32_t registered_iteration; // when the user was registered
-    uint32_t
-        staked_iteration; // the iteration in which the user staked their tokens
-    uint32_t votes;       // how many votes the user has made
-    uint32_t issuances;   // total number of times the user has been issued with
-                          // OPTIONs
-    uint32_t last_issuance; // the last iteration in which the user was issued
-                            // with OPTIONs
-
-    uint64_t primary_key() const { return stake.symbol.code().raw(); }
-  };
-
-  using users_index = eosio::multi_index<"users"_n, user>;
-
-  // new statistics table - to replace counters
-  struct[[eosio::table]] statistic {
-    uint32_t usercount;
-    uint32_t claimevents;
-    uint32_t unvestpercent;
-    uint32_t unvestpercentiteration;
-    uint32_t iteration;
-    uint32_t failsafecounter;
-
-    uint64_t primary_key() const {
-      return 0;
-    } // return a constant (0 in this case) to ensure a single-row table
-  };
-
-  using statistic_index = eosio::multi_index<"statistics"_n, statistic>;
-
-  // FREEOS USD-price - code: freeosconfig, scope: freeosconfig
-  //  struct price {
-  //    double    currentprice;
-  //    double    targetprice;
-
-  //    uint64_t primary_key() const { return 0; } // return a constant (0 in
-  //    this case) to ensure a single-row table
-  //  };
-
-  //  using exchange_index = eosio::multi_index<"exchangerate"_n, price>;
-
-  // ********************************
-
-  // parameter table - code: freeosconfig, scope: freeosconfig
-  struct parameter {
-    name virtualtable;
-    name paramname;
-    std::string value;
-
-    uint64_t primary_key() const { return paramname.value; }
-    uint64_t get_secondary_1() const { return virtualtable.value; }
-  };
-
-  using parameters_index = eosio::multi_index<
-      "parameters"_n, parameter,
-      indexed_by<"virtualtable"_n, const_mem_fun<parameter, uint64_t,
-                                                 &parameter::get_secondary_1>>>;
-
-  // CONFIG stake requirements table - code: freeosconfig, scope: freeosconfig
-  struct stakerequire {
-    uint64_t threshold;
-    uint32_t requirement_a;
-    uint32_t requirement_b;
-    uint32_t requirement_c;
-    uint32_t requirement_d;
-    uint32_t requirement_e;
-    uint32_t requirement_u;
-    uint32_t requirement_v;
-    uint32_t requirement_w;
-    uint32_t requirement_x;
-    uint32_t requirement_y;
-
-    uint64_t primary_key() const { return threshold; }
-  };
-
-  using stakereq_index = eosio::multi_index<"stakereqs"_n, stakerequire>;
-
-  // freeos airclaim iteration calendar - code: freeosconfig, scope:
-  // freeosconfig
-  struct[[eosio::table]] iteration {
-    uint32_t iteration_number;
-    time_point start;
-    time_point end;
-    uint16_t claim_amount;
-    uint16_t tokens_required;
-
-    uint64_t primary_key() const { return iteration_number; }
-    uint64_t get_secondary() const { return start.time_since_epoch()._count; }
-  };
-
-  // using iteration_index = eosio::multi_index<"iterations"_n, iteration>;
-
-  using iterations_index = eosio::multi_index<
-      "iterations"_n, iteration,
-      indexed_by<"start"_n, const_mem_fun<iteration, uint64_t,
-                                          &iteration::get_secondary>>>;
-
-  // Transferer table - a whitelist to determine who can call the transfer
-  // function - code: freeosconfig, scope: freeosconfig
-  struct[[eosio::table]] transferer {
-    name account;
-
-    uint64_t primary_key() const { return account.value; }
-  };
-
-  using transferer_index = eosio::multi_index<"transferers"_n, transferer>;
-
-  // unvest history table - scoped on user account name
-  struct[[eosio::table]] unvestevent {
-    uint64_t iteration_number;
-
-    uint64_t primary_key() const { return iteration_number; }
-  };
-
-  using unvest_index = eosio::multi_index<"unvests"_n, unvestevent>;
-
-  // ***************** KYC from eosio.proton *************
-  struct kyc_prov {
-    name kyc_provider;
-    string kyc_level;
-    uint64_t kyc_date;
-  };
-
-  struct[[eosio::table]] userinfo {
-    name acc;
-    std::string name;
-    std::string avatar;
-    bool verified;
-    uint64_t date;
-    uint64_t verifiedon;
-    eosio::name verifier;
-    std::vector<eosio::name> raccs;
-    std::vector<std::tuple<eosio::name, eosio::name>> aacts;
-    std::vector<std::tuple<eosio::name, std::string>> ac;
-    std::vector<kyc_prov> kyc;
-
-    uint64_t primary_key() const { return acc.value; }
-  };
-
-  typedef eosio::multi_index<"usersinfo"_n, userinfo> usersinfo;
-
-  // freedao deposits table
-  struct[[eosio::table]] deposit {
-    uint64_t iteration;
-    asset accrued;
-
-    uint64_t primary_key() const { return iteration; }
-  };
-
-  using deposits_index = eosio::multi_index<"deposits"_n, deposit>;
-
-  // unstake requests queue (replaces unstakes table)
-  struct[[eosio::table]] unstakerequest {
-    name staker;
-    uint32_t iteration;
-    asset amount;
-
-    uint64_t primary_key() const { return staker.value; }
-    uint64_t get_secondary() const { return iteration; }
-  };
-
-  using unstakerequest_index = eosio::multi_index<
-      "unstakereqs"_n, unstakerequest,
-      indexed_by<"iteration"_n, const_mem_fun<unstakerequest, uint64_t,
-                                              &unstakerequest::get_secondary>>>;
-
-  // ********************************
-
+  void issue(const name &to, const asset &quantity, const string &memo);
+  void retire(const asset &quantity, const string &memo);
   void sub_balance(const name &owner, const asset &value);
   void add_balance(const name &owner, const asset &value,
                    const name &ram_payer);
 
-  // void sub_stake( const name& owner, const asset& value );
-  // void add_stake( const name& owner, const asset& value, const name&
-  // ram_payer );
-
   registration_status register_user(const name &user);
 
-  bool checkmasterswitch();
+  bool check_master_switch();
   uint32_t get_cached_iteration();
   bool checkschedulelogging();
   uint64_t get_threshold(uint32_t numusers);
