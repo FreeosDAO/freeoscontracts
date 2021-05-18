@@ -7,96 +7,9 @@ namespace freedao {
 
 using namespace eosio;
 
-<<<<<<< HEAD
-// versions
-// 301 - with vestaccounts migration to userext_table
-// 302 - changed schema of usercount table
-// 303 - with scheduled actions and functions
-// 304 - with scheduled actions and functions compared against 'earliest time the process could have been run'
-// 305 - a stake transfer must contain 'freeos stake' in the memo field
-// 306 - fixed stake function to work when memo == "freeos stake"
-// 307 - enabled the schedulelog parameter in parameters table to switch schedule logging on or off
-//     - added user-driver ticks to stake, unstake, claim and transfer actions
-// 308 - userext_table migrated back to vestaccounts
-// 309 - dummy 'unvest' action
-// 310 - single record 'counters' table replaces old singleton
-// 311 - unvest action completed
-// 312 - FREEOS holding requirement for a claim also considers vested FREEOS
-//     - getuser action upgraded to show user's staking and various balances
-// 313 - stakes table contains the staking requirements for all types of users - it is subject to change rather set at registration
-//     - stake_requirement field removed from user record
-// 314 - added 'stake' action
-// 315 - capped vested proportion at 0.9
-// 316 - weeks table renamed to iterations
-//       claims table - field: week_number renamed to iteration_number
-//       unvests table - field: week_number renamed to iteration_number
-//       counters table contains a field called 'iteration' which equals the current claim iteration
-// 317 - added the unclaim action which removes user's records from claim history table and sets liquid and freeos balance to zero.
-// 318 - put in a fix in eligibilty to change how we check if the user has staked
-// 319 - added deposits table of accrued transfers to the freedao account - per iteration (used by the dividend contract)
-//       action (depositclear) to clear a deposit record from the deposits table
-//       verification table used to calculate the user account_type
-// 320 - unstake action modified to put unstake request into an unstake queue (the 'unstakes' table)
-//       unstakecncl (unstake cancel) action added
-// 321 - added new field 'failsafecounter' to the counters table
-//       added failsafe unvesting feature
-// 322 - Added reverify action - re-checks whether user is verified and changes their account_type accordingly.
-//       update unvest percentage driven by user 'unvest' action rather than CRON
-//       hourly process refunds stakes
-//       failsafe_frequency determined by 'failsafefreq' parameter in freeosconfig
-// 323 - fixed bug in the unvest function. Tested and working ok.
-// 324 - fixed bug whereby vested freeos was not being decremented after transfer of FREEOS to user.
-// 325 - removed reference to the 'weeks' table in the abi
-// 326 - tables cleared and representative configuration deployed
-// 327 - fixed issue with unstaking where the stake release time was calculated as staked_time + holding time. It should
-//       of course be current_time + holding time.
-// 328 - If the user has a zero stake requirement then we consider them to have staked at registration time i.e. user.staked_time is set
-//       Related to above - if user has 0 XPR staked then we don't need to do a transfer in order to unstake
-// 329 - Removed unneccesary table definitions from the hpp file and abi
-// 330 - All error checking performed by check function
-//       User can only request to unstake once i.e. cannot create multiple unstake requests
-//       Iterations table can now be accessed via secondary index (by start time)
-// 331 - Changed unvest action to not allow unvesting in iteration 0
-//       Corrected problem of advancing unvestperecentiteration more often than required
-// 332 - Improved performance of getclaimiteration function - it uses secondary index based on iteration start
-//       Improved performance of getthreshold function - it uses the primary index based on threshold
-// 333 - User registration record now tracks the number of FREEOS issuances (claims) and the iteration of last issuance.
-//       User registration record no longer records staked_time. It now records the iteration in which the stake was made.
-//       Unstake requests are processed within the next iteration i.e. the 'stake hold time' is no longer used.
-//       There is a fallback 'default' unvestpercent in case the figure can't be calculated. Specified in the 'unvestpercnt' parameter.
-// 334 - Replaced the 'counters' table with the 'statistics' table to solve a record corruption problem
-//       The freeos::stakes table has been deleted - stake requirement code now refers to the freeosconfig::stakereqs table instead
-// 335 - Fixed bug where return value from register_user was being misinterpreted i.e. user account already registered
-// 336 - update_unvest_percent called by hourly process
-//       Staking not allowed in iteration 0
-//       Unstaking not allowed in iteration 0
-// 337 - Unstake requests error fixed - unstakes table changed to unstakereqs
-//       AIRKEY possession allows user to bypass staking requirements as well as holding requirements
-// 338 - Removed unclaim action
-//       Removed tick_process(), hourly_process(), daily_process(), weekly_process()
-//       Removed clearschedule action
-//       Removed tickers table
-//       Tick process called first on all 'user activity' actions (stake, unstake, claim, unvest)
-//       Tick process updated: Either it calls recalculate iteration statistics (on change of iteration) OR refund stakes
-//       getclaimiteration() called as part of tick process. Thereafter all code refers to get_cached_iteration which reads the iteration number from the statistics table
-//       currentiter action removed
-//       removed print of stake amount from version action
-//       default 'unvestpercnt' parameter retired as not required
-//       default 'vestpercent' config parameter implemented for when a current price not set
-// 339 - When calculating vested proportion, uses default 'vestpercent' parameter value if the exchangerate record is not present
-//       Changes to logic in update_unvest_percentage function
-// 340 - Change to tick to improve caching of iteration number
-//       Removed test code
-
-
-const std::string VERSION = "0.340m";
-
-[[eosio::action]]
-=======
 const std::string VERSION = "0.345";
 
 // ACTION
->>>>>>> options
 void freeos::version() {
   iteration this_iteration = get_claim_iteration();
 
@@ -105,11 +18,7 @@ void freeos::version() {
                                 " version = " + VERSION + " - iteration " +
                                 std::to_string(this_iteration.iteration_number);
 
-<<<<<<< HEAD
-  check(false, VERSION);
-=======
   check(false, version_message);
->>>>>>> options
 }
 
 // ACTION
