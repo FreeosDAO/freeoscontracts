@@ -4,24 +4,6 @@
     "types": [],
     "structs": [
         {
-            "name": "additeration",
-            "base": "",
-            "fields": [
-                {
-                    "name": "hours",
-                    "type": "uint8"
-                },
-                {
-                    "name": "claim_amount",
-                    "type": "uint16"
-                },
-                {
-                    "name": "tokens_required",
-                    "type": "uint16"
-                }
-            ]
-        },
-        {
             "name": "addkyc",
             "base": "",
             "fields": [
@@ -44,6 +26,36 @@
             ]
         },
         {
+            "name": "burner_whitelist",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "burneradd",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "burnererase",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                }
+            ]
+        },
+        {
             "name": "currentrate",
             "base": "",
             "fields": [
@@ -54,62 +66,20 @@
             ]
         },
         {
-            "name": "getiter",
-            "base": "",
-            "fields": [
-                {
-                    "name": "iteration_number",
-                    "type": "uint64"
-                }
-            ]
-        },
-        {
-            "name": "getstakes",
-            "base": "",
-            "fields": [
-                {
-                    "name": "threshold",
-                    "type": "uint64"
-                }
-            ]
-        },
-        {
-            "name": "getthreshold",
-            "base": "",
-            "fields": [
-                {
-                    "name": "numusers",
-                    "type": "uint64"
-                },
-                {
-                    "name": "account_type",
-                    "type": "string"
-                }
-            ]
-        },
-        {
             "name": "iteration",
             "base": "",
             "fields": [
                 {
                     "name": "iteration_number",
-                    "type": "uint64"
+                    "type": "uint32"
                 },
                 {
                     "name": "start",
-                    "type": "uint32"
-                },
-                {
-                    "name": "start_date",
-                    "type": "string"
+                    "type": "time_point"
                 },
                 {
                     "name": "end",
-                    "type": "uint32"
-                },
-                {
-                    "name": "end_date",
-                    "type": "string"
+                    "type": "time_point"
                 },
                 {
                     "name": "claim_amount",
@@ -122,12 +92,22 @@
             ]
         },
         {
+            "name": "iterclear",
+            "base": "",
+            "fields": [
+                {
+                    "name": "iteration_number",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
             "name": "itererase",
             "base": "",
             "fields": [
                 {
                     "name": "iteration_number",
-                    "type": "uint64"
+                    "type": "uint32"
                 }
             ]
         },
@@ -137,15 +117,15 @@
             "fields": [
                 {
                     "name": "iteration_number",
-                    "type": "uint64"
+                    "type": "uint32"
                 },
                 {
                     "name": "start",
-                    "type": "string"
+                    "type": "time_point"
                 },
                 {
                     "name": "end",
-                    "type": "string"
+                    "type": "time_point"
                 },
                 {
                     "name": "claim_amount",
@@ -172,6 +152,36 @@
                 {
                     "name": "kyc_date",
                     "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "minter_whitelist",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "minteradd",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "mintererase",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
                 }
             ]
         },
@@ -361,6 +371,36 @@
             ]
         },
         {
+            "name": "transfadd",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "transfer_whitelist",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "transferase",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                }
+            ]
+        },
+        {
             "name": "tuple_name_name",
             "base": "",
             "fields": [
@@ -464,13 +504,18 @@
     ],
     "actions": [
         {
-            "name": "additeration",
-            "type": "additeration",
+            "name": "addkyc",
+            "type": "addkyc",
             "ricardian_contract": ""
         },
         {
-            "name": "addkyc",
-            "type": "addkyc",
+            "name": "burneradd",
+            "type": "burneradd",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "burnererase",
+            "type": "burnererase",
             "ricardian_contract": ""
         },
         {
@@ -479,18 +524,8 @@
             "ricardian_contract": ""
         },
         {
-            "name": "getiter",
-            "type": "getiter",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "getstakes",
-            "type": "getstakes",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "getthreshold",
-            "type": "getthreshold",
+            "name": "iterclear",
+            "type": "iterclear",
             "ricardian_contract": ""
         },
         {
@@ -501,6 +536,16 @@
         {
             "name": "iterupsert",
             "type": "iterupsert",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "minteradd",
+            "type": "minteradd",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "mintererase",
+            "type": "mintererase",
             "ricardian_contract": ""
         },
         {
@@ -534,6 +579,16 @@
             "ricardian_contract": ""
         },
         {
+            "name": "transfadd",
+            "type": "transfadd",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "transferase",
+            "type": "transferase",
+            "ricardian_contract": ""
+        },
+        {
             "name": "userverify",
             "type": "userverify",
             "ricardian_contract": ""
@@ -545,6 +600,13 @@
         }
     ],
     "tables": [
+        {
+            "name": "burners",
+            "type": "burner_whitelist",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
         {
             "name": "exchangerate",
             "type": "price",
@@ -560,6 +622,13 @@
             "key_types": []
         },
         {
+            "name": "minters",
+            "type": "minter_whitelist",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
             "name": "parameters",
             "type": "parameter",
             "index_type": "i64",
@@ -569,6 +638,13 @@
         {
             "name": "stakereqs",
             "type": "stakerequire",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "transferers",
+            "type": "transfer_whitelist",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
