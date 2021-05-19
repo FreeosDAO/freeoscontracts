@@ -337,7 +337,11 @@ void freeosconfig::iter_delete(uint32_t iteration_number) {
 
 #ifdef TEST_BUILD
 // ACTION
+// Required for development purposes as eosio.proton kyc verification is not available on the Proton Testnet.
+// Will be removed from the production build.
 void freeosconfig::userverify(name acc, name verifier, bool verified) {
+
+  require_auth(get_self());
 
   check(is_account(acc), "Account does not exist.");
 
@@ -380,8 +384,12 @@ void freeosconfig::userverify(name acc, name verifier, bool verified) {
 
 #ifdef TEST_BUILD
 // ACTION
+// Required for development purposes as eosio.proton kyc verification is not available on the Proton Testnet.
+// Will be removed from the production build.
 void freeosconfig::addkyc(name acc, name kyc_provider, std::string kyc_level,
                           uint64_t kyc_date) {
+
+  require_auth(get_self());
 
   kyc_prov kyc;
   kyc.kyc_provider = kyc_provider;

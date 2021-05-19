@@ -310,7 +310,6 @@ private:
   bool check_master_switch();
   uint32_t get_cached_iteration();
   bool checkschedulelogging();
-  uint64_t get_threshold(uint32_t numusers);
   uint32_t get_stake_requirement(char account_type);
   iteration get_claim_iteration();
   bool eligible_to_claim(const name &claimant, iteration this_iteration);

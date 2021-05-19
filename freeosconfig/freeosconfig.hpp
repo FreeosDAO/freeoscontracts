@@ -24,13 +24,13 @@ public:
   freeosconfig(name receiver, name code, datastream<const char *> ds)
       : contract(receiver, code, ds){}
 
-            /**
-             * version action.
-             *
-             * @details Prints the version of this contract.
-             */
-            [[eosio::action]] void
-            version();
+  /**
+   * version action.
+   *
+   * @details Prints the version of this contract.
+   */
+  [[eosio::action]] void
+  version();
 
   /**
    * paramupsert action

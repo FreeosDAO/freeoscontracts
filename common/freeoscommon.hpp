@@ -15,22 +15,27 @@ std::string freeosconfig_acct = STRINGIZE(FREEOSCONFIG);
 std::string freeostokens_acct = STRINGIZE(FREEOSTOKENS);
 std::string freedao_acct = STRINGIZE(DIVIDEND);
 
-const std::string verification_contract =
-    "eosio.proton"; // contains the usersinfo table
+const name VERIFICATION_CONTRACT =
+    "eosio.proton"_n; // contains the usersinfo table
 
-// currency symbol for network
+// currency codes and symbols
 const std::string SYSTEM_CURRENCY_CODE = "XPR";
 const std::string NON_EXCHANGEABLE_CURRENCY_CODE = "OPTION";
 const std::string EXCHANGEABLE_CURRENCY_CODE = "FREEOS";
 const std::string AIRKEY_CURRENCY_CODE = "AIRKEY";
 
+const symbol SYSTEM_CURRENCY_SYMBOL = symbol(SYSTEM_CURRENCY_CODE, 4);
+const symbol NON_EXCHANGEABLE_SYMBOL = symbol(NON_EXCHANGEABLE_CURRENCY_CODE, 4);
+const symbol EXCHANGEABLE_SYMBOL = symbol(EXCHANGEABLE_CURRENCY_CODE, 4);
+const symbol AIRKEY_SYMBOL = symbol(AIRKEY_CURRENCY_CODE, 0);
+
 // hard floor for the target exchange rate - it can never go below this
 const double HARD_EXCHANGE_RATE_FLOOR = 0.0167;
 
 // common error/notification messages
-const std::string msg_freeos_system_not_available =
+const std::string MSG_FREEOS_SYSTEM_NOT_AVAILABLE =
     "Freeos system is not currently operating. Please try later";
-const std::string msg_account_not_registered =
+const std::string MSG_ACCOUNT_NOT_REGISTERED =
     "Account is not registered with freeos";
 
 namespace freedao {
@@ -228,8 +233,9 @@ using parameters_index = eosio::multi_index<
                const_mem_fun<parameter, uint64_t, &parameter::get_secondary>>>;
 
 #ifdef TEST_BUILD
-// Verification table - a mockup of the verification table on Proton - so that
-// we can test how to determine a user's account_type Taken from
+// Verification table - a mockup of the verification table on eosio.proton which is not available on the testnet
+// This allows us to test in development.
+// Used to determine a user's account_type. Taken from
 // https://github.com/ProtonProtocol/proton.contracts/blob/master/contracts/eosio.proton/include/eosio.proton/eosio.proton.hpp
 struct[
     [ eosio::table("usersinfo"), eosio::contract("freeosconfig") ]] userinfo {
