@@ -17,6 +17,8 @@ void freeos::version() {
                                 freeostokens_acct + "/" + freedao_acct +
                                 " version = " + VERSION + " - iteration " +
                                 std::to_string(this_iteration.iteration_number);
+  
+   
 
   check(false, version_message);
 }
