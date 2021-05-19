@@ -7,7 +7,7 @@ namespace freedao {
 
 using namespace eosio;
 
-const std::string VERSION = "0.345";
+const std::string VERSION = "0.346";
 
 // ACTION
 void freeos::version() {
@@ -530,12 +530,14 @@ void freeos::refund_stake(name user, asset amount) {
       users_table.find(symbol_code(SYSTEM_CURRENCY_CODE).raw());
 
   // transfer stake from freeos to user account using the eosio.token contract
-  action transfer = action(
+  if (amount.amount > 0) {
+    action transfer = action(
       permission_level{get_self(), "active"_n}, "eosio.token"_n, "allocate"_n,
       std::make_tuple(get_self(), user, amount,
                       std::string("refund of freeos stake")));
 
-  transfer.send();
+    transfer.send();
+  }
 
   // update the user record
   users_table.modify(user_iterator, _self, [&](auto &usr) {
@@ -863,25 +865,31 @@ void freeos::claim(const name &user) {
                     [&](auto &s) { s.conditional_supply += minted_amount; });
 
   // Issue the required minted amount to the freeos account
-  action mint_action = action(
+  if (minted_amount.amount > 0) {
+    action mint_action = action(
       permission_level{get_self(), "active"_n}, name(freeos_acct), "mint"_n,
       std::make_tuple(get_self(), get_self(), minted_amount, memo));
 
-  mint_action.send();
+    mint_action.send();
+  }  
 
   // transfer liquid OPTION to user
-  action user_transfer = action(
+  if (liquid_amount.amount > 0) {
+    action user_transfer = action(
       permission_level{get_self(), "active"_n}, name(freeos_acct), "allocate"_n,
       std::make_tuple(get_self(), user, liquid_amount, memo));
 
-  user_transfer.send();
+    user_transfer.send();
+  }  
 
   // transfer OPTION to freedao_acct
-  action freedao_transfer = action(
+  if (freedao_amount.amount > 0) {
+    action freedao_transfer = action(
       permission_level{get_self(), "active"_n}, name(freeos_acct), "allocate"_n,
       std::make_tuple(get_self(), name(freedao_acct), freedao_amount, memo));
 
-  freedao_transfer.send();
+    freedao_transfer.send();
+  }
 
   // record the deposit to the freedao account
   record_deposit(this_iteration.iteration_number, freedao_amount);
@@ -1036,18 +1044,22 @@ void freeos::unvest(const name &user) {
   memo.append(user.to_string());
 
   // Issue the required amount to the freeos account
-  action mint_action = action(
+  if (converted_options.amount > 0) {
+    action mint_action = action(
       permission_level{get_self(), "active"_n}, name(freeos_acct), "mint"_n,
       std::make_tuple(get_self(), get_self(), converted_options, memo));
 
-  mint_action.send();
+    mint_action.send();
+  }
 
   // transfer liquid OPTIONs to user
-  action user_transfer = action(
+  if (converted_options.amount > 0) {
+    action user_transfer = action(
       permission_level{get_self(), "active"_n}, name(freeos_acct), "allocate"_n,
       std::make_tuple(get_self(), user, converted_options, memo));
 
-  user_transfer.send();
+    user_transfer.send();
+  }
 
   // subtract the amount transferred from the unvested record
   vestaccounts_table.modify(vestaccount_iterator, _self,
