@@ -7,7 +7,7 @@ namespace freedao {
 
 using namespace eosio;
 
-const std::string VERSION = "0.346";
+const std::string VERSION = "0.347";
 
 // ACTION
 void freeos::version() {
@@ -656,7 +656,7 @@ void freeos::allocate(const name &from, const name &to, const asset &quantity,
   auto transferer_iterator = transferers_table.find(from.value);
 
   check(transferer_iterator != transferers_table.end(),
-        "the allocate action is protected");
+        "the allocate action is protected by transferers whitelist");
 
   // if the 'from' user is in the transferers table then call the transfer
   // function
@@ -672,7 +672,7 @@ void freeos::mint(const name &minter, const name &to, const asset &quantity,
                               name(freeosconfig_acct).value);
   auto minter_iterator = minters_table.find(to.value);
 
-  check(minter_iterator != minters_table.end(), "the mint action is protected");
+  check(minter_iterator != minters_table.end(), "the mint action is protected by minters whitelist");
 
   require_auth(minter);
 
@@ -689,7 +689,7 @@ void freeos::burn(const name &burner, const asset &quantity,
                               name(freeosconfig_acct).value);
   auto burner_iterator = burners_table.find(burner.value);
 
-  check(burner_iterator != burners_table.end(), "the burn action is protected");
+  check(burner_iterator != burners_table.end(), "the burn action is protected by burners whitelist");
 
   require_auth(burner);
 
