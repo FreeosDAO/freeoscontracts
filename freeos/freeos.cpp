@@ -7,7 +7,7 @@ namespace freedao {
 
 using namespace eosio;
 
-const std::string VERSION = "0.347";
+const std::string VERSION = "0.348";
 
 // ACTION
 void freeos::version() {
@@ -18,8 +18,6 @@ void freeos::version() {
                                 " version = " + VERSION + " - iteration " +
                                 std::to_string(this_iteration.iteration_number);
   
-   
-
   check(false, version_message);
 }
 
@@ -184,7 +182,7 @@ void freeos::reguser(const name &user) {
 
   // nothing is allowed when not in a valid claim period (when iteration is 0)
   check(current_iteration.iteration_number != 0,
-        "freeos is not in a claim period");
+        "registration is not possible at this time, please try later");
 
   // perform the registration
   registration_status result = register_user(user);
@@ -268,7 +266,7 @@ void freeos::reverify(name user) {
 
   // nothing is allowed when not in a valid claim period (when iteration is 0)
   check(current_iteration.iteration_number != 0,
-        "freeos is not in a claim period");
+        "reverifying is not possible at this time, please try later");
 
   // set the account type
   users_index users_table(get_self(), user.value);
@@ -371,7 +369,7 @@ freeos::stake(name user, name to, asset quantity, std::string memo) {
     // which iteration are we in?
     uint32_t current_iteration = get_cached_iteration();
 
-    check(current_iteration != 0, "Staking not allowed in iteration 0");
+    check(current_iteration != 0, "staking is not possible at this time, please try later");
 
     //****************************************************
 
@@ -453,7 +451,7 @@ void freeos::unstake(const name &user) {
   check(check_master_switch(), MSG_FREEOS_SYSTEM_NOT_AVAILABLE);
 
   uint32_t current_iteration = get_cached_iteration();
-  check(current_iteration != 0, "Unstaking is not allowed in iteration 0");
+  check(current_iteration != 0, "unstaking is not allowed at this time, please try later");
 
   // find user record
   users_index users_table(get_self(), user.value);
@@ -805,7 +803,7 @@ void freeos::claim(const name &user) {
   // what iteration are we in?
   iteration this_iteration = get_claim_iteration();
   check(this_iteration.iteration_number != 0,
-        "freeos is not in a claim period");
+        "claiming is not possible at this time, please try later");
 
   // auto-register the user - if user is already registered then that is ok, the
   // register_user function responds silently
@@ -965,7 +963,7 @@ void freeos::unvest(const name &user) {
 
   // get the current iteration
   uint32_t this_iteration = get_cached_iteration();
-  check(this_iteration > 0, "Not in a valid iteration");
+  check(this_iteration > 0, "unvesting is not possible at this time, please try later");
 
   // calculate the amount to be unvested - get the percentage for the iteration
   statistic_index statistic_table(get_self(), get_self().value);
