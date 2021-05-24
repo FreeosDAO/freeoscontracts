@@ -7,7 +7,7 @@ namespace freedao {
 
 using namespace eosio;
 
-const std::string VERSION = "0.348";
+const std::string VERSION = "0.349";
 
 // ACTION
 void freeos::version() {
@@ -668,7 +668,7 @@ void freeos::mint(const name &minter, const name &to, const asset &quantity,
   // check if the 'to' account is in the minter whitelist
   minters_index minters_table(name(freeosconfig_acct),
                               name(freeosconfig_acct).value);
-  auto minter_iterator = minters_table.find(to.value);
+  auto minter_iterator = minters_table.find(minter.value);
 
   check(minter_iterator != minters_table.end(), "the mint action is protected by minters whitelist");
 
