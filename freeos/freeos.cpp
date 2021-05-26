@@ -7,7 +7,7 @@ namespace freedao {
 
 using namespace eosio;
 
-const std::string VERSION = "0.349";
+const std::string VERSION = "0.350";
 
 // ACTION
 void freeos::version() {
@@ -530,7 +530,7 @@ void freeos::refund_stake(name user, asset amount) {
   // transfer stake from freeos to user account using the eosio.token contract
   if (amount.amount > 0) {
     action transfer = action(
-      permission_level{get_self(), "active"_n}, "eosio.token"_n, "allocate"_n,
+      permission_level{get_self(), "active"_n}, "eosio.token"_n, "transfer"_n,
       std::make_tuple(get_self(), user, amount,
                       std::string("refund of freeos stake")));
 
