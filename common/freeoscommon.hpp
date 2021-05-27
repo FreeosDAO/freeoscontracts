@@ -107,7 +107,7 @@ using statistic_index = eosio::multi_index<"statistics"_n, statistic>;
 struct[[ eosio::table("unvests"), eosio::contract("freeos") ]] unvestevent {
   uint64_t iteration_number;
 
-  uint64_t primary_key() const { return iteration_number; }
+  uint64_t primary_key() const { return 0; } // single record per user
 };
 using unvest_index = eosio::multi_index<"unvests"_n, unvestevent>;
 

@@ -7,7 +7,7 @@ namespace freedao {
 
 using namespace eosio;
 
-const std::string VERSION = "0.350";
+const std::string VERSION = "0.351";
 
 // ACTION
 void freeos::version() {
@@ -17,7 +17,7 @@ void freeos::version() {
                                 freeostokens_acct + "/" + freedao_acct +
                                 " version = " + VERSION + " - iteration " +
                                 std::to_string(this_iteration.iteration_number);
-  
+
   check(false, version_message);
 }
 
@@ -979,11 +979,13 @@ void freeos::unvest(const name &user) {
 
   // has the user unvested this iteration? - consult the unvest history table
   unvest_index unvest_table(get_self(), user.value);
-  auto unvest_iterator = unvest_table.find(this_iteration);
-  // if the unvest record exists for the iteration then the user has unvested,
+  auto unvest_iterator = unvest_table.begin();
+  // if the unvest record exists for the current iteration then the user has already unvested,
   // so is not eligible to unvest again
-  check(unvest_iterator == unvest_table.end(),
+  if (unvest_iterator != unvest_table.end()) {
+    check(unvest_iterator->iteration_number != this_iteration,
         "user has already unvested in this iteration");
+  }
 
   // do the unvesting
   // get the user's unvested OPTION balance
