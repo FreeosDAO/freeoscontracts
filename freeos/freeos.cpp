@@ -7,7 +7,7 @@ namespace freedao {
 
 using namespace eosio;
 
-const std::string VERSION = "0.351";
+const std::string VERSION = "0.352";
 
 // ACTION
 void freeos::version() {
@@ -84,8 +84,8 @@ void freeos::cron() {
 // this is only ever called by tick() when a switch to a new iteration is
 // detected
 void freeos::update_unvest_percentage() {
-  uint32_t current_unvest_percentage;
-  uint32_t new_unvest_percentage;
+  uint32_t current_unvest_percentage = 0;
+  uint32_t new_unvest_percentage = 0;
 
   // get the statistics record
   statistic_index statistic_table(get_self(), get_self().value);
@@ -107,6 +107,7 @@ void freeos::update_unvest_percentage() {
     // 'good times' iteration
     switch (current_unvest_percentage) {
     case 0:
+    case 15:
       new_unvest_percentage = 1;
       break;
     case 1:
@@ -129,6 +130,9 @@ void freeos::update_unvest_percentage() {
       break;
     case 21:
       new_unvest_percentage = 21;
+      break;
+    default :
+      new_unvest_percentage = 0;
       break;
     }
 
