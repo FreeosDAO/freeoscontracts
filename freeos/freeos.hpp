@@ -314,7 +314,7 @@ private:
   iteration get_claim_iteration();
   bool eligible_to_claim(const name &claimant, iteration this_iteration);
   uint32_t update_claim_event_count();
-  uint16_t get_freedao_multiplier(uint32_t claimevents);
+  double get_freedao_multiplier(uint32_t claimevents);
   float get_vested_proportion();
   void update_unvest_percentage();
   void record_deposit(uint64_t iteration_number, asset amount);

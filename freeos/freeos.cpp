@@ -7,7 +7,7 @@ namespace freedao {
 
 using namespace eosio;
 
-const std::string VERSION = "0.352";
+const std::string VERSION = "0.353";
 
 // ACTION
 void freeos::version() {
@@ -354,12 +354,18 @@ char freeos::get_account_type(name user) {
 }
 
 // stake confirmation
-[[eosio::on_notify("eosio.token::transfer")]] void
-freeos::stake(name user, name to, asset quantity, std::string memo) {
+#ifdef TEST_BUILD
+[[eosio::on_notify("eosio.token::transfer")]]
+#else
+[[eosio::on_notify("xtokens::transfer")]]
+#endif
+void freeos::stake(name user, name to, asset quantity, std::string memo) {
   if (memo == "freeos stake") {
     if (user == get_self()) {
       return;
     }
+
+    check(to == get_self(), "recipient of stake is incorrect");
 
     // user-activity-driven background process
     tick();
@@ -368,7 +374,7 @@ freeos::stake(name user, name to, asset quantity, std::string memo) {
     // "1")
     check(check_master_switch(), MSG_FREEOS_SYSTEM_NOT_AVAILABLE);
 
-    check(quantity.symbol == SYSTEM_CURRENCY_SYMBOL, "must send XPR tokens");
+    check(quantity.symbol == SYSTEM_CURRENCY_SYMBOL, ERR_SYSTEM_CURRENCY_CODE);
 
     // which iteration are we in?
     uint32_t current_iteration = get_cached_iteration();
@@ -531,10 +537,10 @@ void freeos::refund_stake(name user, asset amount) {
   auto user_iterator =
       users_table.find(symbol_code(SYSTEM_CURRENCY_CODE).raw());
 
-  // transfer stake from freeos to user account using the eosio.token contract
+  // transfer stake from freeos to user account using the SYSTEM_CURRENCY_CONTRACT
   if (amount.amount > 0) {
     action transfer = action(
-      permission_level{get_self(), "active"_n}, "eosio.token"_n, "transfer"_n,
+      permission_level{get_self(), "active"_n}, name(SYSTEM_CURRENCY_CONTRACT), "transfer"_n,
       std::make_tuple(get_self(), user, amount,
                       std::string("refund of freeos stake")));
 
@@ -821,7 +827,7 @@ void freeos::claim(const name &user) {
   uint32_t claim_event_count = update_claim_event_count();
 
   // get freedao multiplier
-  uint16_t freedao_multiplier = get_freedao_multiplier(claim_event_count);
+  double freedao_multiplier = get_freedao_multiplier(claim_event_count);
 
   // calculate amounts to be transferred to user and FreeDAO
   // first get the proportion that is vested
@@ -866,32 +872,39 @@ void freeos::claim(const name &user) {
   statstable.modify(st, same_payer,
                     [&](auto &s) { s.conditional_supply += minted_amount; });
 
-  // Issue the required minted amount to the freeos account
+  /* Issue the required minted amount to the freeos account
   if (minted_amount.amount > 0) {
     action mint_action = action(
       permission_level{get_self(), "active"_n}, name(freeos_acct), "mint"_n,
       std::make_tuple(get_self(), get_self(), minted_amount, memo));
 
     mint_action.send();
-  }  
+  } */
+  // VERSION 0.353 - Inline action replaced with direct call
+  mint(get_self(), get_self(), minted_amount, memo);
 
-  // transfer liquid OPTION to user
+  /* transfer liquid OPTION to user
   if (liquid_amount.amount > 0) {
     action user_transfer = action(
       permission_level{get_self(), "active"_n}, name(freeos_acct), "allocate"_n,
       std::make_tuple(get_self(), user, liquid_amount, memo));
 
     user_transfer.send();
-  }  
+  } */
+  // VERSION 0.353 - Inline action replaced with direct call
+  allocate(get_self(), user, liquid_amount, memo);
 
-  // transfer OPTION to freedao_acct
+
+  /* transfer OPTION to freedao_acct
   if (freedao_amount.amount > 0) {
     action freedao_transfer = action(
       permission_level{get_self(), "active"_n}, name(freeos_acct), "allocate"_n,
       std::make_tuple(get_self(), name(freedao_acct), freedao_amount, memo));
 
     freedao_transfer.send();
-  }
+  } */
+  // VERSION 0.353 - Inline action replaced with direct call
+  allocate(get_self(), name(freedao_acct), freedao_amount, memo);
 
   // record the deposit to the freedao account
   record_deposit(this_iteration.iteration_number, freedao_amount);
@@ -1047,23 +1060,27 @@ void freeos::unvest(const name &user) {
   std::string memo = std::string("unvesting OPTIONs by ");
   memo.append(user.to_string());
 
-  // Issue the required amount to the freeos account
+  /* Issue the required amount to the freeos account
   if (converted_options.amount > 0) {
     action mint_action = action(
       permission_level{get_self(), "active"_n}, name(freeos_acct), "mint"_n,
       std::make_tuple(get_self(), get_self(), converted_options, memo));
 
     mint_action.send();
-  }
+  } */
+  // VERSION 0.353 - Inline action replaced with direct call
+  mint(get_self(), get_self(), converted_options, memo);
 
-  // transfer liquid OPTIONs to user
+  /* transfer liquid OPTIONs to user
   if (converted_options.amount > 0) {
     action user_transfer = action(
       permission_level{get_self(), "active"_n}, name(freeos_acct), "allocate"_n,
       std::make_tuple(get_self(), user, converted_options, memo));
 
     user_transfer.send();
-  }
+  } */
+  // VERSION 0.353 - Inline action replaced with direct call
+  allocate(get_self(), user, converted_options, memo);
 
   // subtract the amount transferred from the unvested record
   vestaccounts_table.modify(vestaccount_iterator, _self,
@@ -1247,7 +1264,7 @@ uint32_t freeos::update_claim_event_count() {
   return claimevents;
 }
 
-uint16_t freeos::get_freedao_multiplier(uint32_t claimevents) {
+double freeos::get_freedao_multiplier(uint32_t claimevents) {
 #ifdef TEST_BUILD
   if (claimevents <= 5) {
     return 55;
@@ -1269,30 +1286,30 @@ uint16_t freeos::get_freedao_multiplier(uint32_t claimevents) {
     return 1;
   }
 #else
-  if (claimevents <= 100) {
-    return 233;
-  } else if (claimevents <= 200) {
-    return 144;
-  } else if (claimevents <= 300) {
-    return 89;
-  } else if (claimevents <= 500) {
-    return 55;
-  } else if (claimevents <= 800) {
-    return 34;
-  } else if (claimevents <= 1300) {
-    return 21;
-  } else if (claimevents <= 2100) {
-    return 13;
-  } else if (claimevents <= 3400) {
-    return 8;
-  } else if (claimevents <= 5500) {
-    return 5;
-  } else if (claimevents <= 8900) {
-    return 3;
-  } else if (claimevents <= 14400) {
+  if (claimevents <= 199) {
+    return 19;
+  } else if (claimevents <= 499) {
+    return 18;
+  } else if (claimevents <= 999) {
+    return 17;
+  } else if (claimevents <= 1999) {
+    return 16;
+  } else if (claimevents <= 2999) {
+    return 15;
+  } else if (claimevents <= 4999) {
+    return 14;
+  } else if (claimevents <= 7999) {
+    return 10;
+  } else if (claimevents <= 12999) {
+    return 6;
+  } else if (claimevents <= 20999) {
+    return 4;
+  } else if (claimevents <= 33999) {
     return 2;
+  } else if (claimevents <= 54999) {
+    return 1.5;
   } else {
-    return 1;
+    return 0.07;
   }
 #endif
 }

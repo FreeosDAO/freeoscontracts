@@ -19,12 +19,23 @@ const name VERIFICATION_CONTRACT =
     "eosio.proton"_n; // contains the usersinfo table
 
 // currency codes and symbols
+#ifdef TEST_BUILD
 const std::string SYSTEM_CURRENCY_CODE = "XPR";
+const std::string ERR_SYSTEM_CURRENCY_CODE = "you must stake XPR";
+const uint8_t SYSTEM_CURRENCY_PRECISION = 4;
+const std::string SYSTEM_CURRENCY_CONTRACT = "eosio.token";
+#else
+const std::string SYSTEM_CURRENCY_CODE = "XUSDC";
+const std::string ERR_SYSTEM_CURRENCY_CODE = "you must stake XUSDC";
+const uint8_t SYSTEM_CURRENCY_PRECISION = 6;
+const std::string SYSTEM_CURRENCY_CONTRACT = "xtokens";
+#endif
+
 const std::string NON_EXCHANGEABLE_CURRENCY_CODE = "OPTION";
 const std::string EXCHANGEABLE_CURRENCY_CODE = "FREEOS";
 const std::string AIRKEY_CURRENCY_CODE = "AIRKEY";
 
-const symbol SYSTEM_CURRENCY_SYMBOL = symbol(SYSTEM_CURRENCY_CODE, 4);
+const symbol SYSTEM_CURRENCY_SYMBOL = symbol(SYSTEM_CURRENCY_CODE, SYSTEM_CURRENCY_PRECISION);
 const symbol NON_EXCHANGEABLE_SYMBOL = symbol(NON_EXCHANGEABLE_CURRENCY_CODE, 4);
 const symbol EXCHANGEABLE_SYMBOL = symbol(EXCHANGEABLE_CURRENCY_CODE, 4);
 const symbol AIRKEY_SYMBOL = symbol(AIRKEY_CURRENCY_CODE, 0);
@@ -232,7 +243,6 @@ using parameters_index = eosio::multi_index<
     indexed_by<"virtualtable"_n,
                const_mem_fun<parameter, uint64_t, &parameter::get_secondary>>>;
 
-#ifdef TEST_BUILD
 // Verification table - a mockup of the verification table on eosio.proton which is not available on the testnet
 // This allows us to test in development.
 // Used to determine a user's account_type. Taken from
@@ -256,6 +266,5 @@ struct[
   uint64_t primary_key() const { return acc.value; }
 };
 typedef eosio::multi_index<"usersinfo"_n, userinfo> usersinfo;
-#endif
 
 } // namespace freedao
