@@ -874,39 +874,30 @@ void freeos::claim(const name &user) {
 
   // Issue the required minted amount to the freeos account
   if (minted_amount.amount > 0) {
-    /* action mint_action = action(
+    action mint_action = action(
       permission_level{get_self(), "active"_n}, name(freeos_acct), "mint"_n,
       std::make_tuple(get_self(), get_self(), minted_amount, memo));
 
-    mint_action.send(); */
-
-    // VERSION 0.353 - Inline action replaced with function call
-    mint(get_self(), get_self(), minted_amount, memo);
+    mint_action.send();
   }
 
   // transfer liquid OPTION to user
   if (liquid_amount.amount > 0) {
-    /* action user_transfer = action(
+    action user_transfer = action(
       permission_level{get_self(), "active"_n}, name(freeos_acct), "allocate"_n,
       std::make_tuple(get_self(), user, liquid_amount, memo));
 
-    user_transfer.send(); */
-
-    // VERSION 0.353 - Inline action replaced with direct call
-    allocate(get_self(), user, liquid_amount, memo);
+    user_transfer.send();
   }
 
 
   // transfer OPTION to freedao_acct
   if (freedao_amount.amount > 0) {
-    /* action freedao_transfer = action(
+    action freedao_transfer = action(
       permission_level{get_self(), "active"_n}, name(freeos_acct), "allocate"_n,
       std::make_tuple(get_self(), name(freedao_acct), freedao_amount, memo));
 
-    freedao_transfer.send(); */
-
-    // VERSION 0.353 - Inline action replaced with direct call
-    allocate(get_self(), name(freedao_acct), freedao_amount, memo);
+    freedao_transfer.send();
   }
 
   // record the deposit to the freedao account
@@ -1065,26 +1056,20 @@ void freeos::unvest(const name &user) {
 
   // Issue the required amount to the freeos account
   if (converted_options.amount > 0) {
-    /* action mint_action = action(
+    action mint_action = action(
       permission_level{get_self(), "active"_n}, name(freeos_acct), "mint"_n,
       std::make_tuple(get_self(), get_self(), converted_options, memo));
 
-    mint_action.send(); */
-
-    // VERSION 0.353 - Inline action replaced with direct call
-    mint(get_self(), get_self(), converted_options, memo);
+    mint_action.send();
   }
 
   // transfer liquid OPTIONs to user
   if (converted_options.amount > 0) {
-    /* action user_transfer = action(
+    action user_transfer = action(
       permission_level{get_self(), "active"_n}, name(freeos_acct), "allocate"_n,
       std::make_tuple(get_self(), user, converted_options, memo));
 
-    user_transfer.send(); */
-
-    // VERSION 0.353 - Inline action replaced with direct call
-    allocate(get_self(), user, converted_options, memo);
+    user_transfer.send();
   }
 
   // subtract the amount transferred from the unvested record
