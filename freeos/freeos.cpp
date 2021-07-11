@@ -7,7 +7,7 @@ namespace freedao {
 
 using namespace eosio;
 
-const std::string VERSION = "0.353";
+const std::string VERSION = "0.354";
 
 // ACTION
 void freeos::version() {
@@ -658,6 +658,8 @@ void freeos::retire(const asset &quantity, const string &memo) {
 // ACTION
 void freeos::allocate(const name &from, const name &to, const asset &quantity,
                       const string &memo) {
+  require_auth(from);
+
   // check if the 'from' account is in the transferer whitelist
   transferers_index transferers_table(name(freeosconfig_acct),
                                       name(freeosconfig_acct).value);
@@ -666,8 +668,7 @@ void freeos::allocate(const name &from, const name &to, const asset &quantity,
   check(transferer_iterator != transferers_table.end(),
         "the allocate action is protected by transferers whitelist");
 
-  // if the 'from' user is in the transferers table then call the transfer
-  // function
+  // if the 'from' user is in the transferers table then call the transfer function
   transfer(from, to, quantity, memo);
 }
 
@@ -708,7 +709,7 @@ void freeos::burn(const name &burner, const asset &quantity,
 void freeos::transfer(const name &from, const name &to, const asset &quantity,
                       const string &memo) {
   check(from != to, "cannot transfer to self");
-  require_auth(from);
+  // require_auth(from);
   check(is_account(to), "to account does not exist");
 
   // AIRKEY tokens are non-transferable, except by the freeostokens account
@@ -874,30 +875,19 @@ void freeos::claim(const name &user) {
 
   // Issue the required minted amount to the freeos account
   if (minted_amount.amount > 0) {
-    action mint_action = action(
-      permission_level{get_self(), "active"_n}, name(freeos_acct), "mint"_n,
-      std::make_tuple(get_self(), get_self(), minted_amount, memo));
-
-    mint_action.send();
+    // issue the minted options to cover transfers to freedao and the user
+    issue(get_self(), minted_amount, memo);
   }
 
   // transfer liquid OPTION to user
   if (liquid_amount.amount > 0) {
-    action user_transfer = action(
-      permission_level{get_self(), "active"_n}, name(freeos_acct), "allocate"_n,
-      std::make_tuple(get_self(), user, liquid_amount, memo));
-
-    user_transfer.send();
+    transfer(get_self(), user, liquid_amount, memo);
   }
 
 
   // transfer OPTION to freedao_acct
   if (freedao_amount.amount > 0) {
-    action freedao_transfer = action(
-      permission_level{get_self(), "active"_n}, name(freeos_acct), "allocate"_n,
-      std::make_tuple(get_self(), name(freedao_acct), freedao_amount, memo));
-
-    freedao_transfer.send();
+    transfer(get_self(), name(freedao_acct), freedao_amount, memo);
   }
 
   // record the deposit to the freedao account
@@ -974,7 +964,7 @@ void freeos::unvest(const name &user) {
 
   // get the current iteration
   uint32_t this_iteration = get_cached_iteration();
-  check(this_iteration > 0, "unvesting is not possible at this time, please try later");
+  check(this_iteration > 0, "unlocking is not possible at this time, please try later");
 
   // calculate the amount to be unvested - get the percentage for the iteration
   statistic_index statistic_table(get_self(), get_self().value);
@@ -985,7 +975,7 @@ void freeos::unvest(const name &user) {
 
   // check that the unvest percentage is within limits
   check(unvest_percent > 0 && unvest_percent <= 100,
-        "vested OPTIONs cannot be unvested in this claim period. Please try "
+        "locked OPTIONs cannot be unlocked in this claim period. Please try "
         "during next claim period.");
 
   // has the user unvested this iteration? - consult the unvest history table
@@ -995,7 +985,7 @@ void freeos::unvest(const name &user) {
   // so is not eligible to unvest again
   if (unvest_iterator != unvest_table.end()) {
     check(unvest_iterator->iteration_number != this_iteration,
-        "user has already unvested in this iteration");
+        "user has already unlocked in this iteration");
   }
 
   // do the unvesting
@@ -1051,25 +1041,17 @@ void freeos::unvest(const name &user) {
     s.conditional_supply += converted_options;
   });
 
-  std::string memo = std::string("unvesting OPTIONs by ");
+  std::string memo = std::string("unlocking OPTIONs by ");
   memo.append(user.to_string());
 
   // Issue the required amount to the freeos account
   if (converted_options.amount > 0) {
-    action mint_action = action(
-      permission_level{get_self(), "active"_n}, name(freeos_acct), "mint"_n,
-      std::make_tuple(get_self(), get_self(), converted_options, memo));
-
-    mint_action.send();
+    issue(get_self(), converted_options, memo);
   }
 
   // transfer liquid OPTIONs to user
   if (converted_options.amount > 0) {
-    action user_transfer = action(
-      permission_level{get_self(), "active"_n}, name(freeos_acct), "allocate"_n,
-      std::make_tuple(get_self(), user, converted_options, memo));
-
-    user_transfer.send();
+    transfer(get_self(), user, converted_options, memo);
   }
 
   // subtract the amount transferred from the unvested record

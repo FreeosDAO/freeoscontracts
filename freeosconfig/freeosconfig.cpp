@@ -4,7 +4,7 @@
 // using namespace eosio;
 namespace freedao {
 
-const std::string VERSION = "0.110";
+const std::string VERSION = "0.111";
 
 // ACTION
 void freeosconfig::version() {
@@ -60,7 +60,14 @@ void freeosconfig::paramerase(name paramname) {
 // ACTION
 void freeosconfig::currentrate(double price) {
 
-  require_auth(_self);
+  // check if the exchange account is calling this action, or the contract itself
+  parameters_index parameters_table(get_self(), get_self().value);
+  auto parameter_iterator = parameters_table.find(name("exchangeacc").value);
+  if (parameter_iterator != parameters_table.end()) {
+    require_auth(name(parameter_iterator->value));
+  } else {
+    require_auth(_self);
+  }
 
   check(price > 0.0, "current rate must be positive");
 
