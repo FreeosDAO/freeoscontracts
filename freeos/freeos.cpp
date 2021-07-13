@@ -286,8 +286,6 @@ void freeos::reverify(name user) {
   // examine the staking requirement for the user - if their staking requirement
   // is 0 then we will consider them to have already staked
   int64_t stake_requirement_amount = get_stake_requirement(account_type);
-  asset stake_requirement =
-      asset(stake_requirement_amount, SYSTEM_CURRENCY_SYMBOL);
 
   // set the user account type
   users_table.modify(user_iterator, _self, [&](auto &u) {
@@ -295,7 +293,7 @@ void freeos::reverify(name user) {
 
     // if user not already staked and stake requirement is 0, then consider the
     // user to have staked
-    if (u.staked_iteration == 0 && stake_requirement.amount == 0) {
+    if (u.staked_iteration == 0 && stake_requirement_amount == 0) {
       u.staked_iteration = current_iteration.iteration_number;
     }
   });
@@ -406,10 +404,10 @@ void freeos::stake(name user, name to, asset quantity, std::string memo) {
 
     uint32_t stake_requirement_amount =
         get_stake_requirement(user_iterator->account_type);
-    asset stake_requirement = asset(stake_requirement_amount * 10000,
+    asset stake_requirement = asset(stake_requirement_amount * (pow(10, SYSTEM_CURRENCY_PRECISION)),
                                     SYSTEM_CURRENCY_SYMBOL);
     check(stake_requirement == quantity,
-          "the stake amount is not what is required");
+          "the stake amount is not what is required " + stake_requirement.to_string());
 
     // update the user record
     users_table.modify(user_iterator, _self, [&](auto &usr) {
@@ -975,7 +973,7 @@ void freeos::unvest(const name &user) {
 
   // check that the unvest percentage is within limits
   check(unvest_percent > 0 && unvest_percent <= 100,
-        "locked OPTIONs cannot be unlocked in this claim period. Please try "
+        "locked POINTs cannot be unlocked in this claim period. Please try "
         "during next claim period.");
 
   // has the user unvested this iteration? - consult the unvest history table
@@ -1041,7 +1039,7 @@ void freeos::unvest(const name &user) {
     s.conditional_supply += converted_options;
   });
 
-  std::string memo = std::string("unlocking OPTIONs by ");
+  std::string memo = std::string("unlocking POINTs by ");
   memo.append(user.to_string());
 
   // Issue the required amount to the freeos account

@@ -252,10 +252,13 @@ public:
 
   // ********* simulated eosio.proton actions for populating usersinfo table
   // ***********
+
+#ifdef TEST_BUILD
   [[eosio::action]] void userverify(name acc, name verifier, bool verified);
 
   [[eosio::action]] void addkyc(name acc, name kyc_provider,
                                 std::string kyc_level, uint64_t kyc_date);
+#endif
 
   // ***********************************************************************************
 

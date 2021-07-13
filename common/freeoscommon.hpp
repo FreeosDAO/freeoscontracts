@@ -31,7 +31,7 @@ const uint8_t SYSTEM_CURRENCY_PRECISION = 6;
 const std::string SYSTEM_CURRENCY_CONTRACT = "xtokens";
 #endif
 
-const std::string NON_EXCHANGEABLE_CURRENCY_CODE = "OPTION";
+const std::string NON_EXCHANGEABLE_CURRENCY_CODE = "POINT";
 const std::string EXCHANGEABLE_CURRENCY_CODE = "FREEOS";
 const std::string AIRKEY_CURRENCY_CODE = "AIRKEY";
 

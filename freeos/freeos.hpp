@@ -84,8 +84,13 @@ public:
    * If validation is successful the record for the user account is updated to
    * record the amount staked and the date/time of the receipt.
    */
+#ifdef TEST_BUILD
   [[eosio::on_notify("eosio.token::transfer")]] void stake(
       name user, name to, asset quantity, std::string memo);
+#else
+  [[eosio::on_notify("xtokens::transfer")]] void stake(
+      name user, name to, asset quantity, std::string memo);
+#endif
 
   /**
    * unstake action.
