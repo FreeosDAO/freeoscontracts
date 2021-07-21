@@ -25,14 +25,14 @@ const std::string ERR_SYSTEM_CURRENCY_CODE = "you must stake XPR";
 const uint8_t SYSTEM_CURRENCY_PRECISION = 4;
 const std::string SYSTEM_CURRENCY_CONTRACT = "eosio.token";
 #else
-const std::string SYSTEM_CURRENCY_CODE = "XUSDC";
-const std::string ERR_SYSTEM_CURRENCY_CODE = "you must stake XUSDC";
+const std::string SYSTEM_CURRENCY_CODE = "FOOBAR";
+const std::string ERR_SYSTEM_CURRENCY_CODE = "you must stake FOOBAR";
 const uint8_t SYSTEM_CURRENCY_PRECISION = 6;
 const std::string SYSTEM_CURRENCY_CONTRACT = "xtokens";
 #endif
 
 const std::string NON_EXCHANGEABLE_CURRENCY_CODE = "POINT";
-const std::string EXCHANGEABLE_CURRENCY_CODE = "FREEOS";
+const std::string EXCHANGEABLE_CURRENCY_CODE = "BETA";
 const std::string AIRKEY_CURRENCY_CODE = "AIRKEY";
 
 const symbol SYSTEM_CURRENCY_SYMBOL = symbol(SYSTEM_CURRENCY_CODE, SYSTEM_CURRENCY_PRECISION);
