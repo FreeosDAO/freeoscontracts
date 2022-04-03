@@ -4,7 +4,7 @@
 // using namespace eosio;
 namespace freedao {
 
-const std::string VERSION = "0.111";
+const std::string VERSION = "0.112";
 
 // ACTION
 void freeosconfig::version() {
@@ -89,7 +89,16 @@ void freeosconfig::currentrate(double price) {
 // ACTION
 void freeosconfig::targetrate(double exchangerate) {
 
-  require_auth(_self);
+  // require_auth(_self); // v0.111
+  // v0.112 change - check if the locking contract account is calling this action, or the contract itself
+  parameters_index parameters_table(get_self(), get_self().value);
+  auto parameter_iterator = parameters_table.find(name("lockingacc").value);
+  if (parameter_iterator != parameters_table.end()) {
+    require_auth(name(parameter_iterator->value));
+  } else {
+    require_auth(_self);
+  }
+  // end of v0.112 change
 
   check(exchangerate > 0.0, "target rate must be positive");
 
