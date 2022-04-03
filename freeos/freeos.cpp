@@ -1287,8 +1287,6 @@ double freeos::get_freedao_multiplier(uint32_t claimevents) {
     return 3;
   } else if (claimevents <= 4) {
     return 2;
-  } else if (claimevents <= 6) {
-    return 1;
   } else {
     return 0.5;
   }
