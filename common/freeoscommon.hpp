@@ -114,6 +114,18 @@ struct[[ eosio::table("statistics"), eosio::contract("freeos") ]] statistic {
 };
 using statistic_index = eosio::multi_index<"statistics"_n, statistic>;
 
+
+// iterstats table - extension of statistics table // added v0.355
+struct[[ eosio::table("iterstats"), eosio::contract("freeos") ]] iterstat {
+  uint32_t claimevents;
+
+  uint64_t primary_key() const {
+    return 0;
+  } // return a constant (0 in this case) to ensure a single-row table
+};
+using iterstats_index = eosio::multi_index<"iterstats"_n, iterstat>;
+
+
 // unvest history table - scoped on user account name
 struct[[ eosio::table("unvests"), eosio::contract("freeos") ]] unvestevent {
   uint64_t iteration_number;

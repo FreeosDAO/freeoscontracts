@@ -1,2 +1,2 @@
-eosio-cpp -o freeos.wasm freeos.cpp -DTEST_BUILD -DFREEOS="\"freeosd\"" -DFREEOSCONFIG="\"freeoscfgd\"" -DFREEOSTOKENS="\"freeostokend\"" -DDIVIDEND="\"freeosdiv\"" --abigen
+eosio-cpp -o freeos.wasm freeos.cpp -DTEST_BUILD -DFREEOS="\"freeos5\"" -DFREEOSCONFIG="\"freeoscfg5\"" -DFREEOSTOKENS="\"freeostoken5\"" -DDIVIDEND="\"freeosdiv5\"" --abigen
 

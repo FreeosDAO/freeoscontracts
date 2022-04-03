@@ -143,6 +143,16 @@
             ]
         },
         {
+            "name": "iterstat",
+            "base": "",
+            "fields": [
+                {
+                    "name": "claimevents",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
             "name": "mint",
             "base": "",
             "fields": [
@@ -415,6 +425,13 @@
         {
             "name": "deposits",
             "type": "deposit",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "iterstats",
+            "type": "iterstat",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

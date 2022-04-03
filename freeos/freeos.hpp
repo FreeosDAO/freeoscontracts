@@ -319,6 +319,7 @@ private:
   iteration get_claim_iteration();
   bool eligible_to_claim(const name &claimant, iteration this_iteration);
   uint32_t update_claim_event_count();
+  uint32_t update_iteration_claim_event_count();  // new in v0.355
   double get_freedao_multiplier(uint32_t claimevents);
   float get_vested_proportion();
   void update_unvest_percentage();
@@ -327,6 +328,7 @@ private:
   void request_stake_refund(name user, asset amount);
   void refund_stakes();
   void refund_stake(name user, asset amount);
+  void reset_iteration_claimevents(); // new in v0.355
 };
 /** @}*/ // end of @defgroup freeos freeos contract
 } // namespace freedao

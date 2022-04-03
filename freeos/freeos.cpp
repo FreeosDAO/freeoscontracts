@@ -7,7 +7,7 @@ namespace freedao {
 
 using namespace eosio;
 
-const std::string VERSION = "0.354";
+const std::string VERSION = "0.355";
 
 // ACTION
 void freeos::version() {
@@ -41,9 +41,13 @@ void freeos::tick() {
     statistic_table.modify(statistic_iterator, _self,
                            [&](auto &stat) { stat.iteration = new_iteration; });
 
-    // update unvest percent if required
+    // tasks for new iteration
     if (new_iteration > previous_unvest_iteration) {
+      // update unvest percent if required
       update_unvest_percentage();
+
+      // reset the iteration stats table i.e. set weekly claimevents = 0
+      reset_iteration_claimevents();
     }
 
     if (new_iteration != 0) {
@@ -61,6 +65,24 @@ void freeos::tick() {
     // no change to iteration - do some unstaking if we are in a valid iteration
     if (new_iteration > 0)
       refund_stakes();
+  }
+}
+
+// reset the iteration claimevents statistic (number of claim events in the curretn week) // new in v0.355
+void freeos::reset_iteration_claimevents() {
+  iterstats_index iterstats_table(get_self(), get_self().value);
+  auto iterstat_iterator = iterstats_table.begin();
+
+  if (iterstat_iterator == iterstats_table.end()) {
+    // insert the record
+    iterstats_table.emplace(get_self(), [&](auto &s) {
+      s.claimevents = 0;
+    });
+  } else {
+    // modify the record
+    iterstats_table.modify(iterstat_iterator, _self, [&](auto &s) {
+      s.claimevents = 0;
+    });
   }
 }
 
@@ -825,8 +847,11 @@ void freeos::claim(const name &user) {
   // update the number of claimevents
   uint32_t claim_event_count = update_claim_event_count();
 
-  // get freedao multiplier
-  double freedao_multiplier = get_freedao_multiplier(claim_event_count);
+  // update the number of claim events in the current iteration
+  uint32_t iteration_claim_event_count = update_iteration_claim_event_count();
+
+  // get freedao multiplier // new in v0.355 - freedao)multiplier calculated on iteration claimevents count
+  double freedao_multiplier = get_freedao_multiplier(iteration_claim_event_count);
 
   // calculate amounts to be transferred to user and FreeDAO
   // first get the proportion that is vested
@@ -1234,26 +1259,38 @@ uint32_t freeos::update_claim_event_count() {
   return claimevents;
 }
 
+// increment number of claims in the current iteration - new in v0.355
+uint32_t freeos::update_iteration_claim_event_count() {
+  uint32_t iterclaimevents;
+
+  iterstats_index iterstats_table(get_self(), get_self().value);
+  auto iterstat_record = iterstats_table.begin();
+
+  if (iterstat_record == iterstats_table.end()) {
+    // insert the iterstat record
+    iterstats_table.emplace(get_self(), [&](auto &s) {
+      s.claimevents = iterclaimevents = 1;
+    });
+  } else {
+    // modify the iterstat record
+    iterstats_table.modify(iterstat_record, _self, [&](auto &s) {
+      s.claimevents = iterclaimevents = s.claimevents + 1;
+    });
+  }
+
+  return iterclaimevents;
+}
+
 double freeos::get_freedao_multiplier(uint32_t claimevents) {
 #ifdef TEST_BUILD
-  if (claimevents <= 5) {
-    return 55;
-  } else if (claimevents <= 10) {
-    return 34;
-  } else if (claimevents <= 20) {
-    return 21;
-  } else if (claimevents <= 30) {
-    return 13;
-  } else if (claimevents <= 50) {
-    return 8;
-  } else if (claimevents <= 80) {
-    return 5;
-  } else if (claimevents <= 130) {
+  if (claimevents <= 2) {
     return 3;
-  } else if (claimevents <= 210) {
+  } else if (claimevents <= 4) {
     return 2;
-  } else {
+  } else if (claimevents <= 6) {
     return 1;
+  } else {
+    return 0.5;
   }
 #else
   if (claimevents <= 199) {
