@@ -143,6 +143,16 @@
             ]
         },
         {
+            "name": "deregister",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                }
+            ]
+        },
+        {
             "name": "iterstat",
             "base": "",
             "fields": [
@@ -171,6 +181,16 @@
                 {
                     "name": "memo",
                     "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "refundstake",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
                 }
             ]
         },
@@ -374,8 +394,18 @@
             "ricardian_contract": ""
         },
         {
+            "name": "deregister",
+            "type": "deregister",
+            "ricardian_contract": ""
+        },
+        {
             "name": "mint",
             "type": "mint",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "refundstake",
+            "type": "refundstake",
             "ricardian_contract": ""
         },
         {

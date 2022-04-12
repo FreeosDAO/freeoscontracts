@@ -65,6 +65,30 @@ public:
   [[eosio::action]] void reguser(const name &user);
 
   /**
+   * refundstake action.
+   *
+   * @details Refunds a user stake.
+   * @param user - the account to be registered,
+   *
+   * @pre Requires permission of the account listed in the 'adminacc' parameter, failing that, the contract account
+   *
+   * If action is successful a non-zero stake amount is transferred to the user
+   */
+  [[eosio::action]] void refundstake(const name &user);
+
+  /**
+   * deregister action.
+   *
+   * @details Deletes the user record from the users table.
+   * @param user - the account to be deregistered,
+   *
+   * @pre Requires permission of the account listed in the 'adminacc' parameter, failing that, the contract account
+   *
+   * If action is successful, the user's stake is refunded and the user record deleted from the user table
+   */
+  [[eosio::action]] void deregister(const name &user);
+
+  /**
    * stake action.
    *
    * @details Adds a record of staked EOS tokens in the user account record in

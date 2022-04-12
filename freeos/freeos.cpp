@@ -7,7 +7,7 @@ namespace freedao {
 
 using namespace eosio;
 
-const std::string VERSION = "0.355";
+const std::string VERSION = "0.357";
 
 // ACTION
 void freeos::version() {
@@ -1093,6 +1093,67 @@ void freeos::unvest(const name &user) {
     });
   }
 }
+
+
+// ACTION
+void freeos::refundstake(const name &user) {
+  // determine who is allowed to run the action
+  parameters_index parameters_table(name(freeosconfig_acct), name(freeosconfig_acct).value);
+  auto parameter_iterator = parameters_table.find(name("adminacc").value);
+  if (parameter_iterator != parameters_table.end()) {
+    require_auth(name(parameter_iterator->value));
+  } else {
+    require_auth(_self);
+  }
+
+  // get the user record
+  users_index users_table(get_self(), user.value);
+  auto user_iterator = users_table.begin();
+  check(user_iterator != users_table.end(), "user is not registered in freeos");
+
+  asset user_stake = user_iterator->stake;
+  if (user_stake.amount > 0) {
+    refund_stake(user, user_stake);
+  }
+}
+
+// ACTION
+void freeos::deregister(const name &user) {
+  // determine who is allowed to run the action
+  parameters_index parameters_table(name(freeosconfig_acct), name(freeosconfig_acct).value);
+  auto parameter_iterator = parameters_table.find(name("adminacc").value);
+  if (parameter_iterator != parameters_table.end()) {
+    require_auth(name(parameter_iterator->value));
+  } else {
+    require_auth(_self);
+  }
+
+  // get the user record
+  users_index users_table(get_self(), user.value);
+  auto user_iterator = users_table.begin();
+  check(user_iterator != users_table.end(), "user is not registered in freeos");
+
+  // check the amount of stake
+  asset user_stake = user_iterator->stake;
+  if (user_stake.amount > 0) {
+    refund_stake(user, user_stake);
+  }
+
+  // erase the user record
+  users_table.erase(user_iterator);
+
+  // decrement the statistics::usercount
+  statistic_index statistic_table(get_self(), get_self().value);
+  auto statistic_iterator = statistic_table.begin();
+  check(statistic_iterator != statistic_table.end(), "statistics record is not defined");
+
+  statistic_table.modify(statistic_iterator, _self, [&](auto &s) {
+    s.usercount = s.usercount - 1;
+  });
+
+}
+
+//
 
 float freeos::get_vested_proportion() {
   // default rate if exchange rate record not found, or if current price >=
