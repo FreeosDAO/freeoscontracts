@@ -4,28 +4,6 @@
     "types": [],
     "structs": [
         {
-            "name": "addkyc",
-            "base": "",
-            "fields": [
-                {
-                    "name": "acc",
-                    "type": "name"
-                },
-                {
-                    "name": "kyc_provider",
-                    "type": "name"
-                },
-                {
-                    "name": "kyc_level",
-                    "type": "string"
-                },
-                {
-                    "name": "kyc_date",
-                    "type": "uint64"
-                }
-            ]
-        },
-        {
             "name": "burner_whitelist",
             "base": "",
             "fields": [
@@ -479,35 +457,12 @@
             ]
         },
         {
-            "name": "userverify",
-            "base": "",
-            "fields": [
-                {
-                    "name": "acc",
-                    "type": "name"
-                },
-                {
-                    "name": "verifier",
-                    "type": "name"
-                },
-                {
-                    "name": "verified",
-                    "type": "bool"
-                }
-            ]
-        },
-        {
             "name": "version",
             "base": "",
             "fields": []
         }
     ],
     "actions": [
-        {
-            "name": "addkyc",
-            "type": "addkyc",
-            "ricardian_contract": ""
-        },
         {
             "name": "burneradd",
             "type": "burneradd",
@@ -586,11 +541,6 @@
         {
             "name": "transferase",
             "type": "transferase",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "userverify",
-            "type": "userverify",
             "ricardian_contract": ""
         },
         {
