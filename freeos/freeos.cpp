@@ -7,7 +7,7 @@ namespace freedao {
 
 using namespace eosio;
 
-const std::string VERSION = "0.357";
+const std::string VERSION = "0.358";
 
 // ACTION
 void freeos::version() {
@@ -362,8 +362,7 @@ char freeos::get_account_type(name user) {
       size_t fn_pos = kyc_prov[i].kyc_level.find("firstname");
       size_t ln_pos = kyc_prov[i].kyc_level.find("lastname");
 
-      if (verification_iterator->verified == true &&
-          fn_pos != std::string::npos && ln_pos != std::string::npos) {
+      if (fn_pos != std::string::npos && ln_pos != std::string::npos) {
         user_account_type = 'v';
         break;
       }
